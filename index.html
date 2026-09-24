@@ -73,6 +73,8 @@
   .grow{flex:1; min-width:0;}
   a.sheetbtn{display:block; text-align:center; text-decoration:none; padding:10px; border-radius:10px; border:1px solid var(--line); color:var(--accent); font-weight:600;}
   .misswrap{margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;}
+  .shopchips{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;}
+  .shopchips .chip{max-width:100%; overflow:hidden; text-overflow:ellipsis;}
   button.tapchip{border:0; cursor:pointer; min-height:30px; font:600 12.5px var(--fs);}
   .pricebox{margin-top:12px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface-2);}
   .pricebox dl.facts{margin-top:8px;}
@@ -221,7 +223,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.15</span>
+      <span class="ver" id="appVer">v1.16</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -237,7 +239,7 @@
         <div class="note" style="margin-top:4px">ใส่ครั้งเดียว เครื่องนี้จำไว้ · เว้นว่างแล้วกดปลดล็อก = ออกจากโหมดราคา</div>
         <a class="sheetbtn" id="sheetAll" target="_blank" rel="noopener" href="#" style="margin-top:10px" hidden>📄 เปิด Google Sheet (แท็บ Master) ↗</a>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.14 · อัปเดต 24/09/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.16 · อัปเดต 24/09/2026</div>
     </div>
   </header>
 
@@ -335,7 +337,7 @@
         <div style="margin-top:12px"><label class="fld" for="a_pack">ขนาดบรรจุ</label>
           <input type="text" id="a_pack" placeholder="เช่น 2 ชิ้น/แพ็ค" autocomplete="off"></div>
         <div style="margin-top:12px"><label class="fld" for="a_maker">ผู้ขาย / Maker</label>
-          <input type="text" id="a_maker" placeholder="เช่น Hardwarehouse" autocomplete="off"></div>
+          <input type="text" id="a_maker" list="shopList" placeholder="เช่น Hardwarehouse" autocomplete="off"><div id="a_makerChips"></div></div>
         <div style="margin-top:12px"><label class="fld" for="a_bc">บาร์โค้ดผู้ผลิต (ถ้ามี)</label>
           <input type="text" id="a_bc" class="code" placeholder="สแกนกล่องในแท็บสแกน แล้วกด เพิ่มเป็นของใหม่" autocomplete="off"></div>
         <div style="margin-top:16px"><button class="primary" id="a_save">เพิ่มเข้าทะเบียน</button></div>
@@ -600,7 +602,31 @@
   function noStock(it){ return it && it.mn !== null && it.mn !== '' && !isNaN(+it.mn) && +it.mn <= 0; }
   function fmtMM(v){ return (v == null || v === '' || isNaN(+v) || +v === 0) ? '–' : fmt(v); }   // MIN/MAX ที่เป็น 0 โชว์ –
   function baht(n){ return n == null ? '—' : '฿' + (Math.round((+n)*100)/100).toLocaleString('en-US'); }
+  /* v1.16: ร้าน/ผู้ขาย แตะเลือก ไม่ต้องพิมพ์ยาวทุกรอบ — ปุ่มร้านที่ใช้บ่อย + จำร้านล่าสุด */
+  var K_SHOP = 'pcscan_lastshop';
+  function lastShop(){ return lsGetRaw(K_SHOP) || ''; }
+  function rememberShop(v){ v = String(v || '').trim(); if (v) lsSetRaw(K_SHOP, v); }
+  function topShops(n){
+    var cnt = {};
+    ITEMS.forEach(function(it){ var m = String(it.maker || '').trim(); if (m) cnt[m] = (cnt[m] || 0) + 1; });
+    Object.keys(PRICES).forEach(function(k){ var p = PRICES[k]; [p.s1,p.s2,p.s3,p.lastShop].forEach(function(x){ x = String(x || '').trim(); if (x) cnt[x] = (cnt[x] || 0) + 1; }); });
+    var ls = lastShop(), list = Object.keys(cnt).sort(function(a,b){ return cnt[b] - cnt[a]; });
+    if (ls){ list = list.filter(function(x){ return x !== ls; }); list.unshift(ls); }
+    return list.slice(0, n || 5);
+  }
+  function shopChips(id){
+    var l = topShops(5); if (!l.length) return '';
+    return '<div class="shopchips">' + l.map(function(x){ return '<button type="button" class="chip na tapchip" data-fill="' + id + '">' + esc(x) + '</button>'; }).join('') + '</div>';
+  }
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('[data-fill]'); if (!b) return;
+    var x = el(b.getAttribute('data-fill')); if (!x) return;
+    x.value = b.textContent; x.dispatchEvent(new Event('input', {bubbles:true}));
+    try { if (navigator.vibrate) navigator.vibrate(20); } catch(err){}
+  });
   function fillShops(){
+    var mc = el('a_makerChips'); if (mc) mc.innerHTML = shopChips('a_maker');
+    var am = el('a_maker'); if (am && !am.value && lastShop()) am.value = lastShop();
     var set = {};
     Object.keys(PRICES).forEach(function(k){ var p = PRICES[k]; [p.s1,p.s2,p.s3,p.lastShop].forEach(function(x){ if (x) set[x.trim()] = 1; }); });
     ITEMS.forEach(function(it){ if (it.maker) set[String(it.maker).trim()] = 1; });
@@ -668,7 +694,7 @@
 
   /* ================= การ์ดรายการ ================= */
   function renderAll(){
-    renderStatus(); renderRecent(); renderLow(); renderFind(); if (sel || bindCode) renderHit();
+    fillShops(); renderStatus(); renderRecent(); renderLow(); renderFind(); if (sel || bindCode) renderHit();
     renderInbox(); renderReq(); renderMine();
   }
 
@@ -884,7 +910,8 @@
     if (priceEdit === it.sku){
       h += [1,2,3].map(function(i){
         return '<div class="row" style="gap:6px; margin-top:8px"><input type="text" list="shopList" id="pe_s' + i + '" placeholder="ร้าน ' + i + '" value="' + esc(p['s'+i] || '') + '" style="flex:2" autocomplete="off">'
-          + '<input type="number" inputmode="decimal" min="0" id="pe_p' + i + '" placeholder="ราคา' + unit + '" value="' + (p['p'+i] != null ? p['p'+i] : '') + '" style="flex:1"></div>';
+          + '<input type="number" inputmode="decimal" min="0" id="pe_p' + i + '" placeholder="ราคา' + unit + '" value="' + (p['p'+i] != null ? p['p'+i] : '') + '" style="flex:1"></div>'
+          + (p['s'+i] ? '' : shopChips('pe_s' + i));
       }).join('')
         + '<div class="row" style="gap:6px; margin-top:10px; flex-wrap:wrap">'
         +   '<div style="flex:1 1 110px"><label class="fld" for="pe_pu">ราคาคิดต่อ</label><input type="text" id="pe_pu" placeholder="' + esc(it.unit || 'ชิ้น') + '" value="' + esc(p.pu || '') + '" autocomplete="off"></div>'
@@ -914,10 +941,10 @@
   }
   function recvFields(it){
     var u = unitPrice(it), p = pr(it) || {};
-    if (rv.sku !== it.sku) rv = {sku: it.sku, shop: p.lastShop || p.s1 || it.maker || '', price: u != null ? u : '', po: ''};
+    if (rv.sku !== it.sku) rv = {sku: it.sku, shop: p.lastShop || p.s1 || it.maker || lastShop(), price: u != null ? u : '', po: ''};
     return '<div class="pricebox" style="margin-top:12px"><b>ข้อมูลซื้อ (ไม่บังคับ)</b>'
       + '<div class="row" style="gap:6px; margin-top:8px; flex-wrap:wrap">'
-      +   '<div style="flex:2 1 150px"><label class="fld" for="r_shop">ซื้อจากร้าน</label><input type="text" id="r_shop" list="shopList" value="' + esc(rv.shop) + '" autocomplete="off"></div>'
+      +   '<div style="flex:2 1 150px"><label class="fld" for="r_shop">ซื้อจากร้าน</label><input type="text" id="r_shop" list="shopList" value="' + esc(rv.shop) + '" autocomplete="off">' + shopChips('r_shop') + '</div>'
       +   '<div style="flex:1 1 90px"><label class="fld" for="r_price">ราคา/' + esc(p.pu || it.unit || 'หน่วย') + '</label><input type="number" inputmode="decimal" min="0" id="r_price" value="' + esc(rv.price) + '"></div>'
       + '</div>'
       + '<div style="margin-top:6px"><label class="fld" for="r_po">เลข PO</label><input type="text" id="r_po" value="' + esc(rv.po) + '" autocomplete="off"></div>'
@@ -929,6 +956,7 @@
     var sv = el('pe_save'); if (sv) sv.addEventListener('click', function(){
       var body = {sku: it.sku, name: it.name, who: pcMode ? 'PC' : (who || 'PC')};
       [1,2,3].forEach(function(i){ body['s'+i] = (el('pe_s'+i).value || '').trim(); body['p'+i] = el('pe_p'+i).value; });
+      rememberShop(body.s1);
       body.pu = (el('pe_pu').value || '').trim(); body.pf = el('pe_pf').value;
       sv.disabled = true; sv.textContent = 'กำลังบันทึก…';
       api({action:'setprice', p: body}).then(function(j){ priceEdit = null; takeServer(j); toast('บันทึกร้าน/ราคาแล้ว'); })
@@ -1043,7 +1071,7 @@
       + '</div>'
       + '<div class="note" id="ie_sug" style="margin:4px 0 0"></div>'
       + '<div class="note" style="margin:2px 0 0">ใส่ MIN = 0 คือ<b>ไม่ต้องเก็บสต็อก</b> (ซื้อเมื่อมีคนขอ) · ช่องว่าง = ยังไม่ได้ตั้ง</div>'
-      + '<div style="margin-top:8px"><label class="fld" for="ie_maker">ผู้ขาย / MK หลัก</label><input type="text" id="ie_maker" list="shopList" value="' + esc(it.maker || '') + '" autocomplete="off"></div>'
+      + '<div style="margin-top:8px"><label class="fld" for="ie_maker">ผู้ขาย / MK หลัก</label><input type="text" id="ie_maker" list="shopList" value="' + esc(it.maker || '') + '" autocomplete="off">' + shopChips('ie_maker') + '</div>'
       + '<label class="hidebox"><input type="checkbox" id="ie_hide"' + (isHidden(it) ? ' checked' : '') + '> <span><b>ซ่อนจากแผนก</b><br><span class="note" style="margin:0">ของที่ PC ซื้อเติมเองเรื่อยๆ (เช่น กระดาษ) — แผนกค้นไม่เจอ + ไม่ขึ้นในรายการ "ต้องเติม"</span></span></label>'
       + '<div class="row" style="gap:8px; margin-top:10px"><button class="primary" id="ie_save" style="flex:2">บันทึกข้อมูลของ</button><button class="ghost" id="ie_cancel" style="flex:1">ยกเลิก</button></div>'
       + '</div>';
@@ -1073,7 +1101,7 @@
     el('ie_save').addEventListener('click', function(){
       var mn = el('ie_mn').value, mx = el('ie_mx').value;
       if (mn !== '' && mx !== '' && +mn > +mx){ toast('MIN มากกว่า MAX — เช็คอีกที', true); return; }
-      var body = {sku: it.sku, unit: el('ie_unit').value, pack: el('ie_pack').value, mn: mn, mx: mx, maker: el('ie_maker').value, hide: el('ie_hide').checked, who: pcMode ? 'PC' : (who || 'PC')};
+      var body = {sku: it.sku, unit: el('ie_unit').value, pack: el('ie_pack').value, mn: mn, mx: mx, maker: el('ie_maker').value, hide: (rememberShop(el('ie_maker').value), el('ie_hide').checked), who: pcMode ? 'PC' : (who || 'PC')};
       if (!API){ toast('ต้องต่อ Google Sheet ก่อน', true); return; }
       var btn = el('ie_save'); btn.disabled = true; btn.textContent = 'กำลังบันทึก…';
       api({action:'edititem', item: body}).then(function(j){ itemEdit = null; takeServer(j); toast('บันทึกข้อมูล ' + it.sku + ' แล้ว'); })
@@ -1150,6 +1178,7 @@
     if (dir === 'รับเข้า' && pinOk && el('r_price')){
       var rp = +el('r_price').value || 0;
       if (rp > 0) rec.pur = { shop: (el('r_shop').value || '').trim(), price: rp, po: (el('r_po').value || '').trim(), pf: pf(sel) };
+      rememberShop(el('r_shop').value);
     }
     var unit = sel.unit || '';
     var btn = el('save'); btn.disabled = true; btn.textContent = 'กำลังบันทึก…';
@@ -1476,7 +1505,9 @@
     var btn = el('a_save'); btn.disabled = true; btn.textContent = 'กำลังเพิ่ม…';
     api({action:'additem', item:item}).then(function(j){
       takeServer(j);
-      ['a_name','a_unit','a_stock','a_mn','a_mx','a_pack','a_maker','a_bc'].forEach(function(id){ el(id).value = ''; });
+      rememberShop(item.maker);
+      ['a_name','a_unit','a_stock','a_mn','a_mx','a_pack','a_bc'].forEach(function(id){ el(id).value = ''; });   // v1.16: ผู้ขายคงไว้ ของล็อตเดียวกันไม่ต้องพิมพ์ซ้ำ
+      fillShops();
       el('a_dup').hidden = true; el('a_msg').textContent = '';
       toast('เพิ่ม ' + j.newSku + ' เข้าทะเบียนแล้ว');
       var it = BY_SKU[String(j.newSku).toUpperCase()];
