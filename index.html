@@ -241,7 +241,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.19</span>
+      <span class="ver" id="appVer">v1.20</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -257,7 +257,7 @@
         <div class="note" style="margin-top:4px">ใส่ครั้งเดียว เครื่องนี้จำไว้ · เว้นว่างแล้วกดปลดล็อก = ออกจากโหมดราคา</div>
         <a class="sheetbtn" id="sheetAll" target="_blank" rel="noopener" href="#" style="margin-top:10px" hidden>📄 เปิด Google Sheet (แท็บ Master) ↗</a>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.19 · อัปเดต 25/09/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.20 · อัปเดต 25/09/2026</div>
     </div>
   </header>
 
@@ -359,11 +359,11 @@
         <div id="a_dup" hidden style="margin-top:8px; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--warn-soft)"></div>
         <div class="row" style="margin-top:12px; gap:8px; flex-wrap:wrap">
           <div style="flex:1 1 130px"><label class="fld" for="a_unit">หน่วยนับ *</label>
-            <input type="text" id="a_unit" list="units" placeholder="ชิ้น / กล่อง / ลิตร" autocomplete="off"></div>
+            <input type="text" id="a_unit" list="units" placeholder="ชิ้น / กล่อง / ลิตร" autocomplete="off"><div class="shopchips"><button type="button" class="chip na tapchip" data-fill="a_unit">ชิ้น</button><button type="button" class="chip na tapchip" data-fill="a_unit">กก.</button><button type="button" class="chip na tapchip" data-fill="a_unit">กล่อง</button><button type="button" class="chip na tapchip" data-fill="a_unit">แพ็ค</button><button type="button" class="chip na tapchip" data-fill="a_unit">ม้วน</button><button type="button" class="chip na tapchip" data-fill="a_unit">ลิตร</button><button type="button" class="chip na tapchip" data-fill="a_unit">ถัง</button><button type="button" class="chip na tapchip" data-fill="a_unit">กระป๋อง</button><button type="button" class="chip na tapchip" data-fill="a_unit">ชุด</button><button type="button" class="chip na tapchip" data-fill="a_unit">อัน</button><button type="button" class="chip na tapchip" data-fill="a_unit">เมตร</button><button type="button" class="chip na tapchip" data-fill="a_unit">โหล</button></div></div>
           <div style="flex:1 1 130px"><label class="fld" for="a_stock">จำนวนที่มีตอนนี้</label>
             <input type="number" id="a_stock" inputmode="decimal" min="0" placeholder="0"></div>
         </div>
-        <datalist id="units"><option>ชิ้น</option><option>อัน</option><option>ตัว</option><option>กล่อง</option><option>แพ็ค</option><option>ม้วน</option><option>ลิตร</option><option>กิโล</option><option>ถัง</option><option>กระป๋อง</option><option>ขวด</option><option>ชุด</option><option>แผ่น</option><option>โหล</option></datalist>
+        <datalist id="units"><option>ชิ้น</option><option>กก.</option><option>กล่อง</option><option>แพ็ค</option><option>ม้วน</option><option>ลิตร</option><option>ถัง</option><option>กระป๋อง</option><option>ขวด</option><option>ชุด</option><option>แผ่น</option><option>โหล</option><option>อัน</option><option>ตัว</option><option>เมตร</option><option>ถุง</option><option>คู่</option><option>เส้น</option><option>ด้าม</option><option>กระปุก</option><option>แกลลอน</option></datalist>
         <div class="row" style="margin-top:12px; gap:8px; flex-wrap:wrap">
           <div style="flex:1 1 100px"><label class="fld" for="a_mn">MIN (จุดสั่งเติม)</label>
             <input type="number" id="a_mn" inputmode="decimal" min="0"></div>
@@ -960,7 +960,7 @@
           + (p['s'+i] ? '' : shopChips('pe_s' + i));
       }).join('')
         + '<div class="row" style="gap:6px; margin-top:10px; flex-wrap:wrap">'
-        +   '<div style="flex:1 1 110px"><label class="fld" for="pe_pu">ราคาคิดต่อ</label><input type="text" id="pe_pu" placeholder="' + esc(it.unit || 'ชิ้น') + '" value="' + esc(p.pu || '') + '" autocomplete="off"></div>'
+        +   '<div style="flex:1 1 110px"><label class="fld" for="pe_pu">ราคาคิดต่อ (หน่วย)</label><input type="text" id="pe_pu" list="units" placeholder="' + esc(it.unit || 'ชิ้น') + '" value="' + esc(p.pu || '') + '" autocomplete="off">' + unitChips('pe_pu') + '</div>'
         +   '<div style="flex:1 1 150px"><label class="fld" for="pe_pf">1 หน่วยราคา = กี่ ' + esc(it.unit || 'หน่วยนับ') + '</label><input type="number" inputmode="decimal" min="0" id="pe_pf" placeholder="1" value="' + (p.pf != null ? p.pf : '') + '"></div>'
         + '</div>'
         + '<div class="note" style="margin:4px 0 0">เช่น ราคาต่อถัง แต่นับสต็อกเป็นลิตร → ราคาคิดต่อ = ถัง, 1 ถัง = 200 · ถ้าหน่วยเดียวกันเว้นว่าง</div>'
@@ -1003,7 +1003,7 @@
       var body = {sku: it.sku, name: it.name, who: pcMode ? 'PC' : (who || 'PC')};
       [1,2,3].forEach(function(i){ body['s'+i] = (el('pe_s'+i).value || '').trim(); body['p'+i] = el('pe_p'+i).value; });
       rememberShop(body.s1);
-      body.pu = (el('pe_pu').value || '').trim(); body.pf = el('pe_pf').value;
+      body.pu = stdUnit(el('pe_pu').value); body.pf = el('pe_pf').value;
       sv.disabled = true; sv.textContent = 'กำลังบันทึก…';
       api({action:'setprice', p: body}).then(function(j){ priceEdit = null; takeServer(j); toast('บันทึกร้าน/ราคาแล้ว'); })
         ['catch'](function(e){ sv.disabled = false; sv.textContent = 'บันทึกร้าน/ราคา'; toast('ไม่สำเร็จ — ' + ((e && e.message) || 'เช็คเน็ต'), true); });
@@ -1109,6 +1109,7 @@
     return '<div class="pricebox"><b>แก้ข้อมูลของ</b>'
       + '<div class="row" style="gap:6px; margin-top:8px; flex-wrap:wrap">'
       +   '<div style="flex:1 1 120px"><label class="fld" for="ie_unit">หน่วยนับ</label><input type="text" id="ie_unit" list="units" value="' + esc(it.unit || '') + '" autocomplete="off"></div>'
+      + '</div>' + unitChips('ie_unit') + '<div>'
       +   '<div style="flex:1 1 120px"><label class="fld" for="ie_pack">ขนาดบรรจุ (โน้ต)</label><input type="text" id="ie_pack" value="' + esc(it.pack || '') + '" autocomplete="off"></div>'
       + '</div>'
       + '<div class="row" style="gap:6px; margin-top:8px">'
@@ -1148,7 +1149,7 @@
     el('ie_save').addEventListener('click', function(){
       var mn = el('ie_mn').value, mx = el('ie_mx').value;
       if (mn !== '' && mx !== '' && +mn > +mx){ toast('MIN มากกว่า MAX — เช็คอีกที', true); return; }
-      var body = {sku: it.sku, unit: el('ie_unit').value, pack: el('ie_pack').value, mn: mn, mx: mx, maker: el('ie_maker').value, link: (el('ie_link').value || '').trim(), hide: (rememberShop(el('ie_maker').value), el('ie_hide').checked), who: pcMode ? 'PC' : (who || 'PC')};
+      var body = {sku: it.sku, unit: stdUnit(el('ie_unit').value), pack: el('ie_pack').value, mn: mn, mx: mx, maker: el('ie_maker').value, link: (el('ie_link').value || '').trim(), hide: (rememberShop(el('ie_maker').value), el('ie_hide').checked), who: pcMode ? 'PC' : (who || 'PC')};
       if (!API){ toast('ต้องต่อ Google Sheet ก่อน', true); return; }
       var btn = el('ie_save'); btn.disabled = true; btn.textContent = 'กำลังบันทึก…';
       api({action:'edititem', item: body}).then(function(j){ itemEdit = null; takeServer(j); toast('บันทึกข้อมูล ' + it.sku + ' แล้ว'); })
@@ -1541,7 +1542,7 @@
   el('a_name').addEventListener('input', dupCheck);
   el('a_save').addEventListener('click', function(){
     var item = {
-      name: (el('a_name').value || '').trim(), unit: (el('a_unit').value || '').trim(),
+      name: (el('a_name').value || '').trim(), unit: stdUnit(el('a_unit').value),
       stock: el('a_stock').value, mn: el('a_mn').value, mx: el('a_mx').value,
       pack: (el('a_pack').value || '').trim(), maker: (el('a_maker').value || '').trim(),
       bc: (el('a_bc').value || '').trim(), who: 'PC'
@@ -1985,13 +1986,7 @@
   var UNIT_TH = {PCS:'ชิ้น', PC:'ชิ้น', EA:'ชิ้น', EACH:'ชิ้น', PIECE:'ชิ้น', BOX:'กล่อง', BX:'กล่อง', PACK:'แพ็ค', PK:'แพ็ค', PAC:'แพ็ค', ROLL:'ม้วน', RL:'ม้วน',
     CAN:'กระป๋อง', SET:'ชุด', BOTTLE:'ขวด', BTL:'ขวด', BT:'ขวด', KG:'กก.', M:'เมตร', MTR:'เมตร', L:'ลิตร', LTR:'ลิตร', DOZ:'โหล', DZ:'โหล', PAIR:'คู่', PR:'คู่',
     SHEET:'แผ่น', SHT:'แผ่น', TUBE:'หลอด', BAG:'ถุง', GAL:'แกลลอน', DRUM:'ถัง', PAIL:'ถัง', LOT:'ล็อต', REAM:'รีม', UNIT:'ชิ้น', CYL:'ถัง', CYLINDER:'ถัง'};
-  function normUnit(u){
-    var t = String(u || '').trim().toUpperCase().replace(/[.\s]/g, '').replace(/\(.*\)/, '');
-    if (UNIT_TH[t]) return UNIT_TH[t];
-    t = String(u || '').trim().replace(/[.\s]/g, '').replace(/\(.*\)/, '');
-    if (/^แพ็[คก]/.test(t)) return 'แพ็ค';
-    return t.toLowerCase();
-  }
+  function normUnit(u){ return stdUnit(u).replace(/\s*\(.*\)$/, '').toLowerCase(); }   // v1.20 ใช้หน่วยมาตรฐานเดียวกันทั้งระบบ
   function prKey(l){ return String(l.code || '').trim() || ('#' + String(l.desc || '').trim().slice(0, 60)); }
   function prMapOf(l){ var k = prKey(l); for (var i = 0; i < PRMAP.length; i++) if (PRMAP[i].code === k) return PRMAP[i]; return null; }
   function shopFromOcr(s){
@@ -2372,6 +2367,24 @@
       reqAction({action:'edititem', item:{sku: it.sku, link: v, who: 'PC'}}, v ? 'ยืนยันลิงก์แล้ว' : 'ลบลิงก์แล้ว', b);
     }); });
   }
+
+  /* ---------- v1.20 หน่วยมาตรฐาน: กิโล / กิโลกรัม / KG. → กก. ฯลฯ ---------- */
+  var UNIT_STD = [
+    ['กก.', /^(kg|kgs|kilo|kilogram|กก|กิโล|กิโลกรัม)$/i], ['ชิ้น', /^(pcs|pc|piece|pieces|ea|each|unit|ชิ้น|ชน)$/i],
+    ['กล่อง', /^(box|bx|ctn|carton|กล่อง|กล่อ)$/i], ['แพ็ค', /^(pack|pk|pac|pkt|แพ็ค|แพ็ก|แพค|แพก)$/i], ['ม้วน', /^(roll|rl|ม้วน)$/i],
+    ['ลิตร', /^(l|lt|ltr|litre|liter|ลิตร|ลิต)$/i], ['ถัง', /^(cyl|cylinder|drum|pail|paill|ถัง)$/i], ['กระป๋อง', /^(can|กระป๋อง|กป)$/i],
+    ['ขวด', /^(bottle|btl|bt|ขวด)$/i], ['ชุด', /^(set|ชุด)$/i], ['แผ่น', /^(sheet|sht|แผ่น)$/i], ['โหล', /^(doz|dz|dozen|โหล)$/i],
+    ['เมตร', /^(m|mtr|meter|metre|เมตร|ม)$/i], ['คู่', /^(pair|pr|คู่)$/i], ['ถุง', /^(bag|ถุง)$/i], ['หลอด', /^(tube|หลอด)$/i],
+    ['แกลลอน', /^(gal|gallon|gl|แกลลอน|แกลอน)$/i], ['รีม', /^(ream|รีม)$/i], ['อัน', /^(อัน)$/i], ['ตัว', /^(ตัว)$/i], ['เส้น', /^(เส้น)$/i], ['ใบ', /^(ใบ)$/i], ['ดอก', /^(ดอก)$/i]
+  ];
+  function stdUnit(u){
+    var s = String(u == null ? '' : u).trim().replace(/([\u0E48-\u0E4B])\1+/g, '$1'); if (!s) return '';
+    var m = s.match(/^([^\s(]+?)\.?\s*(\(.*\))?$/); if (!m) return s;
+    for (var i = 0; i < UNIT_STD.length; i++) if (UNIT_STD[i][1].test(m[1])) return UNIT_STD[i][0] + (m[2] ? ' ' + m[2] : '');
+    return s;
+  }
+  var UNIT_CHIPS = ['ชิ้น', 'กก.', 'กล่อง', 'แพ็ค', 'ม้วน', 'ลิตร', 'ถัง', 'กระป๋อง', 'ชุด', 'อัน', 'เมตร', 'โหล'];
+  function unitChips(id){ return '<div class="shopchips">' + UNIT_CHIPS.map(function(x){ return '<button type="button" class="chip na tapchip" data-fill="' + id + '">' + x + '</button>'; }).join('') + '</div>'; }
 
   /* ================= เริ่มต้น ================= */
   if (embedded){
