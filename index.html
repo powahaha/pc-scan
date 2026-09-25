@@ -79,6 +79,18 @@
   .prline input.prcode{display:inline-block; width:150px; min-height:0; padding:2px 6px; font:500 12px var(--fm);}
   .prmatch{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:6px; padding:6px 8px; border-radius:8px; background:var(--ok-soft);}
   .prmatch button{min-height:30px; padding:2px 10px;}
+  .cylrow{display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 0; border-top:1px solid var(--line);}
+  .cylrow .cylbal{font-size:18px; white-space:nowrap;}
+  .cylrow .cylfix{flex-basis:100%;}
+  #walk{position:fixed; inset:0; z-index:60; background:var(--ground); overflow:auto; padding:12px 16px 24px;}
+  .walkbar{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:18px;}
+  .walksku{font:600 15px var(--fm); text-align:center; color:var(--muted); margin-top:24px;}
+  .walkname{font:700 24px/1.35 var(--fs); text-align:center; margin-top:8px;}
+  .walkshot{margin-top:28px; min-height:72px; font-size:20px;}
+  .walkdone{font:700 28px var(--fs); text-align:center; margin:40px 0 10px;}
+  #nudge{position:fixed; left:12px; right:12px; bottom:76px; z-index:55; background:var(--surface); border:2px solid var(--accent); border-radius:12px; padding:12px; box-shadow:var(--shadow); max-width:520px; margin:0 auto;}
+  .linkbox{margin:4px 0 10px;}
+  .linkbtn{display:block; text-align:center; text-decoration:none; padding:10px; border-radius:10px;}
   .shopchips{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;}
   .shopchips .chip{max-width:100%; overflow:hidden; text-overflow:ellipsis;}
   button.tapchip{border:0; cursor:pointer; min-height:30px; font:600 12.5px var(--fs);}
@@ -229,7 +241,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.17</span>
+      <span class="ver" id="appVer">v1.19</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -245,7 +257,7 @@
         <div class="note" style="margin-top:4px">ใส่ครั้งเดียว เครื่องนี้จำไว้ · เว้นว่างแล้วกดปลดล็อก = ออกจากโหมดราคา</div>
         <a class="sheetbtn" id="sheetAll" target="_blank" rel="noopener" href="#" style="margin-top:10px" hidden>📄 เปิด Google Sheet (แท็บ Master) ↗</a>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.17 · อัปเดต 24/09/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.19 · อัปเดต 25/09/2026</div>
     </div>
   </header>
 
@@ -286,6 +298,11 @@
 
     <!-- ── แท็บ ค้นหา ── -->
     <section id="v-find" hidden>
+      <div class="card" id="walkCard">
+        <div class="row" style="justify-content:space-between; gap:8px; align-items:center"><div><b>📷 เดินถ่ายรูป</b><div class="note" id="walkCount" style="margin:2px 0 0"></div></div>
+        <button class="primary" id="walkGo" style="width:auto; padding:0 16px">เริ่ม</button></div>
+        <div class="note" style="margin:6px 0 0">ถือมือถือเดินตามชั้น ระบบโชว์ชื่อของทีละชิ้น กดถ่าย → ไปชิ้นถัดไปเอง (เบิกบ่อยขึ้นก่อน) · ของหมดจะเตือนให้ถ่ายตอนของเข้า</div>
+      </div>
       <div class="card">
         <label class="fld" for="q">ค้นหาชื่อของหรือรหัส</label>
         <input type="text" id="q" placeholder="เช่น ถุงมือ, สีสเปรย์, CS-017" autocomplete="off">
@@ -321,14 +338,15 @@
     <!-- ── แท็บ เพิ่มของใหม่ ── -->
     <section id="v-add" hidden>
       <div class="card" id="prCard">
-        <h2>📄 รับของตามใบ PR</h2>
-        <div class="note" style="margin:0">ถ่ายรูปใบ PR หรือเลือกไฟล์ PDF สแกน → ระบบอ่านให้ → ตรวจทีละบรรทัด → กดรับเข้าทั้งใบ (ตัดสต็อก + ราคา + ร้าน + เลข PR ให้เอง)</div>
+        <h2>📄 รับของตามใบ PR / อินวอยซ์</h2>
+        <div class="note" style="margin:0">ถ่ายรูปใบ PR, อินวอยซ์ หรือใบส่งของ Linde (หรือเลือก PDF สแกน) → ระบบรู้เองว่าเป็นใบอะไร อ่านให้ → ตรวจทีละบรรทัด → กดรับเข้าทั้งใบ (ตัดสต็อก + ราคา + ร้าน + เลข PR ให้เอง)</div>
         <div class="note" id="pr_lock" style="margin:8px 0 0">🔒 ต้องใส่ PIN ของ PC ในปุ่มตั้งค่าก่อน (ในใบมีราคา)</div>
-        <div class="row" id="pr_btns" style="gap:8px; margin-top:10px"><button class="primary" id="pr_cam" style="flex:1">📷 ถ่ายรูปใบ PR</button><button class="ghost" id="pr_pick" style="flex:1">📎 เลือกไฟล์ / PDF</button></div>
+        <div class="row" id="pr_btns" style="gap:8px; margin-top:10px"><button class="primary" id="pr_cam" style="flex:1">📷 ถ่ายรูปใบ</button><button class="ghost" id="pr_pick" style="flex:1">📎 เลือกไฟล์ / PDF</button></div>
         <input type="file" id="pr_file_cam" accept="image/*" capture="environment" hidden>
         <input type="file" id="pr_file" accept="image/*,application/pdf" hidden>
         <div class="note" id="pr_status" style="margin:8px 0 0"></div>
         <div id="pr_open"></div>
+        <div id="pr_cyl"></div>
         <div class="note" style="margin:8px 0 0">ถ่ายให้ตรง เต็มใบ ไม่มีเงา · ของที่เคยจับคู่แล้ว ครั้งหน้าระบบจำให้เอง</div>
       </div>
       <div id="pr_review" hidden></div>
@@ -417,6 +435,12 @@
 
   <datalist id="shopList"></datalist>
   <input type="file" id="imgFile" accept="image/*" capture="environment" hidden>
+  <div id="walk" hidden role="dialog" aria-label="เดินถ่ายรูป">
+    <div class="walkbar"><div><b id="walkHead">เดินถ่ายรูป</b><div class="li-meta" id="walkProg"></div></div><button class="ghost" id="walkClose" style="width:auto">ปิด ✕</button></div>
+    <div id="walkBody"></div>
+  </div>
+  <input type="file" id="walkFile" accept="image/*" capture="environment" hidden>
+  <div id="nudge" hidden><div id="nudgeText"></div><div class="row" style="gap:8px; margin-top:8px"><button class="primary" id="nudgeGo" style="flex:2">📷 ถ่ายเลย</button><button class="ghost" id="nudgeNo" style="flex:1">ไว้ก่อน</button></div></div>
   <div id="lb" hidden role="dialog" aria-label="ดูรูปใหญ่ (แตะเพื่อปิด)"><img id="lbImg" alt=""></div>
 
   <nav role="tablist">
@@ -545,6 +569,7 @@
     if (j.retired){ setRetired(j.retired); lsSet(K_OFF, j.retired); }
     if (j.requests){ requests = j.requests; lsSet(K_REQ, requests); }
     if (j.prs) PRS = j.prs; if (j.prmap) PRMAP = j.prmap;   // v1.17 ใบ PR
+    if (j.cyl) CYL = j.cyl;   // v1.18 ถังแก๊ส
     if (j.sheet && j.sheet.id){ SHEETINFO = j.sheet; lsSet('pcscan_sheet', SHEETINFO); }
     if (j.pin === true){ pinOk = true; PRICES = j.prices || {}; PURCH = j.purchases || []; lsSet(K_PRICE, PRICES); fillShops(); }
     else if (j.pin === false){   // PIN เก่า/ผิด — ล้างทิ้ง กันไปนับครั้งผิดจนระบบล็อก
@@ -713,7 +738,7 @@
 
   /* ================= การ์ดรายการ ================= */
   function renderAll(){
-    fillShops(); renderStatus(); renderRecent(); renderLow(); renderFind(); if (sel || bindCode) renderHit();
+    fillShops(); renderWalkCard(); renderStatus(); renderRecent(); renderLow(); renderFind(); if (sel || bindCode) renderHit();
     renderInbox(); renderReq(); renderMine(); renderPRCard();
   }
 
@@ -772,6 +797,7 @@
     box.hidden = false;
     box.innerHTML = ''
       + photoBlock(it, true)
+      + linkBlock(it)
       + '<p class="itemname">' + esc(it.name) + '</p>'
       + '<div class="row" style="justify-content:space-between">'
       +   '<span class="sku">' + esc(it.sku) + (it.old != null && it.old !== '' ? ' · ลำดับเดิม ' + esc(it.old) : '') + '</span>'
@@ -831,6 +857,7 @@
     el('q_').addEventListener('input', function(){ qty = Math.max(0, +el('q_').value || 0); });
     el('save').addEventListener('click', save);
     bindPhoto(it);
+    bindLink(it);
     bindPrice(it);
     bindMissing(it);
     bindCount(it, n);
@@ -1091,6 +1118,7 @@
       + '<div class="note" id="ie_sug" style="margin:4px 0 0"></div>'
       + '<div class="note" style="margin:2px 0 0">ใส่ MIN = 0 คือ<b>ไม่ต้องเก็บสต็อก</b> (ซื้อเมื่อมีคนขอ) · ช่องว่าง = ยังไม่ได้ตั้ง</div>'
       + '<div style="margin-top:8px"><label class="fld" for="ie_maker">ผู้ขาย / MK หลัก</label><input type="text" id="ie_maker" list="shopList" value="' + esc(it.maker || '') + '" autocomplete="off">' + shopChips('ie_maker') + '</div>'
+      + '<div style="margin-top:8px"><label class="fld" for="ie_link">ลิงก์ดูรูปสินค้า (หน้าเว็บผู้ขาย ไม่บังคับ)</label><input type="url" id="ie_link" value="' + esc(linkOf(it) ? linkOf(it).url : '') + '" placeholder="https://..." autocomplete="off"></div>'
       + '<label class="hidebox"><input type="checkbox" id="ie_hide"' + (isHidden(it) ? ' checked' : '') + '> <span><b>ซ่อนจากแผนก</b><br><span class="note" style="margin:0">ของที่ PC ซื้อเติมเองเรื่อยๆ (เช่น กระดาษ) — แผนกค้นไม่เจอ + ไม่ขึ้นในรายการ "ต้องเติม"</span></span></label>'
       + '<div class="row" style="gap:8px; margin-top:10px"><button class="primary" id="ie_save" style="flex:2">บันทึกข้อมูลของ</button><button class="ghost" id="ie_cancel" style="flex:1">ยกเลิก</button></div>'
       + '</div>';
@@ -1120,7 +1148,7 @@
     el('ie_save').addEventListener('click', function(){
       var mn = el('ie_mn').value, mx = el('ie_mx').value;
       if (mn !== '' && mx !== '' && +mn > +mx){ toast('MIN มากกว่า MAX — เช็คอีกที', true); return; }
-      var body = {sku: it.sku, unit: el('ie_unit').value, pack: el('ie_pack').value, mn: mn, mx: mx, maker: el('ie_maker').value, hide: (rememberShop(el('ie_maker').value), el('ie_hide').checked), who: pcMode ? 'PC' : (who || 'PC')};
+      var body = {sku: it.sku, unit: el('ie_unit').value, pack: el('ie_pack').value, mn: mn, mx: mx, maker: el('ie_maker').value, link: (el('ie_link').value || '').trim(), hide: (rememberShop(el('ie_maker').value), el('ie_hide').checked), who: pcMode ? 'PC' : (who || 'PC')};
       if (!API){ toast('ต้องต่อ Google Sheet ก่อน', true); return; }
       var btn = el('ie_save'); btn.disabled = true; btn.textContent = 'กำลังบันทึก…';
       api({action:'edititem', item: body}).then(function(j){ itemEdit = null; takeServer(j); toast('บันทึกข้อมูล ' + it.sku + ' แล้ว'); })
@@ -1199,12 +1227,13 @@
       if (rp > 0) rec.pur = { shop: (el('r_shop').value || '').trim(), price: rp, po: (el('r_po').value || '').trim(), pf: pf(sel) };
       rememberShop(el('r_shop').value);
     }
-    var unit = sel.unit || '';
+    var unit = sel.unit || '', gotSku = rec.dir === 'รับเข้า' && pcMode ? sel.sku : '';   // v1.19 เตือนถ่ายรูปของที่เพิ่งเข้า
     var btn = el('save'); btn.disabled = true; btn.textContent = 'กำลังบันทึก…';
     addRecord(rec).then(function(){
       toast(rec.dir + ' ' + fmt(rec.qty) + ' ' + unit + ' · ' + rec.name.slice(0,26)
             + (API && !online ? ' (เก็บไว้ในเครื่อง รอส่ง)' : ''));
       sel = null; qty = 1; renderAll();
+      if (gotSku) imgNudge([gotSku]);
     });
   }
 
@@ -1881,13 +1910,81 @@
     if (!out.no) out.warn.push('อ่านเลข PR ไม่ได้ — พิมพ์เอง');
     return out;
   }
+  /* ---------- v1.18 อินวอยซ์ / ใบส่งของ Linde (ถังแก๊ส) ---------- */
+  function docKind(text){
+    var t = String(text || '');
+    if (/PURCHASE\s*REQUISITION|RFPU-GE/i.test(t)) return 'PR';
+    if (/DELIVERY\s*DOCKET/i.test(t)) return 'DD';
+    if (/INVOICE/i.test(t) && /Linde|ลินเด้/i.test(t)) return 'INV';
+    return 'PR';
+  }
+  function matCode(t){ var m = String(t || '').trim().match(/^E?(\d{3}-\d{2,3})$/i); return m ? m[1] : ''; }
+  function afterLabel(toks, re, test, span){
+    for (var i = 0; i < toks.length; i++) if (re.test(toks[i])){
+      for (var k = i; k < Math.min(toks.length, i + (span || 12)); k++){ var m = test(toks[k], k === i); if (m) return m; }
+    }
+    return '';
+  }
+  function parseLinde(text){
+    var raw = String(text || '').replace(/\r/g, ''), kind = docKind(raw);
+    var toks = raw.split('\n').map(function(x){ return x.trim(); }).filter(Boolean);
+    var out = {kind:kind, no:'', date:'', shop:'Linde', so:'', ref:'', lines:[], warn:[], note:''};
+    var mats = toks.map(matCode).filter(Boolean);
+    function isSur(d){ return /surcharge|ค่าธรรมเนียม|transport|delivery charge|rental|ค่าเช่า|ค่าขนส่ง/i.test(d); }
+    if (kind === 'INV'){
+      var m = raw.match(/INVOICE\s*NO\.?\s*:?\s*(\d{6,})/i); if (m) out.no = 'INV-' + m[1];
+      m = raw.match(/DATE\s*:?\s*(\d{1,2}\.\d{1,2}\.\d{2,4})/i); if (m) out.date = m[1];
+      m = raw.match(/ORDER\s*No\.?\s*:?\s*(\d{6,})/i); if (m) out.so = m[1];
+      out.ref = afterLabel(toks, /Ref\.?\s*DD/i, function(t){ var x = t.match(/^\d{9,10}$/); return x && x[0]; }, 10);
+      var po = afterLabel(toks, /PURCHASE\s*ORDER/i, function(t, first){ var x = first ? null : t.match(/^\d{6,8}$/); return x && x[0]; }, 6);
+      if (po) out.note = 'PO ' + po;
+      var di = toks.findIndex(function(t){ return /^DESCRIPTION$/i.test(t); }), descs = [];
+      for (var i = di + 1; di >= 0 && i < toks.length && !/QTY|OTY|จ[ํำ]?านวน/i.test(toks[i]); i++) descs.push(toks[i]);
+      var qi = toks.findIndex(function(t){ return /Q?[TO]?TY\.?\s*SUPP|OTY\.SUPP|QTY\.SUPP/i.test(t); }), qtys = [];
+      for (var q = qi + 1; qi >= 0 && q < toks.length && prNum(toks[q]) != null; q++) qtys.push(prNum(toks[q]));
+      var ui = raw.search(/UNIT\s*PRICE/i), prices = [];
+      if (ui >= 0){ var re = /(\d[\d,]*\.\d{2})\s*\|?\s*\n?\s*([A-Z]{2,4})\b/g, mm, seg = raw.slice(ui).replace(/UOM|DISC|VAT|UNIT PRICE/gi, ' ');
+        while ((mm = re.exec(seg)) && prices.length < descs.length) prices.push({p:prNum(mm[1]), u:mm[2].toUpperCase()}); }
+      var ai = toks.findIndex(function(t){ return /^AMOUNT$/i.test(t); }), amts = [];
+      for (var a = ai + 1; ai >= 0 && a < toks.length && prNum(toks[a]) != null; a++) amts.push(prNum(toks[a]));
+      descs.forEach(function(d, k){
+        var l = {ln:k + 1, code: mats[k] || (k === 0 ? mats[0] || '' : ''), desc:d, qty: qtys[k] != null ? qtys[k] : null, unit: prices[k] ? prices[k].u : 'CYL',
+                 price: prices[k] ? prices[k].p : null, total: amts[k] != null ? amts[k] : null, flags:[]};
+        if (isSur(d)){ l.auto = 'SKIP'; l.code = ''; }
+        out.lines.push(l);
+      });
+      var sur = out.lines.filter(function(l){ return l.auto === 'SKIP' && l.price != null; });
+      var main = out.lines.filter(function(l){ return l.auto !== 'SKIP'; });
+      if (sur.length && main.length) main[0].note = sur.map(function(s){ return s.desc + ' ' + s.price + '/' + s.unit; }).join(', ');
+    } else {
+      var n = afterLabel(toks, /Document\s*No/i, function(t){ var x = t.match(/^\d{9,11}$/); return x && x[0]; }, 8); if (n) out.no = 'DD-' + n;
+      var dm = raw.match(/\b(\d{1,2}\.\d{1,2}\.\d{4})\b/); if (dm) out.date = dm[1];
+      var so = raw.match(/SO\.?\s*(\d{6,})/i); if (so) out.so = so[1];
+      var ri = toks.findIndex(function(t){ return /^Rtn\.?$/i.test(t) || /Qty\s*Rtn/i.test(t); }), nums = [], unit = 'CYL';
+      for (var r = ri + 1; ri >= 0 && r < toks.length; r++){ if (/^[A-Z]{2,4}$/.test(toks[r])){ unit = toks[r]; continue; } var v = prNum(toks[r]); if (v == null) break; nums.push(v); }
+      toks.forEach(function(t, k){
+        var c = matCode(t); if (!c) return;
+        var i2 = out.lines.length, d = toks[k + 1] && !matCode(toks[k + 1]) ? toks[k + 1] : '';
+        out.lines.push({ln:i2 + 1, code:c, desc:d.replace(/\s*EMPTY$/i, ''), qty: nums[i2 * 2] != null ? nums[i2 * 2] : null, rtn: nums[i2 * 2 + 1] != null ? nums[i2 * 2 + 1] : 0,
+                        unit:unit, price:null, total:null, flags:[]});
+      });
+    }
+    out.lines.forEach(function(l){
+      if (l.qty == null) l.flags.push('อ่านจำนวนไม่ได้');
+      if (l.qty != null && l.price != null && l.total != null && Math.abs(l.qty * l.price - l.total) > 0.05) l.flags.push('จำนวน×ราคา ไม่เท่ายอด');
+    });
+    if (!out.no) out.warn.push('อ่านเลขเอกสารไม่ได้ — พิมพ์เอง');
+    if (!out.lines.length) out.warn.push('หาบรรทัดสินค้าไม่เจอ');
+    return out;
+  }
+  function parseDoc(text){ var k = docKind(text); if (k === 'PR'){ var d = parsePR(text); d.kind = 'PR'; return d; } return parseLinde(text); }
 
   /* ================= v1.17 รับของตามใบ PR ================= */
   var K_PRDRAFT = 'pcscan_prdraft';
-  var PRS = [], PRMAP = [], prDoc = lsGet(K_PRDRAFT, null), prBusy = false;
+  var CYL = [], PRS = [], PRMAP = [], prDoc = lsGet(K_PRDRAFT, null), prBusy = false;
   var UNIT_TH = {PCS:'ชิ้น', PC:'ชิ้น', EA:'ชิ้น', EACH:'ชิ้น', PIECE:'ชิ้น', BOX:'กล่อง', BX:'กล่อง', PACK:'แพ็ค', PK:'แพ็ค', PAC:'แพ็ค', ROLL:'ม้วน', RL:'ม้วน',
     CAN:'กระป๋อง', SET:'ชุด', BOTTLE:'ขวด', BTL:'ขวด', BT:'ขวด', KG:'กก.', M:'เมตร', MTR:'เมตร', L:'ลิตร', LTR:'ลิตร', DOZ:'โหล', DZ:'โหล', PAIR:'คู่', PR:'คู่',
-    SHEET:'แผ่น', SHT:'แผ่น', TUBE:'หลอด', BAG:'ถุง', GAL:'แกลลอน', DRUM:'ถัง', PAIL:'ถัง', LOT:'ล็อต', REAM:'รีม', UNIT:'ชิ้น'};
+    SHEET:'แผ่น', SHT:'แผ่น', TUBE:'หลอด', BAG:'ถุง', GAL:'แกลลอน', DRUM:'ถัง', PAIL:'ถัง', LOT:'ล็อต', REAM:'รีม', UNIT:'ชิ้น', CYL:'ถัง', CYLINDER:'ถัง'};
   function normUnit(u){
     var t = String(u || '').trim().toUpperCase().replace(/[.\s]/g, '').replace(/\(.*\)/, '');
     if (UNIT_TH[t]) return UNIT_TH[t];
@@ -1918,9 +2015,9 @@
   }
   function prPrev(no, ln){ for (var i = 0; i < PRS.length; i++) if (PRS[i].no === no && PRS[i].ln === ln) return PRS[i]; return null; }
   function prSave(){ lsSet(K_PRDRAFT, prDoc); }
-  function prLineInit(l, no){
+  function prLineInit(l, no, doc){
     var m = prMapOf(l), prev = no ? prPrev(no, l.ln) : null;
-    l.sku = l.sku || (prev && prev.sku) || (m && m.sku) || (l.code && bcMap[nz(l.code)]) || '';
+    l.sku = l.sku || l.auto || (prev && prev.sku) || (m && m.sku) || (l.code && bcMap[nz(l.code)]) || '';
     l.factor = l.factor || (prev && prev.factor) || (m && m.factor) || 1;
     if (!m && !prev && l.sku && l.sku !== 'SKIP'){ var it = getSku(l.sku); if (it && normUnit(it.unit) !== normUnit(l.unit)) l.factorAsk = true; }
     l.prev = prev ? prev.recv : 0;
@@ -1928,12 +2025,18 @@
     var rem = Math.max(0, (+l.qty || 0) - l.prev);
     l.recv = l.done ? 0 : rem;
     l.on = !l.done && rem > 0 && !!l.sku && l.sku !== 'SKIP';
+    // v1.18: อินวอยซ์กับใบส่งของล็อตเดียวกัน (เลข Sys. Order เดียวกัน) — ถังเต็มรับได้ครั้งเดียว
+    if (doc && doc.so && doc.kind !== 'PR' && l.code){
+      var other = PRS.filter(function(r){ return r.ref === doc.so && r.no !== doc.no && r.code === l.code && r.recv > 0; })[0];
+      if (other){ l.dup = other.no; l.recv = 0; l.on = false; }
+    }
+    l.rtnOn = (+l.rtn || 0) > 0;
     l.mode = l.sku ? 'ok' : 'pick';
     return l;
   }
   function prStart(doc){
     doc.shop = shopFromOcr(doc.shop);
-    doc.lines = doc.lines.map(function(l){ return prLineInit(l, doc.no); });
+    doc.lines = doc.lines.map(function(l){ return prLineInit(l, doc.no, doc); });
     doc.seen = PRS.some(function(r){ return r.no === doc.no; });
     prDoc = doc; prSave(); renderPR();
     var box = el('pr_review'); if (box) box.scrollIntoView({block:'start', behavior:'smooth'});
@@ -1963,13 +2066,15 @@
     fileToData(f).then(function(d){ return api({action:'prscan', name: f.name || 'PR.jpg', mime: d.mime, data: d.data}); })
       .then(function(j){
         PRS = j.prs || PRS; PRMAP = j.prmap || PRMAP;
-        var doc = parsePR(j.text); doc.file = j.fileId || '';
+        var doc = parseDoc(j.text); doc.file = j.fileId || '';
+        if (j.cyl) CYL = j.cyl;
         if (!doc.lines.length){ stt.innerHTML = '⚠ อ่านบรรทัดของไม่ได้ — ลองถ่ายใหม่ให้ตรง เต็มใบ ไม่มีเงา'; return; }
-        stt.textContent = 'อ่านได้ ' + doc.lines.length + ' บรรทัด — ตรวจด้านล่างแล้วกดรับเข้า';
+        stt.textContent = 'อ่าน' + KIND_TH[doc.kind || 'PR'] + 'ได้ ' + doc.lines.length + ' บรรทัด — ตรวจด้านล่างแล้วกดรับเข้า';
         prStart(doc);
       })['catch'](function(e){ stt.textContent = '⚠ อ่านไม่สำเร็จ — ' + ((e && e.message) || 'เช็คเน็ต'); })
       .then(function(){ prBusy = false; el('pr_file').value = ''; el('pr_file_cam').value = ''; });
   }
+  var KIND_TH = {PR:'ใบ PR ', INV:'อินวอยซ์ ', DD:'ใบส่งของ '};
   function prOpenList(){
     var g = {}, order = [];
     PRS.forEach(function(r){ if (!g[r.no]){ g[r.no] = {no:r.no, shop:r.shop, date:r.date, file:r.file, lines:[], open:0}; order.push(r.no); } g[r.no].lines.push(r); if (r.st === 'ค้างรับ') g[r.no].open++; });
@@ -1978,7 +2083,7 @@
   function prLoadStored(no){
     var rows = PRS.filter(function(r){ return r.no === no; }).sort(function(a, b){ return a.ln - b.ln; });
     if (!rows.length) return;
-    prStart({no:no, date:rows[0].date, shop:rows[0].shop, file:rows[0].file, sub:null, warn:[], stored:true,
+    prStart({no:no, date:rows[0].date, shop:rows[0].shop, file:rows[0].file, sub:null, warn:[], stored:true, so:rows[0].ref || '', kind: /^INV-/.test(no) ? 'INV' : /^DD-/.test(no) ? 'DD' : 'PR',
       lines: rows.map(function(r){ return {ln:r.ln, code:r.code, desc:r.desc, qty:r.qty, unit:r.unit, price:r.price, total:r.price != null ? r.qty * r.price : null, flags:[], sku:r.sku, factor:r.factor}; })});
   }
   function renderPRCard(){
@@ -1991,6 +2096,7 @@
       return '<button type="button" class="chip warn tapchip" data-propen="' + esc(g.no) + '" style="margin:6px 6px 0 0">' + esc(g.no) + ' · ค้าง ' + g.open + ' บรรทัด</button>';
     }).join('') : '';
     el('pr_open').querySelectorAll('[data-propen]').forEach(function(b){ b.addEventListener('click', function(){ prLoadStored(b.getAttribute('data-propen')); }); });
+    renderCyl();
     renderPR();
   }
   function prLineHtml(l, i){
@@ -2000,8 +2106,11 @@
       + '<div class="row" style="justify-content:space-between; gap:6px"><div class="li-meta"><b>#' + l.ln + '</b> · <input class="prcode" data-f="code" value="' + esc(l.code || '') + '" placeholder="รหัสในใบ"></div>'
       + (l.done ? '<span class="chip ok">รับแล้ว</span>' : '') + '</div>'
       + '<div class="li-name" style="font-weight:500">' + esc(l.desc || '—') + '</div>'
-      + '<div class="li-meta">ใบสั่ง <b>' + fmt(l.qty) + ' ' + esc(l.unit) + '</b>' + (l.price != null ? ' × ' + baht(l.price) : '') + (l.prev ? ' · รับไปแล้ว ' + fmt(l.prev) + ' · <b class="over">ค้าง ' + fmt(rem) + '</b>' : '') + '</div>'
-      + (l.flags && l.flags.length ? '<div class="outnote">⚠ ' + l.flags.map(esc).join(' · ') + ' — เทียบกับใบจริง</div>' : '');
+      + '<div class="li-meta">' + (prDoc && prDoc.kind === 'DD' ? 'ถังเต็มส่งมา' : prDoc && prDoc.kind === 'INV' ? 'ส่งมา' : 'ใบสั่ง') + ' <b>' + fmt(l.qty) + ' ' + esc(l.unit) + '</b>' + (l.price != null ? ' × ' + baht(l.price) : '') + (l.prev ? ' · รับไปแล้ว ' + fmt(l.prev) + ' · <b class="over">ค้าง ' + fmt(rem) + '</b>' : '') + '</div>'
+      + (l.flags && l.flags.length ? '<div class="outnote">⚠ ' + l.flags.map(esc).join(' · ') + ' — เทียบกับใบจริง</div>' : '')
+      + (l.note ? '<div class="li-meta">หมายเหตุ: ' + esc(l.note) + '</div>' : '')
+      + (l.dup ? '<div class="note" style="margin:4px 0 0">ℹ ถังเต็มล็อตนี้รับเข้าไปแล้วตาม ' + esc(l.dup) + ' — ไม่รับซ้ำ (บันทึกราคาได้)</div>' : '')
+      + ((+l.rtn || 0) > 0 ? '<label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:4px"><input type="checkbox" data-f="rtnOn"' + (l.rtnOn ? ' checked' : '') + ' style="width:auto; min-height:0"> 🛢 บันทึก<b>คืนถังเปล่า ' + fmt(l.rtn) + ' ' + esc(l.unit) + '</b> ให้ร้าน</label>' : '');
     if (l.mode === 'new'){
       h += '<div class="pricebox" style="margin-top:6px"><b>ของใหม่</b>'
         + '<input type="text" data-f="nname" value="' + esc(l.nname != null ? l.nname : l.desc) + '" style="margin-top:6px" placeholder="ชื่อรายการ">'
@@ -2019,7 +2128,7 @@
         + '<div class="row" style="gap:6px; margin-top:6px"><button type="button" class="ghost" data-act="new" style="flex:1">+ เพิ่มเป็นของใหม่</button><button type="button" class="ghost" data-act="skip" style="flex:1">ไม่เข้าสต็อก</button></div></div>';
     }
     var tUnit = it ? (it.unit || 'หน่วยนับ') : (l.mode === 'new' ? (l.nunit != null ? l.nunit : normUnit(l.unit)) || 'หน่วยนับ' : 'หน่วยนับ');
-    if (l.sku !== 'SKIP' && (it || l.mode === 'new') && !l.done){
+    if (l.sku !== 'SKIP' && (it || l.mode === 'new') && !l.done && !l.dup && (+l.qty || 0) > 0){
       var ask = l.factorAsk || +l.factor !== 1;
       h += '<div class="row prrecv" style="gap:8px; margin-top:8px; align-items:center; flex-wrap:wrap">'
         + '<label class="li-meta" style="display:flex; gap:6px; align-items:center"><input type="checkbox" data-f="on"' + (l.on ? ' checked' : '') + ' style="width:auto; min-height:0"> รับ</label>'
@@ -2036,12 +2145,13 @@
     box.hidden = false;
     var d = prDoc, on = d.lines.filter(function(l){ return l.on && +l.recv > 0; });
     var val = on.reduce(function(a, l){ return a + (+l.recv || 0) * (+l.price || 0); }, 0);
-    box.innerHTML = '<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">ตรวจใบ PR ก่อนรับ</h2>'
+    box.innerHTML = '<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">ตรวจ' + KIND_TH[d.kind || 'PR'] + 'ก่อนรับ</h2>'
       + (d.file ? '<a href="https://drive.google.com/file/d/' + esc(d.file) + '/view" target="_blank" rel="noopener" class="li-meta">ดูใบจริง ↗</a>' : '') + '</div>'
       + '<div class="row" style="gap:6px; margin-top:8px; flex-wrap:wrap">'
-      +   '<div style="flex:1 1 140px"><label class="fld" for="pr_no">เลข PR</label><input type="text" id="pr_no" value="' + esc(d.no) + '" autocomplete="off"></div>'
+      +   '<div style="flex:1 1 140px"><label class="fld" for="pr_no">เลขเอกสาร</label><input type="text" id="pr_no" value="' + esc(d.no) + '" autocomplete="off"></div>'
       +   '<div style="flex:1 1 110px"><label class="fld" for="pr_date">วันที่ใบ</label><input type="text" id="pr_date" value="' + esc(d.date) + '" autocomplete="off"></div></div>'
       + '<div style="margin-top:6px"><label class="fld" for="pr_shop">ร้าน</label><input type="text" id="pr_shop" list="shopList" value="' + esc(d.shop) + '" autocomplete="off">' + shopChips('pr_shop') + '</div>'
+      + (d.so || d.note ? '<div class="li-meta" style="margin-top:6px">' + (d.so ? 'Sys. Order ' + esc(d.so) : '') + (d.ref ? ' · ใบส่งของ ' + esc(d.ref) : '') + (d.note ? ' · ' + esc(d.note) : '') + '</div>' : '')
       + (d.seen ? '<div class="note" style="margin:8px 0 0">ℹ ใบนี้เคยรับไปแล้วบางส่วน — ระบบนับต่อจากที่รับไปแล้ว ไม่รับซ้ำ</div>' : '')
       + (d.warn && d.warn.length ? '<div class="outnote" style="margin-top:8px">⚠ ' + d.warn.map(esc).join('<br>⚠ ') + '</div>' : '')
       + '<div id="pr_lines">' + d.lines.map(prLineHtml).join('') + '</div>'
@@ -2067,7 +2177,7 @@
           if (f === 'factor') l.factorAsk = false;
           if (f === 'code'){ l.flags = (l.flags || []).filter(function(x){ return !/บาร์โค้ด/.test(x); }); if (eanOk(l.code) === false) l.flags.push('รหัสบาร์โค้ดอาจอ่านผิด'); }
           prSave();
-          if (f === 'on' || f === 'recv' || f === 'code') { var y = window.scrollY; renderPR(); window.scrollTo(0, y); }
+          if (f === 'on' || f === 'recv' || f === 'code' || f === 'rtnOn') { var y = window.scrollY; renderPR(); window.scrollTo(0, y); }
         });
       });
       function bindPick(b){ b.addEventListener('click', function(){
@@ -2091,7 +2201,7 @@
   function prReceiveGo(){
     var d = prDoc, bad = [];
     d.no = String(d.no || '').trim().toUpperCase();
-    if (!/^[A-Z0-9-]{4,}$/.test(d.no)){ toast('ใส่เลข PR ก่อน', true); el('pr_no').focus(); return; }
+    if (!/^[A-Z0-9-]{4,}$/.test(d.no)){ toast('ใส่เลขเอกสารก่อน', true); el('pr_no').focus(); return; }
     var lines = d.lines.map(function(l){
       var on = l.on && +l.recv > 0 && !l.done;
       var it = l.sku && l.sku !== 'SKIP' && l.sku !== 'NEW' ? getSku(l.sku) : null;
@@ -2106,23 +2216,162 @@
       if (l.mode === 'new') o.item = {name: String(l.nname != null ? l.nname : l.desc).trim(), unit: String(l.nunit != null ? l.nunit : normUnit(l.unit)).trim(), maker: d.shop};
       if (l.mode === 'new' && !on){ o.sku = ''; delete o.item; }
       if (l.done) o.recv = 0;
+      if (l.note) o.note = l.note;
+      if (l.dup) o.dup = l.dup;
+      o.rtn = l.rtnOn ? (+l.rtn || 0) : 0;
       return o;
     });
     if (bad.length){ toast(bad[0], true); return; }
-    if (!lines.some(function(l){ return l.recv > 0 || l.sku === 'SKIP'; })){ toast('ยังไม่ได้ติ๊กรับบรรทัดไหน', true); return; }
+    if (!lines.some(function(l){ return l.recv > 0 || l.sku === 'SKIP' || l.rtn > 0; })){ toast('ยังไม่ได้ติ๊กรับบรรทัดไหน', true); return; }
+    var cyl = lines.filter(function(l){ return normUnit(l.unit) === 'ถัง' && (l.recv > 0 || l.rtn > 0); })
+      .map(function(l){ return {mat: l.code || l.desc, desc: l.desc, supp: l.recv, rtn: l.rtn}; });
     var btn = el('pr_go'); btn.disabled = true; btn.textContent = 'กำลังรับเข้า…';
     rememberShop(d.shop);
-    api({action:'prreceive', pr:{no:d.no, date:d.date, shop:d.shop, file:d.file || '', who:'PC', lines:lines}}).then(function(j){
+    api({action:'prreceive', pr:{no:d.no, date:d.date, shop:d.shop, file:d.file || '', who:'PC', lines:lines, ref:d.so || '', cyl:cyl}}).then(function(j){
       var n = (j.pr && j.pr.received) || 0;
       prDoc = null; prSave(); takeServer(j);
-      el('pr_status').textContent = '✅ รับเข้า ' + n + ' บรรทัดจาก ' + d.no + ' แล้ว';
-      toast('รับเข้า ' + n + ' บรรทัดแล้ว');
+      var got = lines.filter(function(l){ return l.recv > 0 && l.sku && l.sku !== 'SKIP'; }).map(function(l){ return l.sku === 'NEW' ? (j.pr && j.pr.newSkus && j.pr.newSkus[l.ln]) : l.sku; }).filter(Boolean);
+      imgNudge(got);
+      el('pr_status').textContent = '✅ รับเข้า ' + n + ' บรรทัดจาก ' + d.no + ' แล้ว' + (cyl.some(function(c){ return c.rtn > 0; }) ? ' · บันทึกคืนถังเปล่าแล้ว' : '');
+      var rt = cyl.reduce(function(a, c){ return a + (c.rtn || 0); }, 0);
+      toast(n ? 'รับเข้า ' + n + ' บรรทัดแล้ว' + (rt ? ' · คืนถังเปล่า ' + fmt(rt) : '') : rt ? 'บันทึกคืนถังเปล่า ' + fmt(rt) + ' ถังแล้ว' : 'บันทึกแล้ว');
     })['catch'](function(e){ btn.disabled = false; btn.textContent = '✅ รับเข้าทั้งใบ'; toast('ไม่สำเร็จ — ' + ((e && e.message) || 'เช็คเน็ต'), true); });
   }
   el('pr_cam').addEventListener('click', function(){ el('pr_file_cam').click(); });
   el('pr_pick').addEventListener('click', function(){ el('pr_file').click(); });
   el('pr_file_cam').addEventListener('change', function(){ prScanFile(this.files && this.files[0]); });
   el('pr_file').addEventListener('change', function(){ prScanFile(this.files && this.files[0]); });
+
+  /* ---------- v1.18 ถังแก๊สของร้านที่อยู่กับเรา (ถังเต็มเข้า − ถังเปล่าคืน) ---------- */
+  function renderCyl(){
+    var box = el('pr_cyl'); if (!box) return;
+    if (!pinOk || !CYL.length){ box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="li-meta" style="margin-top:12px"><b>🛢 ถังแก๊สของร้านที่อยู่กับเรา</b> (ถังเต็มที่รับ − ถังเปล่าที่คืน)</div>'
+      + CYL.map(function(c, i){
+        return '<div class="cylrow"><div class="grow"><div class="li-name" style="font-weight:500">' + esc(c.shop) + ' · ' + esc(c.desc || c.mat) + '</div>'
+          + '<div class="li-meta">รับถังเต็มรวม ' + fmt(c.supp) + ' · คืนถังเปล่ารวม ' + fmt(c.rtn) + (c.open ? ' · ยอดตั้งต้น ' + fmt(c.open) : '') + '</div></div>'
+          + '<b class="cylbal">' + fmt(c.bal) + ' ถัง</b>'
+          + '<details class="cylfix"><summary class="li-meta">นับจริง</summary><div class="row" style="gap:6px; margin-top:6px"><input type="number" inputmode="decimal" min="0" data-cyl="' + i + '" placeholder="มีอยู่จริงกี่ถัง" style="flex:1"><button type="button" class="ghost" data-cylgo="' + i + '">บันทึก</button></div></details></div>';
+      }).join('');
+    box.querySelectorAll('[data-cylgo]').forEach(function(b){ b.addEventListener('click', function(){
+      var i = +b.getAttribute('data-cylgo'), c = CYL[i], v = box.querySelector('[data-cyl="' + i + '"]').value;
+      if (v === '' || !(+v >= 0)){ toast('ใส่จำนวนถังที่มีอยู่จริง', true); return; }
+      reqAction({action:'cylset', cyl:{shop:c.shop, mat:c.mat, desc:c.desc, qty:+v, who:'PC'}}, 'ปรับยอดถัง ' + (c.desc || c.mat) + ' = ' + v + ' แล้ว', b);
+    }); });
+  }
+
+  /* ================= v1.19 รูปของ: เดินถ่ายรูป · เตือนถ่ายตอนของเข้า · ลิงก์ดูรูปสินค้า ================= */
+  var walk = null, walkQ = Promise.resolve(), walkBusy = 0;
+  function usedCount(){ var c = {}; log.forEach(function(r){ if (r.dir === 'เบิกออก') c[r.sku] = (c[r.sku] || 0) + 1; }); return c; }
+  function walkList(opt){
+    opt = opt || {};
+    var used = usedCount();
+    var rows = ITEMS.filter(function(it){ return !it.img; });
+    if (opt.skus) rows = rows.filter(function(it){ return opt.skus.indexOf(it.sku) >= 0; });
+    else if (opt.inStock) rows = rows.filter(function(it){ return onHand(it) > 0; });
+    rows.sort(opt.order === 'sku' ? function(a, b){ return a.sku < b.sku ? -1 : 1; }
+                                  : function(a, b){ return (used[b.sku] || 0) - (used[a.sku] || 0) || (a.sku < b.sku ? -1 : 1); });
+    return rows.map(function(it){ return it.sku; });
+  }
+  function walkOpen(opt){
+    if (!API){ toast('ต้องต่อ Google Sheet ก่อน', true); return; }
+    opt = opt || {inStock: true, order: 'used'};
+    walk = {opt: opt, list: walkList(opt), i: 0, done: 0, skipped: 0};
+    if (nativeStop || scanner) stopCam();
+    el('walk').hidden = false; document.body.style.overflow = 'hidden';
+    renderWalk();
+  }
+  function walkClose(){ walk = null; el('walk').hidden = true; document.body.style.overflow = ''; renderAll(); }
+  function renderWalk(){
+    if (!walk) return;
+    var box = el('walkBody'), sku = walk.list[walk.i], it = sku ? getSku(sku) : null;
+    var used = usedCount();
+    el('walkHead').textContent = walk.opt.skus ? 'ถ่ายรูปของที่เพิ่งรับเข้า' : 'เดินถ่ายรูปของที่ยังไม่มีรูป';
+    el('walkProg').textContent = it ? (walk.i + 1) + ' / ' + walk.list.length + (walkBusy ? ' · กำลังส่ง ' + walkBusy + ' รูป…' : '') : '';
+    if (!it){
+      box.innerHTML = '<div class="walkdone">🎉 ครบแล้ว</div><div class="note" style="text-align:center">ถ่ายไป ' + walk.done + ' รูป · ข้าม ' + walk.skipped + ' รายการ'
+        + (walkBusy ? '<br>กำลังส่งรูปที่เหลือ ' + walkBusy + ' รูป — รอสักครู่ก่อนปิดหน้า' : '') + '</div>'
+        + '<button class="primary" id="walkEnd" style="margin-top:16px">ปิด</button>';
+      el('walkEnd').addEventListener('click', walkClose); return;
+    }
+    var n = onHand(it);
+    box.innerHTML = '<div class="walksku">' + esc(it.sku) + (it.old != null && it.old !== '' ? ' · ลำดับเดิม ' + esc(it.old) : '') + '</div>'
+      + '<div class="walkname">' + esc(it.name) + '</div>'
+      + '<div class="note" style="text-align:center; margin:6px 0 0">' + (it.pack ? esc(it.pack) + ' · ' : '') + 'คงเหลือ ' + fmt(n) + ' ' + esc(it.unit || '')
+      + (used[it.sku] ? ' · เบิก ' + used[it.sku] + ' ครั้ง' : '') + (it.maker ? ' · ' + esc(it.maker) : '') + '</div>'
+      + (n <= 0 ? '<div class="outnote" style="text-align:center">ของหมด — ถ่ายตอนของเข้า หรือถ่ายที่ไลน์ที่ใช้อยู่</div>' : '')
+      + '<button class="primary walkshot" id="walkShot">📷 ถ่ายรูปชิ้นนี้</button>'
+      + '<div class="row" style="gap:8px; margin-top:10px"><button class="ghost" id="walkBack" style="flex:1"' + (walk.i ? '' : ' disabled') + '>◀ ก่อนหน้า</button>'
+      + '<button class="ghost" id="walkSkip" style="flex:1">ข้าม ▶</button></div>'
+      + (walk.opt.skus ? '' : '<div class="row" style="gap:8px; margin-top:14px; align-items:center; justify-content:center; flex-wrap:wrap">'
+      + '<label class="li-meta" style="display:flex; gap:6px; align-items:center"><input type="checkbox" id="walkStock"' + (walk.opt.inStock ? ' checked' : '') + ' style="width:auto; min-height:0"> เฉพาะของที่มีในคลัง</label>'
+      + '<select id="walkOrder" style="width:auto"><option value="used">เบิกบ่อยก่อน</option><option value="sku"' + (walk.opt.order === 'sku' ? ' selected' : '') + '>เรียงตามรหัส</option></select></div>');
+    el('walkShot').addEventListener('click', function(){ var f = el('walkFile'); f.value = ''; f.dataset.sku = it.sku; f.click(); });
+    el('walkSkip').addEventListener('click', function(){ walk.skipped++; walk.i++; renderWalk(); });
+    el('walkBack').addEventListener('click', function(){ if (walk.i > 0){ walk.i--; renderWalk(); } });
+    var ws = el('walkStock'), wo = el('walkOrder');
+    function reopt(){ walk.opt.inStock = ws.checked; walk.opt.order = wo.value; walk.list = walkList(walk.opt); walk.i = 0; renderWalk(); }
+    if (ws) ws.addEventListener('change', reopt);
+    if (wo) wo.addEventListener('change', reopt);
+  }
+  el('walkFile').addEventListener('change', function(){
+    var f = this.files && this.files[0], sku = this.dataset.sku;
+    if (!f || !sku || !walk) return;
+    walk.done++; walk.i++; walkBusy++; renderWalk();          // ไปชิ้นถัดไปทันที รูปส่งเบื้องหลัง
+    walkQ = walkQ.then(function(){ return shrink(f); }).then(function(d){
+      return api({action:'setimg', sku: sku, data: d, who: 'PC'});
+    }).then(function(j){ walkBusy--; takeServer(j); if (walk) renderWalk(); })
+      ['catch'](function(e){ walkBusy--; toast('ส่งรูป ' + sku + ' ไม่สำเร็จ — ' + ((e && e.message) || 'เช็คเน็ต'), true); if (walk) renderWalk(); });
+  });
+  el('walkClose').addEventListener('click', function(){
+    if (walkBusy){ toast('ยังส่งรูปไม่ครบ (' + walkBusy + ') — รอสักครู่', true); return; }
+    walkClose();
+  });
+  function renderWalkCard(){
+    var c = el('walkCard'); if (!c) return;
+    c.hidden = DEPT_MODE;
+    var all = ITEMS.filter(function(it){ return !it.img; }).length;
+    var inStock = ITEMS.filter(function(it){ return !it.img && onHand(it) > 0; }).length;
+    el('walkCount').textContent = all ? 'ยังไม่มีรูป ' + all + ' รายการ (มีของในคลัง ' + inStock + ')' : 'ของทุกชิ้นมีรูปแล้ว 👍';
+    el('walkGo').hidden = !all;
+  }
+  el('walkGo').addEventListener('click', function(){ walkOpen({inStock: true, order: 'used'}); });
+
+  /* เตือนถ่ายรูปตอนของเข้า (ของที่ยังไม่มีรูป) */
+  var nudgeSkus = [], nudgeTimer = null;
+  function imgNudge(skus){
+    if (DEPT_MODE) return;
+    nudgeSkus = skus.filter(function(s){ var it = getSku(s); return it && !it.img; }).filter(function(s, i, a){ return a.indexOf(s) === i; });
+    var n = el('nudge');
+    if (!nudgeSkus.length){ n.hidden = true; return; }
+    var it = getSku(nudgeSkus[0]);
+    el('nudgeText').innerHTML = '📷 <b>' + (nudgeSkus.length > 1 ? nudgeSkus.length + ' รายการที่เพิ่งรับ' : esc(it.name.slice(0, 40))) + '</b> ยังไม่มีรูป — ของอยู่ในมือพอดี ถ่ายเลยไหม?';
+    n.hidden = false;
+    clearTimeout(nudgeTimer); nudgeTimer = setTimeout(function(){ n.hidden = true; }, 30000);
+  }
+  el('nudgeGo').addEventListener('click', function(){
+    el('nudge').hidden = true;
+    if (nudgeSkus.length === 1 && !walk){ var f = el('imgFile'); f.value = ''; f.dataset.sku = nudgeSkus[0]; f.click(); return; }
+    walkOpen({skus: nudgeSkus.slice()});
+  });
+  el('nudgeNo').addEventListener('click', function(){ el('nudge').hidden = true; });
+
+  /* ลิงก์ดูรูปสินค้า (หน้าเว็บผู้ขาย) — ไม่ก๊อปรูปมาเก็บ · "?" นำหน้า = ยังไม่ยืนยันว่าเป็นรุ่นเดียวกัน */
+  function linkOf(it){ var l = String((it && it.link) || '').trim(); return l ? {url: l.replace(/^\?/, ''), sure: l.charAt(0) !== '?'} : null; }
+  function linkBlock(it){
+    var L = linkOf(it); if (!L || it.img) return '';
+    if (DEPT_MODE && !L.sure) return '';
+    return '<div class="linkbox"><a class="ghost linkbtn" href="' + esc(L.url) + '" target="_blank" rel="noopener noreferrer">🔎 ดูรูปสินค้า (เว็บผู้ขาย) ↗</a>'
+      + (!L.sure && !DEPT_MODE ? '<div class="li-meta" style="margin-top:6px">ลิงก์นี้ยังไม่ยืนยันรุ่น — เปิดดูแล้วเทียบกับของจริง: '
+        + '<button type="button" class="chip ok tapchip" data-link="ok">✓ ใช่รุ่นนี้</button> <button type="button" class="chip na tapchip" data-link="no">✗ ไม่ใช่ ลบลิงก์</button></div>' : '')
+      + '</div>';
+  }
+  function bindLink(it){
+    el('hit').querySelectorAll('[data-link]').forEach(function(b){ b.addEventListener('click', function(){
+      var L = linkOf(it), v = b.getAttribute('data-link') === 'ok' ? L.url : '';
+      reqAction({action:'edititem', item:{sku: it.sku, link: v, who: 'PC'}}, v ? 'ยืนยันลิงก์แล้ว' : 'ลบลิงก์แล้ว', b);
+    }); });
+  }
 
   /* ================= เริ่มต้น ================= */
   if (embedded){
