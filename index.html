@@ -82,6 +82,18 @@
   .cylrow{display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 0; border-top:1px solid var(--line);}
   .cylrow .cylbal{font-size:18px; white-space:nowrap;}
   .cylrow .cylfix{flex-basis:100%;}
+  /* v1.23 สีแยก เบิกออก (ส้ม) / รับเข้า (เขียว) */
+  #hit.dir-out{border:3px solid var(--warn); box-shadow:none;}
+  #hit.dir-in{border:3px solid var(--ok); box-shadow:none;}
+  .dirband{margin:-2px 0 12px; padding:8px 12px; border-radius:8px; font:700 15px var(--fs); text-align:center;}
+  #hit.dir-out .dirband{background:var(--warn-soft); color:var(--warn);}
+  #hit.dir-in .dirband{background:var(--ok-soft); color:var(--ok);}
+  #hit .seg button[data-dir="เบิกออก"][aria-pressed="true"]{border-color:var(--warn); background:var(--warn); color:#fff;}
+  #hit .seg button[data-dir="รับเข้า"][aria-pressed="true"]{border-color:var(--ok); background:var(--ok); color:#fff;}
+  #hit.dir-out .savebtn{background:var(--warn); color:#fff;}
+  #hit.dir-in .savebtn{background:var(--ok); color:#fff;}
+  #recent li.rout{box-shadow:inset 4px 0 0 var(--warn); padding-left:10px;}
+  #recent li.rin{box-shadow:inset 4px 0 0 var(--ok); padding-left:10px;}
   .donebox{background:var(--ok-soft); color:var(--ok); border-radius:12px; padding:14px 16px; text-align:center;}
   .donebox .itemname, .donebox div{color:inherit;}
   .donehead{font:700 22px var(--fs);}
@@ -251,7 +263,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.22</span>
+      <span class="ver" id="appVer">v1.23</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -267,7 +279,7 @@
         <div class="note" style="margin-top:4px">ใส่ครั้งเดียว เครื่องนี้จำไว้ · เว้นว่างแล้วกดปลดล็อก = ออกจากโหมดราคา</div>
         <a class="sheetbtn" id="sheetAll" target="_blank" rel="noopener" href="#" style="margin-top:10px" hidden>📄 เปิด Google Sheet (แท็บ Master) ↗</a>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.22 · อัปเดต 25/09/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.23 · อัปเดต 25/09/2026</div>
     </div>
   </header>
 
@@ -776,6 +788,7 @@
 
   function renderHit(){
     var box = el('hit');
+    box.classList.remove('dir-out', 'dir-in');   // v1.23 สีตามเบิก/รับ
     if (bindCode){
       box.hidden = false;
       var q = (el('bq') && el('bq').value || '').trim().toLowerCase();
@@ -817,7 +830,8 @@
     if (sel.off){ renderRetired(box, sel); return; }
     var it = sel, st = status(it), n = onHand(it), m = moved(it.sku);
     box.hidden = false;
-    box.innerHTML = ''
+    box.classList.add(dir === 'รับเข้า' ? 'dir-in' : 'dir-out');
+    box.innerHTML = '<div class="dirband">' + (dir === 'รับเข้า' ? '📥 กำลังทำ: รับเข้า (ของเข้าคลัง)' : '📤 กำลังทำ: เบิกออก (ของออกจากคลัง)') + '</div>'
       + photoBlock(it, true)
       + linkBlock(it)
       + '<p class="itemname">' + esc(it.name) + '</p>'
@@ -864,7 +878,7 @@
       +   '<label class="pcchk"><input type="checkbox" id="whPC"' + (pcMode ? ' checked' : '') + '><span>PC จ่ายของ</span></label>'
       +   '<input type="text" id="wh" value="' + esc(who) + '" placeholder="ชื่อคนทำรายการ" autocomplete="off"'
       +   (pcMode ? ' hidden' : '') + ' style="margin-top:8px"></div>'
-      + '<div style="margin-top:14px"><button class="primary" id="save">บันทึก</button></div>'
+      + '<div style="margin-top:14px"><button class="primary savebtn" id="save">' + (dir === 'รับเข้า' ? '📥 บันทึก รับเข้า' : '📤 บันทึก เบิกออก') + '</button></div>'
       + '<div style="margin-top:18px; padding-top:12px; border-top:1px solid var(--line)">'
       +   '<button type="button" class="ghost" id="retire" style="width:100%; color:var(--warn)">'
       +   (retireArm === it.sku ? 'แตะอีกครั้งเพื่อยืนยัน เลิกใช้ ' + esc(it.sku) : 'เลิกใช้รายการนี้') + '</button>'
@@ -1305,7 +1319,7 @@
     ul.innerHTML = rows.map(function(r){
       var t = new Date(r.ts);
       var hh = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
-      return '<li><div class="li-top"><div>'
+      return '<li class="' + (r.dir === 'รับเข้า' ? 'rin' : r.dir === 'เบิกออก' ? 'rout' : '') + '"><div class="li-top"><div>'
         + '<div class="li-name">' + esc(r.name) + (pend[r.id] ? ' <span class="chip na">รอส่ง</span>' : '') + '</div>'
         + '<div class="li-meta">' + hh + ' · ' + esc(r.dir) + ' ' + (r.dir === 'ปรับยอด' && +r.qty > 0 ? '+' : '') + fmt(r.qty)
         + (r.dept ? ' · ' + esc(r.dept) : '') + (r.who ? ' · ' + esc(r.who) : '') + '</div>'
