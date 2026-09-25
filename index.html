@@ -82,6 +82,9 @@
   .cylrow{display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 0; border-top:1px solid var(--line);}
   .cylrow .cylbal{font-size:18px; white-space:nowrap;}
   .cylrow .cylfix{flex-basis:100%;}
+  .donebox{background:var(--ok-soft); color:var(--ok); border-radius:12px; padding:14px 16px; text-align:center;}
+  .donebox .itemname, .donebox div{color:inherit;}
+  .donehead{font:700 22px var(--fs);}
   .cntbar{height:8px; border-radius:4px; background:var(--line,#ddd); margin-top:8px; overflow:hidden;}
   .cntbar span{display:block; height:100%; background:var(--accent,#1a5c8a);}
   .cntq{font-size:28px !important; text-align:center; min-height:64px;}
@@ -248,7 +251,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.21</span>
+      <span class="ver" id="appVer">v1.22</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -264,7 +267,7 @@
         <div class="note" style="margin-top:4px">ใส่ครั้งเดียว เครื่องนี้จำไว้ · เว้นว่างแล้วกดปลดล็อก = ออกจากโหมดราคา</div>
         <a class="sheetbtn" id="sheetAll" target="_blank" rel="noopener" href="#" style="margin-top:10px" hidden>📄 เปิด Google Sheet (แท็บ Master) ↗</a>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.21 · อัปเดต 25/09/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.22 · อัปเดต 25/09/2026</div>
     </div>
   </header>
 
@@ -757,7 +760,7 @@
 
   /* ================= การ์ดรายการ ================= */
   function renderAll(){
-    fillShops(); renderWalkCard(); renderCountCard(); if (cnt && !cnt.sum) cntProg(); renderStatus(); renderRecent(); renderLow(); renderFind(); if (sel || bindCode) renderHit();
+    fillShops(); renderWalkCard(); renderCountCard(); if (cnt && !cnt.sum) cntProg(); renderStatus(); renderRecent(); renderLow(); renderFind(); if (sel || bindCode || lastDone) renderHit();
     renderInbox(); renderReq(); renderMine(); renderPRCard();
   }
 
@@ -810,7 +813,7 @@
       el('bcancel').addEventListener('click', function(){ bindCode = null; renderHit(); });
       return;
     }
-    if (!sel){ box.hidden = true; box.innerHTML = ''; return; }
+    if (!sel){ if (lastDone){ renderDone(box); return; } box.hidden = true; box.innerHTML = ''; return; }
     if (sel.off){ renderRetired(box, sel); return; }
     var it = sel, st = status(it), n = onHand(it), m = moved(it.sku);
     box.hidden = false;
@@ -1211,7 +1214,7 @@
   function pick(it, viaScan){
     if (!it) return;
     if (!sel || sel.sku !== it.sku){ retireArm = null; imgDelArm = null; priceEdit = null; rv = {}; itemEdit = null; countOpen = null; }
-    sel = it; bindCode = null; qty = 1; pcMode = true; renderHit(); show('t-scan');
+    sel = it; bindCode = null; lastDone = null; qty = 1; pcMode = true; renderHit(); show('t-scan');
     var box = el('hit');
     box.classList.remove('flash'); void box.offsetWidth; box.classList.add('flash');
     if (viaScan){
@@ -1250,13 +1253,46 @@
       rememberShop(el('r_shop').value);
     }
     var unit = sel.unit || '', gotSku = rec.dir === 'รับเข้า' && pcMode ? sel.sku : '';   // v1.19 เตือนถ่ายรูปของที่เพิ่งเข้า
-    var btn = el('save'); btn.disabled = true; btn.textContent = 'กำลังบันทึก…';
+    // v1.22 กันกดซ้ำ: รายการเดียวกัน (รหัส + เบิก/รับ + จำนวน) ภายใน 3 นาที ต้องยืนยันก่อน
+    var dup = log.filter(function(r){ return r.sku === rec.sku && r.dir === rec.dir && +r.qty === +rec.qty && (Date.now() - new Date(r.ts)) < 180000; })[0];
+    if (dup){
+      var sec = Math.max(1, Math.round((Date.now() - new Date(dup.ts)) / 1000));
+      if (!confirm('⚠ เพิ่ง' + rec.dir + ' ' + rec.name.slice(0, 30) + ' ' + fmt(rec.qty) + ' ' + unit + ' ไปแล้ว เมื่อ ' + (sec < 60 ? sec + ' วินาที' : Math.round(sec / 60) + ' นาที') + 'ที่แล้ว\n\nบันทึกซ้ำอีกรายการจริงไหม?\n(ถ้ากดซ้ำโดยไม่ตั้งใจ กด "ยกเลิก")')) return;
+    }
+    // v1.22 ปิดการ์ดทันที + โชว์กล่อง "บันทึกแล้ว" ค้างไว้ (เดิมการ์ดวาดใหม่ระหว่างรอส่ง ปุ่มบันทึกกลับมากดได้ → กดซ้ำ)
+    lastDone = {rec: rec, unit: unit, st: 'send'};
+    sel = null; qty = 1;
     addRecord(rec).then(function(){
-      toast(rec.dir + ' ' + fmt(rec.qty) + ' ' + unit + ' · ' + rec.name.slice(0,26)
-            + (API && !online ? ' (เก็บไว้ในเครื่อง รอส่ง)' : ''));
-      sel = null; qty = 1; renderAll();
+      if (lastDone && lastDone.rec.id === rec.id){
+        lastDone.st = pending.some(function(r){ return r.id === rec.id; }) ? 'queue' : 'ok';
+        renderHit();
+      }
       if (gotSku) imgNudge([gotSku]);
     });
+  }
+
+  /* ---------- v1.22 กล่อง "บันทึกแล้ว" หลังกดบันทึก — ค้างไว้จนสแกนชิ้นถัดไป ---------- */
+  var lastDone = null;
+  function renderDone(box){
+    var d = lastDone, r = d.rec, t = new Date(r.ts);
+    var hh = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+    var stt = d.st === 'send' ? '<span class="chip na">⏳ กำลังส่งเข้า Sheet…</span>'
+            : d.st === 'queue' ? '<span class="chip warn">เก็บในเครื่องแล้ว · รอเน็ตแล้วส่งเอง</span>'
+            : '<span class="chip ok">✓ ส่งเข้า Sheet แล้ว</span>';
+    box.hidden = false;
+    box.innerHTML = '<div class="donebox"><div class="donehead">✓ บันทึกแล้ว</div>'
+      + '<div class="itemname" style="margin:6px 0 2px">' + esc(r.dir) + ' ' + fmt(r.qty) + ' ' + esc(d.unit) + '</div>'
+      + '<div>' + esc(r.name) + '</div>'
+      + '<div class="li-meta" style="margin-top:4px">' + esc(r.sku) + ' · ' + hh + (r.dept ? ' · ' + esc(r.dept) : '') + (r.who ? ' · ' + esc(r.who) : '') + '</div>'
+      + '<div style="margin-top:8px">' + stt + '</div></div>'
+      + '<div class="note" style="margin-top:10px">ไม่ต้องกดซ้ำ — สแกนชิ้นถัดไปได้เลย</div>'
+      + '<div class="row" style="gap:8px; margin-top:10px"><button class="ghost" id="doneUndo" style="flex:2; color:var(--warn)">↩ ยกเลิกรายการนี้</button>'
+      + '<button class="ghost" id="doneOk" style="flex:1">ปิด</button></div>';
+    el('doneUndo').addEventListener('click', function(){
+      if (!confirm('ยกเลิก ' + r.dir + ' ' + r.name.slice(0, 30) + ' ' + fmt(r.qty) + ' ' + d.unit + ' ?\nยอดคงเหลือจะกลับเป็นเหมือนก่อนบันทึก')) return;
+      lastDone = null; removeRec(r.id);
+    });
+    el('doneOk').addEventListener('click', function(){ lastDone = null; renderHit(); });
   }
 
   /* ================= รายการล่าสุด ================= */
@@ -1278,7 +1314,12 @@
         + '</div></li>';
     }).join('');
     ul.querySelectorAll('[data-del]').forEach(function(b){
-      b.addEventListener('click', function(){ removeRec(b.getAttribute('data-del')); });
+      b.addEventListener('click', function(){
+        var id = b.getAttribute('data-del'), r = log.filter(function(x){ return x.id === id; })[0];
+        if (r && !confirm('ลบรายการ ' + r.dir + ' ' + fmt(r.qty) + ' · ' + String(r.name).slice(0, 30) + ' ?\nยอดคงเหลือจะกลับเป็นเหมือนก่อนบันทึก')) return;
+        if (lastDone && lastDone.rec.id === id) lastDone = null;
+        removeRec(id);
+      });
     });
   }
 
