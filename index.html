@@ -263,7 +263,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.23</span>
+      <span class="ver" id="appVer">v1.24</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -279,7 +279,13 @@
         <div class="note" style="margin-top:4px">ใส่ครั้งเดียว เครื่องนี้จำไว้ · เว้นว่างแล้วกดปลดล็อก = ออกจากโหมดราคา</div>
         <a class="sheetbtn" id="sheetAll" target="_blank" rel="noopener" href="#" style="margin-top:10px" hidden>📄 เปิด Google Sheet (แท็บ Master) ↗</a>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.23 · อัปเดต 25/09/2026</div>
+      <div id="bulkWrap" style="margin-top:14px; padding-top:12px; border-top:1px solid var(--line)">
+        <label class="fld" for="bulkImg">📷 อัปรูปหลายรูปพร้อมกัน (ตั้งชื่อไฟล์เป็นรหัส เช่น CS-012.jpg)</label>
+        <input type="file" id="bulkImg" accept="image/*" multiple>
+        <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
+        <div class="note" id="bulkState" style="margin-top:6px"></div>
+      </div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.24 · อัปเดต 05/10/2026</div>
     </div>
   </header>
 
@@ -2652,6 +2658,41 @@
       cnt = null; el('cntw').hidden = true; document.body.style.overflow = '';
     });
   }
+
+  /* ================= v1.24 อัปรูปหลายรูปพร้อมกัน (ชื่อไฟล์ = รหัส เช่น CS-012.jpg) ================= */
+  (function(){
+    var inp = el('bulkImg'); if (!inp) return;
+    if (DEPT_MODE){ el('bulkWrap').hidden = true; return; }
+    inp.addEventListener('change', function(){
+      var files = [].slice.call(this.files || []), over = el('bulkOver').checked, st = el('bulkState');
+      if (!files.length) return;
+      if (!API){ toast('ต้องต่อ Google Sheet ก่อน', true); return; }
+      var jobs = [], skipHas = [], skipNo = [];
+      files.forEach(function(f){
+        var m = f.name.match(/CS-?(\d{1,3})/i); if (!m){ skipNo.push(f.name); return; }
+        var sku = 'CS-' + ('00' + m[1]).slice(-3), it = getSku(sku);
+        if (!it){ skipNo.push(f.name); return; }
+        if (it.img && !over){ skipHas.push(sku); return; }
+        jobs.push({sku: sku, f: f});
+      });
+      var ok = 0, bad = [], i = 0;
+      inp.disabled = true;
+      function msg(){ st.textContent = 'ส่งแล้ว ' + ok + ' / ' + jobs.length + (bad.length ? ' · ไม่สำเร็จ ' + bad.length : '') + ' · ข้าม (มีรูปแล้ว) ' + skipHas.length + (skipNo.length ? ' · ชื่อไฟล์ไม่ตรงรหัส ' + skipNo.length : ''); }
+      msg();
+      (function next(){
+        if (i >= jobs.length){
+          inp.disabled = false; inp.value = '';
+          st.textContent = '✓ เสร็จ: ใส่รูป ' + ok + ' รายการ · ข้าม (มีรูปแล้ว) ' + skipHas.length + (bad.length ? ' · ไม่สำเร็จ ' + bad.join(', ') : '') + (skipNo.length ? ' · ไม่รู้จักชื่อไฟล์: ' + skipNo.slice(0, 5).join(', ') : '');
+          toast('อัปรูปเสร็จ ' + ok + ' รายการ'); return;
+        }
+        var J = jobs[i++];
+        shrink(J.f).then(function(d){ return api({action:'setimg', sku: J.sku, data: d, who: 'PC (อัปหลายรูป)'}); })
+          .then(function(j){ ok++; if (i === jobs.length || ok % 10 === 0) takeServer(j); })
+          ['catch'](function(){ bad.push(J.sku); })
+          .then(function(){ msg(); next(); });
+      })();
+    });
+  })();
 
   /* ================= เริ่มต้น ================= */
   if (embedded){
