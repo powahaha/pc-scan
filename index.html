@@ -313,7 +313,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.28</span>
+      <span class="ver" id="appVer">v1.29</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -335,7 +335,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.28 · อัปเดต 06/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.29 · อัปเดต 06/10/2026</div>
     </div>
   </header>
 
@@ -631,7 +631,11 @@
   setRetired(lsGet(K_OFF, []));
   requests = lsGet(K_REQ, []);
   var SHEETINFO = lsGet('pcscan_sheet', null);   // v1.11: {id, gid} สำหรับปุ่มเปิด Sheet
+  // v1.29 ใบขอเบิกแยกตามแผนก: เปลี่ยนแผนกแล้วสลับใบ ไม่เอาของแผนกอื่นติดมา (ใบเดิมยังเก็บไว้ สลับกลับมาเจอ)
+  var CARTS = lsGet('pcscan_carts', null) || {}, cartDept = lsGetRaw(K_DEPT) || '';
   cart = lsGet(K_CART, []);
+  if (cart.length && !CARTS[cartDept]) CARTS[cartDept] = cart;
+  cart = CARTS[cartDept] || [];
   // v1.8: ราคา — เฉพาะ PC ที่ใส่ PIN ถูก (Sheet เป็นคนเช็ค PIN)
   var PIN = DEPT_MODE ? '' : lsGetRaw(K_PIN);
   var PRICES = PIN ? lsGet(K_PRICE, {}) : {}, PURCH = [];
@@ -1903,7 +1907,8 @@
   }
 
   /* ---------- มุมมองแผนก: ขอเบิก ---------- */
-  function saveCart(){ lsSet(K_CART, cart); }
+  function saveCart(){ CARTS[cartDept] = cart; lsSet('pcscan_carts', CARTS); lsSet(K_CART, cart); }
+  function switchCart(d){ CARTS[cartDept] = cart; cartDept = d || ''; cart = CARTS[cartDept] || []; lsSet('pcscan_carts', CARTS); lsSet(K_CART, cart); }
   function renderReq(){
     if (!DEPT_MODE) return;
     var cb = el('cartBadge'); cb.hidden = cart.length === 0; cb.textContent = cart.length;
@@ -1935,7 +1940,7 @@
         saveCart(); renderReq(); toast('เพิ่ม ' + it.name.slice(0,30) + ' ในใบแล้ว');
       });
     });
-    el('d_n').textContent = cart.length ? '(' + cart.length + ' รายการ)' : '';
+    el('d_n').textContent = (cartDept ? '· ' + cartDept + ' ' : '') + (cart.length ? '(' + cart.length + ' รายการ)' : '');
     el('d_cart').innerHTML = cart.length ? cart.map(function(c, i){
       var it = getSku(c.sku), n = it ? onHand(it) : null;
       var warn = n == null ? '' : n <= 0 ? '<div class="outnote">⛔ ของหมด — ส่งใบได้ PC จะค้างไว้ จ่ายเมื่อของเข้า</div>'
@@ -1953,7 +1958,11 @@
   }
   if (DEPT_MODE){
     el('d_q').addEventListener('input', renderReq);
-    el('d_dept').addEventListener('change', function(){ lsSetRaw(K_DEPT, el('d_dept').value); renderMine(); renderReq(); });
+    el('d_dept').addEventListener('change', function(){
+      var d = el('d_dept').value; lsSetRaw(K_DEPT, d); switchCart(d);
+      if (d && cart.length) toast('ใบของ ' + d + ' ที่ทำค้างไว้ ' + cart.length + ' รายการ');
+      renderMine(); renderReq();
+    });
     el('d_who').addEventListener('change', function(){ lsSetRaw(K_RWHO, el('d_who').value.trim()); });
     el('d_send').addEventListener('click', function(){
       var dept = el('d_dept').value, rw = (el('d_who').value || '').trim();
@@ -2776,6 +2785,7 @@
   }
   function reuseReq(no){
     var g = groupReq(requests.filter(function(r){ return r.no === no; }))[0]; if (!g) return;
+    if (g.dept && el('d_dept') && el('d_dept').value !== g.dept){ el('d_dept').value = g.dept; lsSetRaw(K_DEPT, g.dept); switchCart(g.dept); }   // v1.29 ใบเก่าเข้าใบของแผนกนั้นเสมอ
     var u = usableLines(g);
     if (!u.ok.length){ toast('ใบนี้ไม่มีของที่ขอได้แล้ว', true); return; }
     if (cart.length && !confirm('ในใบตอนนี้มีของอยู่ ' + cart.length + ' รายการ\nกด OK = ล้างแล้วใช้รายการจากใบ ' + no + '\nกด ยกเลิก = เพิ่มต่อท้ายของเดิม')) {
