@@ -124,7 +124,14 @@
     .freqgrid{grid-template-columns:1fr 1fr;}
     button.freq{grid-template-columns:1fr; text-align:center; justify-items:center; row-gap:4px;}
     button.freq .thumb{grid-row:auto; width:56px; height:56px; flex-basis:56px;}
+    button.freq .fimg{grid-row:auto;}
   }
+  /* v1.26 ✕ บนรูปของที่อยู่ในใบ · ปุ่มใบก่อนหน้า */
+  button.freq .fimg{position:relative; display:inline-block; line-height:0; grid-row:1 / span 2;}
+  button.freq .fx{position:absolute; top:-7px; right:-7px; width:24px; height:24px; border-radius:50%; background:var(--warn); color:#fff;
+    font:700 14px/24px var(--fs); text-align:center; box-shadow:0 0 0 2px var(--surface);}
+  .reusebtn.small{min-height:48px; font-size:15px; margin-top:8px; text-align:left;}
+  @media (max-width:400px){ button.freq .fimg{grid-row:auto;} }
   .donebox{background:var(--ok-soft); color:var(--ok); border-radius:12px; padding:14px 16px; text-align:center;}
   .donebox .itemname, .donebox div{color:inherit;}
   .donehead{font:700 22px var(--fs);}
@@ -294,7 +301,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.25</span>
+      <span class="ver" id="appVer">v1.26</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -316,7 +323,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.25 · อัปเดต 06/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.26 · อัปเดต 06/10/2026</div>
     </div>
   </header>
 
@@ -2784,18 +2791,20 @@
     var box = el('d_quick'); if (!box) return;
     var dept = deptNow();
     if (!dept){ box.innerHTML = '<div class="note" style="margin:0">เลือกแผนกข้างบนก่อน จะมีปุ่ม "ขอแบบใบล่าสุด" กับของที่แผนกขอบ่อยให้แตะเลือก</div>'; return; }
-    var last = groupReq(requests.filter(function(r){ return r.dept === dept; }))[0];
+    var recent = groupReq(requests.filter(function(r){ return r.dept === dept; })).slice(0, 3), last = recent[0];   // v1.26: 3 ใบล่าสุด
     var fr = freqItems(dept), h = '';
-    if (last){
-      var u = usableLines(last);
-      h += '<button class="primary reusebtn" data-reuse="' + esc(last.no) + '">🔁 ขอแบบใบล่าสุด<span class="sub">' + whenTH(last.ts) + ' · ' + u.ok.length + ' รายการ · แก้จำนวนได้ก่อนส่ง</span></button>';
-    }
+    recent.forEach(function(g, i){
+      var u = usableLines(g);
+      h += '<button class="' + (i ? 'ghost reusebtn small' : 'primary reusebtn') + '" data-reuse="' + esc(g.no) + '">🔁 ' + (i ? 'ใบก่อนหน้า ' + i : 'ขอแบบใบล่าสุด')
+        + '<span class="sub">' + whenTH(g.ts) + ' · ' + u.ok.length + ' รายการ' + (i ? '' : ' · แก้จำนวนได้ก่อนส่ง') + '</span></button>';
+    });
     if (fr.length){
       h += '<div class="fld" style="margin-top:' + (last ? 12 : 0) + 'px">ของที่ ' + esc(dept) + ' ขอบ่อย · แตะเพื่อเพิ่ม</div><div class="freqgrid">'
         + fr.map(function(x){
             var inC = cart.some(function(c){ return c.sku === x.it.sku; });
-            return '<button type="button" class="freq' + (inC ? ' in' : '') + '" data-fq="' + esc(x.it.sku) + '" data-q="' + x.q + '">' + thumb(x.it)
-              + '<span class="fname">' + esc(x.it.name) + '</span><span class="fmeta">' + (inC ? '✓ อยู่ในใบ' : (isOut(x.it) ? '⛔ ของหมด' : '+ ' + fmt(x.q) + ' ' + esc(x.it.unit || ''))) + '</span></button>';
+            return '<button type="button" class="freq' + (inC ? ' in' : '') + '" data-fq="' + esc(x.it.sku) + '" data-q="' + x.q + '"' + (inC ? ' aria-label="เอา ' + esc(x.it.name) + ' ออกจากใบ"' : '') + '>'
+              + '<span class="fimg">' + thumb(x.it) + (inC ? '<span class="fx" aria-hidden="true">✕</span>' : '') + '</span>'
+              + '<span class="fname">' + esc(x.it.name) + '</span><span class="fmeta">' + (inC ? '✓ อยู่ในใบ · แตะ ✕ เอาออก' : (isOut(x.it) ? '⛔ ของหมด' : '+ ' + fmt(x.q) + ' ' + esc(x.it.unit || ''))) + '</span></button>';
           }).join('') + '</div>';
     }
     if (!h) h = '<div class="note" style="margin:0">แผนก ' + esc(dept) + ' ยังไม่มีประวัติขอเบิก — ค้นหาหรือสแกนของข้างล่างได้เลย ครั้งหน้าจะมีปุ่มลัดให้</div>';
@@ -2803,7 +2812,8 @@
     box.querySelectorAll('[data-reuse]').forEach(function(b){ b.addEventListener('click', function(){ reuseReq(b.getAttribute('data-reuse')); }); });
     box.querySelectorAll('[data-fq]').forEach(function(b){ b.addEventListener('click', function(){
       var it = getSku(b.getAttribute('data-fq'));
-      if (cart.some(function(c){ return c.sku === it.sku; })){ toast('อยู่ในใบแล้ว — แก้จำนวนที่ใบข้างล่าง'); return; }
+      var ci = -1; cart.forEach(function(c, i){ if (c.sku === it.sku) ci = i; });
+      if (ci >= 0){ cart.splice(ci, 1); saveCart(); renderReq(); toast('เอา ' + it.name.slice(0, 30) + ' ออกจากใบแล้ว'); try { if (navigator.vibrate) navigator.vibrate(20); } catch(e){} return; }   // v1.26 แตะตัวที่อยู่ในใบ = เอาออก
       if (addToCart(it, +b.getAttribute('data-q') || 1)){ saveCart(); renderReq(); toast('เพิ่ม ' + it.name.slice(0, 30) + ' ในใบแล้ว'); try { if (navigator.vibrate) navigator.vibrate(20); } catch(e){} }
     }); });
   }
