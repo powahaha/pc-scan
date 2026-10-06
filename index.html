@@ -127,8 +127,9 @@
     button.freq .fimg{grid-row:auto;}
   }
   /* v1.26 ✕ บนรูปของที่อยู่ในใบ · ปุ่มใบก่อนหน้า */
-  button.freq .fimg{position:relative; display:inline-block; line-height:0; grid-row:1 / span 2;}
-  button.freq .fx{position:absolute; top:-7px; right:-7px; width:24px; height:24px; border-radius:50%; background:var(--warn); color:#fff;
+  button.freq{position:relative;}
+  button.freq .fimg{display:inline-block; line-height:0; grid-row:1 / span 2;}
+  button.freq .fx{position:absolute; top:6px; right:6px; width:24px; height:24px; border-radius:50%; background:var(--warn); color:#fff;
     font:700 14px/24px var(--fs); text-align:center; box-shadow:0 0 0 2px var(--surface);}
   .reusebtn.small{min-height:48px; font-size:15px; margin-top:8px; text-align:left;}
   @media (max-width:400px){ button.freq .fimg{grid-row:auto;} }
@@ -301,7 +302,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.26</span>
+      <span class="ver" id="appVer">v1.27</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -323,7 +324,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.26 · อัปเดต 06/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.27 · อัปเดต 06/10/2026</div>
     </div>
   </header>
 
