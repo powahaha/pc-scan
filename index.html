@@ -200,7 +200,11 @@
   .hero.none{height:74px; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:13px; border-style:dashed;}
   #lb{position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.88); display:flex; align-items:center; justify-content:center; padding:16px;}
   #lb[hidden]{display:none;}
-  #lb img{max-width:100%; max-height:100%; object-fit:contain; border-radius:8px;}
+  #lb{flex-direction:column; gap:10px;}
+  #lb img{max-width:100%; max-height:calc(100% - 70px); object-fit:contain; border-radius:8px; background:#fff;}
+  #lbCap{color:#fff; font:600 15px/1.35 var(--fs); text-align:center; max-width:560px;}
+  #lbHint{color:rgba(255,255,255,.65); font:12px var(--fs);}
+  img.thumb[data-big]{cursor:zoom-in;}
   .reqgrp{border:1px solid var(--line); border-radius:10px; padding:12px; margin-top:10px;}
   .reqgrp.urgent{border-color:var(--warn); box-shadow:inset 3px 0 0 var(--warn);}
   .reqline{display:grid; grid-template-columns:1fr 88px; gap:8px; align-items:center; padding:8px 0; border-top:1px dashed var(--line);}
@@ -344,7 +348,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.36</span>
+      <span class="ver" id="appVer">v1.37</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -366,7 +370,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.36 · อัปเดต 06/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.37 · อัปเดต 06/10/2026</div>
     </div>
   </header>
 
@@ -579,7 +583,7 @@
   </div>
   <input type="file" id="walkFile" accept="image/*" capture="environment" hidden>
   <div id="nudge" hidden><div id="nudgeText"></div><div class="row" style="gap:8px; margin-top:8px"><button class="primary" id="nudgeGo" style="flex:2">📷 ถ่ายเลย</button><button class="ghost" id="nudgeNo" style="flex:1">ไว้ก่อน</button></div></div>
-  <div id="lb" hidden role="dialog" aria-label="ดูรูปใหญ่ (แตะเพื่อปิด)"><img id="lbImg" alt=""></div>
+  <div id="lb" hidden role="dialog" aria-label="ดูรูปใหญ่ (แตะเพื่อปิด)"><img id="lbImg" alt=""><div id="lbCap"></div><div id="lbHint">แตะที่ไหนก็ได้เพื่อปิด</div></div>
 
   <nav role="tablist">
     <button role="tab" id="t-scan" aria-selected="true">สแกน</button>
@@ -624,7 +628,7 @@
   function imgUrl(id, w){ return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w' + (w || 400); }
   function thumb(it){
     return (it && it.img)
-      ? '<img class="thumb" loading="lazy" alt="" src="' + imgUrl(it.img, 120) + '">'
+      ? '<img class="thumb" loading="lazy" alt="ดูรูปใหญ่" src="' + imgUrl(it.img, 120) + '" data-big="' + esc(it.img) + '" data-cap="' + esc(it.sku + ' · ' + it.name) + '">'
       : '<span class="thumb none" aria-hidden="true"></span>';
   }
   function getSku(s){ s = String(s || '').toUpperCase(); return BY_SKU[s] || OFF_SKU[s] || null; }
@@ -1124,10 +1128,19 @@
     if (!f || !sku) return;
     shrink(f).then(function(d){ return uploadImg(sku, d); })['catch'](function(e){ toast(e.message, true); });
   });
-  function openLightbox(src){
-    var lb = el('lb'); el('lbImg').src = src; lb.hidden = false;
+  function openLightbox(src, cap, low){
+    var lb = el('lb'), im = el('lbImg');
+    im.src = low || src; el('lbCap').textContent = cap || ''; lb.hidden = false;
+    if (low){ var big = new Image(); big.onload = function(){ if (!lb.hidden) im.src = src; }; big.src = src; }   // โชว์รูปเล็กก่อน แล้วสลับเป็นรูปชัดเมื่อโหลดเสร็จ
   }
   el('lb').addEventListener('click', function(){ el('lb').hidden = true; el('lbImg').src = ''; });
+  // v1.37 แตะรูปเล็กตรงไหนก็ได้ (รายการ ผลค้นหา ของที่ขอบ่อย การ์ด) = เปิดรูปใหญ่ ไม่ไปกดเพิ่มของ
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    if (!t || !t.matches || !t.matches('img.thumb[data-big]')) return;
+    e.preventDefault(); e.stopPropagation();
+    openLightbox(imgUrl(t.getAttribute('data-big'), 1200), t.getAttribute('data-cap'), t.src);
+  }, true);
 
   /* ---------- v1.8 ราคา / ร้าน / มูลค่า (เฉพาะ PC) ---------- */
   var priceEdit = null, rv = {shop:'', price:'', po:''};
