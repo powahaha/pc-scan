@@ -133,6 +133,17 @@
     font:700 14px/24px var(--fs); text-align:center; box-shadow:0 0 0 2px var(--surface);}
   .reusebtn.small{min-height:48px; font-size:15px; margin-top:8px; text-align:left;}
   @media (max-width:400px){ button.freq .fimg{grid-row:auto;} }
+  /* v1.28 ใบเก่า 3 ใบ: การ์ดหน้าตาเดียวกัน วันที่ตัวใหญ่ */
+  button.reqpick{display:grid; grid-template-columns:58px 1fr 16px; gap:10px; align-items:center; width:100%; text-align:left; margin-top:8px;
+    padding:8px 10px; min-height:64px; border:1.5px solid var(--line); border-radius:12px; background:var(--surface); color:var(--ink); cursor:pointer;}
+  button.reqpick.newest{border-color:var(--accent); border-width:2px;}
+  .rpdate{display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px; background:var(--accent-soft); color:var(--accent); padding:4px 0; line-height:1.1;}
+  .reqpick.newest .rpdate{background:var(--accent); color:var(--accent-ink);}
+  .rpd{font:600 12px var(--fs);} .rpn{font:800 22px var(--fs);} .rpm{font:600 12px var(--fs);}
+  .rpbody{min-width:0; display:flex; flex-direction:column; gap:2px;}
+  .rptop{font:500 13px var(--fs); color:var(--muted);} .rptop b{color:var(--ink);}
+  .rpitems{font:500 13.5px/1.35 var(--fs); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word; max-height:2.7em;}
+  .rpgo{font:700 22px var(--fs); color:var(--muted);}
   .donebox{background:var(--ok-soft); color:var(--ok); border-radius:12px; padding:14px 16px; text-align:center;}
   .donebox .itemname, .donebox div{color:inherit;}
   .donehead{font:700 22px var(--fs);}
@@ -302,7 +313,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.27</span>
+      <span class="ver" id="appVer">v1.28</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -324,7 +335,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.27 · อัปเดต 06/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.28 · อัปเดต 06/10/2026</div>
     </div>
   </header>
 
@@ -2794,10 +2805,15 @@
     if (!dept){ box.innerHTML = '<div class="note" style="margin:0">เลือกแผนกข้างบนก่อน จะมีปุ่ม "ขอแบบใบล่าสุด" กับของที่แผนกขอบ่อยให้แตะเลือก</div>'; return; }
     var recent = groupReq(requests.filter(function(r){ return r.dept === dept; })).slice(0, 3), last = recent[0];   // v1.26: 3 ใบล่าสุด
     var fr = freqItems(dept), h = '';
-    recent.forEach(function(g, i){
-      var u = usableLines(g);
-      h += '<button class="' + (i ? 'ghost reusebtn small' : 'primary reusebtn') + '" data-reuse="' + esc(g.no) + '">🔁 ' + (i ? 'ใบก่อนหน้า ' + i : 'ขอแบบใบล่าสุด')
-        + '<span class="sub">' + whenTH(g.ts) + ' · ' + u.ok.length + ' รายการ' + (i ? '' : ' · แก้จำนวนได้ก่อนส่ง') + '</span></button>';
+    if (recent.length) h += '<div class="fld" style="margin:0 0 6px">🔁 ขอแบบใบเก่า · แตะใบที่ต้องการ แก้จำนวนได้ก่อนส่ง</div>';
+    recent.forEach(function(g, i){      // v1.28 3 ใบหน้าตาเดียวกัน วันที่ตัวใหญ่สีเด่น + บอกของในใบ แยกออกง่าย
+      var u = usableLines(g), d = new Date(g.ts);
+      var dd = isNaN(d) ? '' : ['อา','จ','อ','พ','พฤ','ศ','ส'][d.getDay()], dn = isNaN(d) ? '' : d.getDate(), mo = isNaN(d) ? '' : TH_MON[d.getMonth()];
+      var prev = u.ok.map(function(x){ return x.it.name.replace(/\s*\(.*?\)\s*/g, ' ').trim().slice(0, 22) + ' ×' + fmt(x.qty); }).join(' · ');
+      h += '<button type="button" class="reqpick' + (i ? '' : ' newest') + '" data-reuse="' + esc(g.no) + '">'
+        + '<span class="rpdate"><span class="rpd">' + esc(dd) + '</span><span class="rpn">' + dn + '</span><span class="rpm">' + esc(mo) + '</span></span>'
+        + '<span class="rpbody"><span class="rptop">' + (i ? '' : '<span class="chip ok">ล่าสุด</span> ') + '<b>' + u.ok.length + ' รายการ</b></span>'
+        + '<span class="rpitems">' + esc(prev) + '</span></span><span class="rpgo" aria-hidden="true">›</span></button>';
     });
     if (fr.length){
       h += '<div class="fld" style="margin-top:' + (last ? 12 : 0) + 'px">ของที่ ' + esc(dept) + ' ขอบ่อย · แตะเพื่อเพิ่ม</div><div class="freqgrid">'
