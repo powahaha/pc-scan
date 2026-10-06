@@ -117,10 +117,6 @@
   .dscanbar{background:var(--surface); color:var(--ink); padding:12px 16px calc(12px + env(safe-area-inset-bottom, 0px));}
   #dscanMsg{font:500 15px/1.45 var(--fs); min-height:44px;}
   @media (max-width:400px){
-    .cartline{grid-template-columns:44px 1fr 44px 44px; row-gap:6px;}
-    .cartline > div:first-child{grid-column:1 / -1;}
-    .cartline input{min-height:44px; font-size:17px;}
-    .cartline button{min-height:44px;}
     .freqgrid{grid-template-columns:1fr 1fr;}
     button.freq{grid-template-columns:1fr; text-align:center; justify-items:center; row-gap:4px;}
     button.freq .thumb{grid-row:auto; width:56px; height:56px; flex-basis:56px;}
@@ -181,9 +177,15 @@
   .reqline{display:grid; grid-template-columns:1fr 88px; gap:8px; align-items:center; padding:8px 0; border-top:1px dashed var(--line);}
   .reqline:first-of-type{border-top:0;}
   .reqline input{padding:8px; text-align:center;}
-  .cartline{display:grid; grid-template-columns:1fr 40px 64px 40px 34px; gap:6px; align-items:center; padding:8px 0; border-top:1px dashed var(--line);}
-  .cartline button{padding:8px 0; min-height:40px;}
-  .cartline input{padding:8px 4px; text-align:center;}
+  /* v1.30 บรรทัดในใบขอเบิก: ชื่อ+คงเหลือบน · ปุ่ม − จำนวน + ขนาดเท่ากันล่าง · ลบชิดขวา */
+  .cartline{padding:10px 0; border-top:1px dashed var(--line);}
+  .clctl{display:flex; align-items:center; gap:8px; margin-top:8px;}
+  .clctl button.qb{flex:0 0 48px; width:48px; height:48px; min-height:48px; padding:0; font:700 22px var(--fs); display:flex; align-items:center; justify-content:center;}
+  .clctl input{flex:0 0 84px; width:84px; height:48px; min-height:48px; padding:0 4px; text-align:center; font:700 20px var(--fs);}
+  .clctl .clu{font:500 13px var(--fs); color:var(--muted); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .clctl button.del{margin-left:auto; color:var(--warn);}
+  .clstock{margin-top:4px; font:600 13px var(--fs);}
+  .clstock.ok{color:var(--ok);} .clstock.low{color:var(--warn);} .clstock.out{color:#c62828;}
   .over{color:var(--warn); font-weight:600;}
   nav button[aria-selected="true"]{color:var(--accent); border-top-color:var(--accent);}
   nav .badge{display:inline-block; min-width:19px; margin-left:4px; padding:0 5px;
@@ -313,7 +315,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.29</span>
+      <span class="ver" id="appVer">v1.30</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -335,7 +337,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.29 · อัปเดต 06/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.30 · อัปเดต 06/10/2026</div>
     </div>
   </header>
 
@@ -1942,14 +1944,16 @@
     });
     el('d_n').textContent = (cartDept ? '· ' + cartDept + ' ' : '') + (cart.length ? '(' + cart.length + ' รายการ)' : '');
     el('d_cart').innerHTML = cart.length ? cart.map(function(c, i){
-      var it = getSku(c.sku), n = it ? onHand(it) : null;
+      var it = getSku(c.sku), n = it ? onHand(it) : null, u = esc(c.unit || (it && it.unit) || '');
+      // v1.30 โชว์จำนวนที่มีในคลังตอนนี้เสมอ + สีบอกพอ/ไม่พอ/หมด
+      var stock = n == null ? '' : '<div class="clstock ' + (n <= 0 ? 'out' : n < c.qty ? 'low' : 'ok') + '">📦 มีในคลังตอนนี้ <b>' + fmt(Math.max(0, n)) + '</b> ' + u + '</div>';
       var warn = n == null ? '' : n <= 0 ? '<div class="outnote">⛔ ของหมด — ส่งใบได้ PC จะค้างไว้ จ่ายเมื่อของเข้า</div>'
-               : n < c.qty ? '<div class="outnote soft">มีแค่ ' + fmt(n) + ' — ได้ก่อนเท่าที่มี ที่เหลือค้างไว้</div>' : '';
-      return '<div class="cartline"><div><div class="li-name">' + esc(c.name) + '</div><div class="li-meta">' + esc(c.sku) + (c.unit ? ' · ' + esc(c.unit) : '') + '</div>' + warn + '</div>'
-        + '<button class="ghost" data-dec="' + i + '" aria-label="ลด">−</button>'
-        + '<input type="number" inputmode="decimal" min="0" data-q="' + i + '" value="' + c.qty + '" aria-label="จำนวน">'
-        + '<button class="ghost" data-inc="' + i + '" aria-label="เพิ่ม">+</button>'
-        + '<button class="ghost" data-del="' + i + '" aria-label="ลบ" style="color:var(--warn)">×</button></div>';
+               : n < c.qty ? '<div class="outnote soft">มีไม่พอ — ได้ก่อน ' + fmt(n) + ' ที่เหลือค้างไว้</div>' : '';
+      return '<div class="cartline"><div class="clinfo"><div class="li-name">' + esc(c.name) + '</div><div class="li-meta">' + esc(c.sku) + '</div>' + stock + warn + '</div>'
+        + '<div class="clctl"><button class="ghost qb" data-dec="' + i + '" aria-label="ลด">−</button>'
+        + '<input type="number" inputmode="decimal" min="0" data-q="' + i + '" value="' + c.qty + '" aria-label="จำนวนขอ">'
+        + '<button class="ghost qb" data-inc="' + i + '" aria-label="เพิ่ม">+</button><span class="clu">' + u + '</span>'
+        + '<button class="ghost qb del" data-del="' + i + '" aria-label="ลบออกจากใบ">×</button></div></div>';
     }).join('') : '<div class="note" style="margin:0">ยังไม่มีของในใบ — ค้นหาแล้วแตะเพื่อเพิ่ม</div>';
     el('d_cart').querySelectorAll('[data-dec]').forEach(function(b){ b.addEventListener('click', function(){ var c = cart[+b.dataset.dec]; c.qty = Math.max(1, c.qty - 1); saveCart(); renderReq(); }); });
     el('d_cart').querySelectorAll('[data-inc]').forEach(function(b){ b.addEventListener('click', function(){ cart[+b.dataset.inc].qty += 1; saveCart(); renderReq(); }); });
