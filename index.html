@@ -140,6 +140,8 @@
   .rptop{font:500 13px var(--fs); color:var(--muted);} .rptop b{color:var(--ink);}
   .rpitems{font:500 13.5px/1.35 var(--fs); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word; max-height:2.7em;}
   .rpgo{font:700 22px var(--fs); color:var(--muted);}
+  /* v1.32 รายการทั้งหมดที่ขอได้ เลื่อนดูในกรอบ */
+  #d_list.browse{max-height:62vh; overflow-y:auto; -webkit-overflow-scrolling:touch; border:1px solid var(--line); border-radius:10px; padding:0 8px; overscroll-behavior:contain;}
   .donebox{background:var(--ok-soft); color:var(--ok); border-radius:12px; padding:14px 16px; text-align:center;}
   .donebox .itemname, .donebox div{color:inherit;}
   .donehead{font:700 22px var(--fs);}
@@ -315,7 +317,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.31</span>
+      <span class="ver" id="appVer">v1.32</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -337,7 +339,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.31 · อัปเดต 06/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.32 · อัปเดต 06/10/2026</div>
     </div>
   </header>
 
@@ -483,6 +485,8 @@
       <div class="card">
         <label class="fld" for="d_q">ค้นหาของที่จะขอ</label>
         <div class="searchrow"><input type="text" id="d_q" placeholder="เช่น ถุงมือ, ใบเจียร" autocomplete="off"><button type="button" class="ghost" id="d_scan">📷 สแกน</button></div>
+        <div class="row" id="d_sortrow" style="gap:6px; margin-top:8px; align-items:center; flex-wrap:wrap"><span class="li-meta">เรียง:</span><button type="button" class="chip na tapchip" data-dsort="name">ชื่อ ก-ฮ</button><button type="button" class="chip na tapchip" data-dsort="sku">รหัส</button></div>
+        <div class="note" id="d_browseN" style="margin:6px 0 0"></div>
         <ul class="list" id="d_list" style="margin-top:6px"></ul>
       </div>
       <div class="card">
@@ -1936,18 +1940,28 @@
     }
     renderQuick();   // v1.25 ปุ่มลัด: ขอแบบใบล่าสุด + ของที่ขอบ่อย
     var q = (el('d_q').value || '').trim().toLowerCase();
-    var rows = q ? ITEMS.filter(function(it){
+    // v1.31.1 ไม่พิมพ์อะไร = โชว์ของทั้งหมดที่ขอได้ ไว้เลื่อนดู (กล่องเลื่อนในตัว ใบขอเบิกข้างล่างยังกดถึง)
+    var dsort = lsGetRaw('pcscan_dsort') || 'name';
+    var rows = ITEMS.filter(function(it){
       if (isHidden(it)) return false;                                   // v1.15: ของที่ PC ซ่อนไว้ ไม่โชว์ฝั่งแผนก
-      return itemMatch(it, q);
-    }) : [];
-    rows = exactFirst(rows, q).slice(0, 30);
-    el('d_list').innerHTML = q ? (rows.map(function(it){
+      return !q || itemMatch(it, q);
+    });
+    if (q) rows = exactFirst(rows, q).slice(0, 30);
+    else rows = rows.slice().sort(dsort === 'sku' ? function(a, b){ return a.sku < b.sku ? -1 : 1; }
+                                                   : function(a, b){ return String(a.name).localeCompare(String(b.name), 'th'); });
+    var lst = el('d_list'), keep = lst.scrollTop;
+    lst.classList.toggle('browse', !q);
+    el('d_sortrow').hidden = !!q;
+    el('d_sortrow').querySelectorAll('[data-dsort]').forEach(function(b){ b.className = 'chip tapchip ' + (b.getAttribute('data-dsort') === dsort ? 'ok' : 'na'); });
+    el('d_browseN').textContent = q ? '' : 'ของที่ขอได้ทั้งหมด ' + rows.length + ' รายการ · เลื่อนดูในกรอบ';
+    lst.innerHTML = rows.map(function(it){
       var n = onHand(it), inCart = cart.some(function(c){ return c.sku === it.sku; });
       return '<li class="tap" data-add="' + esc(it.sku) + '"><div class="li-top">' + thumb(it) + '<div class="grow">'
         + '<div class="li-name">' + esc(it.name) + '</div>'
         + '<div class="li-meta">' + esc(it.sku) + ' · ' + (n > 0 ? 'มีของ ' + fmt(n) + ' ' + esc(it.unit || '') : '<span class="chip out">ของหมด</span> ขอได้ — ใบจะค้างไว้จนของเข้า') + '</div>'
         + '</div><span class="chip ' + (inCart ? 'ok' : 'na') + '">' + (inCart ? 'อยู่ในใบ' : '+ เพิ่ม') + '</span></div></li>';
-    }).join('') || '<li class="empty">ไม่พบ — ลองคำอื่น หรือเขียนในหมายเหตุ</li>') : '<li class="empty">พิมพ์ชื่อของเพื่อค้นหา</li>';
+    }).join('') || '<li class="empty">ไม่พบ — ลองคำอื่น หรือเขียนในหมายเหตุ</li>';
+    if (!q) lst.scrollTop = keep;
     el('d_list').querySelectorAll('[data-add]').forEach(function(li){
       li.addEventListener('click', function(){
         var it = getSku(li.getAttribute('data-add')); if (!it) return;
@@ -1977,7 +1991,8 @@
     el('d_cart').querySelectorAll('[data-q]').forEach(function(inp){ inp.addEventListener('change', function(){ cart[+inp.dataset.q].qty = Math.max(0, +inp.value || 0); saveCart(); }); });
   }
   if (DEPT_MODE){
-    el('d_q').addEventListener('input', renderReq);
+    el('d_q').addEventListener('input', function(){ el('d_list').scrollTop = 0; renderReq(); });
+    el('d_sortrow').querySelectorAll('[data-dsort]').forEach(function(b){ b.addEventListener('click', function(){ lsSetRaw('pcscan_dsort', b.getAttribute('data-dsort')); el('d_list').scrollTop = 0; renderReq(); }); });
     el('d_dept').addEventListener('change', function(){
       var d = el('d_dept').value; lsSetRaw(K_DEPT, d); switchCart(d);
       if (d && cart.length) toast('ใบของ ' + d + ' ที่ทำค้างไว้ ' + cart.length + ' รายการ');
