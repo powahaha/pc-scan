@@ -344,7 +344,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.35</span>
+      <span class="ver" id="appVer">v1.36</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -366,7 +366,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.35 · อัปเดต 06/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.36 · อัปเดต 06/10/2026</div>
     </div>
   </header>
 
@@ -679,6 +679,14 @@
   cart = lsGet(K_CART, []);
   if (cart.length && !CARTS[cartDept]) CARTS[cartDept] = cart;
   cart = CARTS[cartDept] || [];
+  // v1.36 QR ประจำไลน์: ?v=dept&d=cnc → เลือกไลน์ให้เลย (เปลี่ยนเองทีหลังได้)
+  var QR_DEPT = {cnc:'CNC', robot:'Robot', friction:'Friction', assy:'Assy', finish:'Finishing & Hand weld', qa:'QA', mthw:'MT/HW'};
+  (function(){
+    var m = QS.match(/[?&]d=([^&]+)/), d = m && QR_DEPT[decodeURIComponent(m[1]).toLowerCase()];
+    if (!DEPT_MODE || !d || d === cartDept) return;
+    CARTS[cartDept] = cart; cartDept = d; cart = CARTS[d] || [];
+    lsSetRaw(K_DEPT, d); lsSet('pcscan_carts', CARTS); lsSet(K_CART, cart);
+  })();
   // v1.8: ราคา — เฉพาะ PC ที่ใส่ PIN ถูก (Sheet เป็นคนเช็ค PIN)
   var PIN = DEPT_MODE ? '' : lsGetRaw(K_PIN);
   var PRICES = PIN ? lsGet(K_PRICE, {}) : {}, PURCH = [];
