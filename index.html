@@ -151,6 +151,23 @@
   .stk{margin-top:5px; font:700 15px/1.3 var(--fs);}
   .stk.ok{color:var(--ok);}
   .stk.out{color:#c62828; font-size:16.5px;}
+  /* v1.35 แท็บมีกรอบ + สีตอนเลือก · คอลัมน์รหัสซ้ายสุด · ของหมดทั้งแถวเด่น */
+  nav.dept{gap:6px; padding:7px 8px calc(7px + env(safe-area-inset-bottom, 0px));}
+  nav.dept button{border:1.5px solid var(--line); border-radius:11px; background:var(--surface-2); padding:10px 4px; font-size:14px; color:var(--ink); line-height:1.25;}
+  nav.dept button[aria-selected="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink); box-shadow:0 2px 6px rgba(0,0,0,.18);}
+  nav.dept #t-list{font-size:12.5px; font-weight:600; color:var(--muted); background:var(--surface); border-style:dashed;}
+  nav.dept #t-list[aria-selected="true"]{color:var(--accent-ink); background:var(--accent); border-style:solid;}
+  nav.dept #t-list .tn{display:block; font-size:11px; margin:0;}
+  nav.dept button[aria-selected="true"] .badge{background:var(--accent-ink); color:var(--accent);}
+  .skucol{flex:0 0 46px; width:46px; padding-top:2px; font:700 11.5px/1.25 var(--fm); color:var(--accent); white-space:nowrap; overflow:hidden;}
+  #d_list .li-top, #l_list .li-top{gap:8px;}
+  #d_list .thumb, #l_list .thumb{flex-basis:38px; width:38px; height:38px;}
+  .addbtn{flex:0 0 36px; width:36px; min-height:36px; border-radius:18px; display:flex; flex-direction:column; align-items:center; justify-content:center; font:700 20px/1 var(--fs); color:var(--accent); background:var(--accent-soft); border:1.5px solid var(--accent);}
+  .addbtn.in{background:var(--ok); border-color:var(--ok); color:#fff; font-size:15px;}
+  .addbtn small{font:600 10.5px/1.1 var(--fm);}
+  ul.list li.outrow{background:rgba(198,40,40,.08); box-shadow:inset 4px 0 0 #c62828; padding-left:9px; padding-right:4px; border-radius:6px;}
+  ul.list li.outrow .thumb{opacity:.55;}
+  ul.list li.outrow .li-name{color:#9b1c1c;}
   button.morereq{appearance:none; border:0; background:none; color:var(--accent); font:600 13px var(--fs); padding:10px 2px 2px; cursor:pointer;}
   .donebox{background:var(--ok-soft); color:var(--ok); border-radius:12px; padding:14px 16px; text-align:center;}
   .donebox .itemname, .donebox div{color:inherit;}
@@ -327,7 +344,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.34</span>
+      <span class="ver" id="appVer">v1.35</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -349,7 +366,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.34 · อัปเดต 06/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.35 · อัปเดต 06/10/2026</div>
     </div>
   </header>
 
@@ -570,8 +587,8 @@
     <button role="tab" id="t-low" aria-selected="false">ต้องเติม<span class="badge" id="tabBadge" hidden>0</span></button>
     <button role="tab" id="t-add" aria-selected="false">เพิ่มของ</button>
     <button role="tab" id="t-inbox" aria-selected="false">ใบเบิก<span class="badge" id="inboxBadge" hidden>0</span></button>
-    <button role="tab" id="t-req" aria-selected="false" class="off">ขอเบิก<span class="badge" id="cartBadge" hidden>0</span></button>
     <button role="tab" id="t-list" aria-selected="false" class="off">รายการ<span class="tn" id="listN"></span></button>
+    <button role="tab" id="t-req" aria-selected="false" class="off">ขอเบิก<span class="badge" id="cartBadge" hidden>0</span></button>
     <button role="tab" id="t-mine" aria-selected="false" class="off">ใบของแผนก</button>
   </nav>
 </div>
@@ -865,6 +882,7 @@
     TABS.forEach(function(p){ el(p[0]).classList.toggle('off', MODE_TABS.indexOf(p[0]) < 0); });
     nav.style.gridTemplateColumns = 'repeat(' + MODE_TABS.length + ',1fr)';
     if (DEPT_MODE){
+      nav.classList.add('dept'); nav.style.gridTemplateColumns = '0.72fr 1.14fr 1.14fr';   // v1.35 รายการ ปุ่มเล็กซ้ายสุด
       el('appTitle').textContent = 'ขอเบิกวัสดุสิ้นเปลือง';
       document.title = 'ขอเบิกของ โรงงาน 1';
     }
@@ -1978,10 +1996,10 @@
     lst.hidden = !q; el('d_qhint').hidden = !!q;
     lst.innerHTML = rows.map(function(it){
       var n = onHand(it), inCart = cart.some(function(c){ return c.sku === it.sku; });
-      return '<li class="tap" data-add="' + esc(it.sku) + '"><div class="li-top">' + thumb(it) + '<div class="grow">'
-        + '<div class="li-name"><span class="skutag">' + esc(it.sku) + '</span> ' + esc(it.name) + '</div>'
+      return '<li class="tap' + (n > 0 ? '' : ' outrow') + '" data-add="' + esc(it.sku) + '"><div class="li-top"><span class="skucol">' + esc(it.sku) + '</span>' + thumb(it) + '<div class="grow">'
+        + '<div class="li-name">' + esc(it.name) + '</div>'
         + (n > 0 ? '<div class="stk ok">📦 มีของ ' + fmt(n) + ' ' + esc(it.unit || '') + '</div>' : '<div class="stk out">⛔ ของหมด</div><div class="li-meta">ขอได้ — ใบจะค้างไว้จนของเข้า</div>')
-        + '</div><span class="chip ' + (inCart ? 'ok' : 'na') + '">' + (inCart ? 'อยู่ในใบ' : '+ เพิ่ม') + '</span></div></li>';
+        + '</div><span class="addbtn' + (inCart ? ' in' : '') + '" aria-label="' + (inCart ? 'อยู่ในใบแล้ว' : 'เพิ่ม') + '">' + (inCart ? '✓' : '+') + '</span></div></li>';
     }).join('') || '<li class="empty">ไม่พบ — ลองคำอื่น หรือเขียนในหมายเหตุ</li>';
     el('d_list').querySelectorAll('[data-add]').forEach(function(li){
       li.addEventListener('click', function(){
@@ -2846,10 +2864,10 @@
     el('l_sortrow').querySelectorAll('[data-lsort]').forEach(function(b){ b.className = 'chip tapchip ' + (b.getAttribute('data-lsort') === srt ? 'ok' : 'na'); });
     el('l_list').innerHTML = rows.map(function(it){
       var n = onHand(it), c = cart.filter(function(x){ return x.sku === it.sku; })[0];
-      return '<li class="tap" data-ladd="' + esc(it.sku) + '"><div class="li-top">' + thumb(it) + '<div class="grow">'
-        + '<div class="li-name"><span class="skutag">' + esc(it.sku) + '</span> ' + esc(it.name) + '</div>'
+      return '<li class="tap' + (n > 0 ? '' : ' outrow') + '" data-ladd="' + esc(it.sku) + '"><div class="li-top"><span class="skucol">' + esc(it.sku) + '</span>' + thumb(it) + '<div class="grow">'
+        + '<div class="li-name">' + esc(it.name) + '</div>'
         + (n > 0 ? '<div class="stk ok">📦 มีของ ' + fmt(n) + ' ' + esc(it.unit || '') + '</div>' : '<div class="stk out">⛔ ของหมด</div>')
-        + '</div><span class="chip ' + (c ? 'ok' : 'na') + '">' + (c ? 'ในใบ ×' + fmt(c.qty) : '+ เพิ่ม') + '</span></div></li>';
+        + '</div><span class="addbtn' + (c ? ' in' : '') + '" aria-label="' + (c ? 'อยู่ในใบ ' + fmt(c.qty) : 'เพิ่ม') + '">' + (c ? '✓<small>×' + fmt(c.qty) + '</small>' : '+') + '</span></div></li>';
     }).join('') || '<li class="empty">ยังไม่มีรายการ</li>';
     el('l_list').querySelectorAll('[data-ladd]').forEach(function(li){ li.addEventListener('click', function(){
       var it = getSku(li.getAttribute('data-ladd')); if (!it) return;
