@@ -198,6 +198,14 @@
   .hero{margin:-4px 0 10px; border-radius:10px; overflow:hidden; background:var(--surface-2); border:1px solid var(--line);}
   .hero img{display:block; width:100%; max-height:260px; object-fit:contain; cursor:zoom-in;}
   .hero.none{height:74px; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:13px; border-style:dashed;}
+  .angs{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:0 0 8px;}
+  .ang{display:flex; flex-direction:column; align-items:center; gap:4px; padding:6px 4px; min-height:0; border-radius:10px; border:1.5px solid var(--line); background:var(--surface); color:var(--ink); font:inherit; cursor:pointer;}
+  .ang img{width:100%; height:56px; object-fit:contain; border-radius:6px; background:var(--surface-2);}
+  .ang span{height:56px; display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--muted);}
+  .ang b{font-size:12px; font-weight:600;}
+  .ang.empty{border-style:dashed; color:var(--muted);}
+  .ang.on{border-color:var(--accent); background:var(--accent-soft); box-shadow:0 0 0 1px var(--accent) inset;}
+  .walkangs{margin-top:12px;}
   #lb{position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.88); display:flex; align-items:center; justify-content:center; padding:16px;}
   #lb[hidden]{display:none;}
   #lb{flex-direction:column; gap:10px;}
@@ -348,7 +356,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.37</span>
+      <span class="ver" id="appVer">v1.38</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -370,7 +378,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.37 · อัปเดต 06/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.38 · อัปเดต 07/10/2026</div>
     </div>
   </header>
 
@@ -1069,34 +1077,61 @@
 
   /* ---------- v1.7 รูปของ ---------- */
   var imgBusy = null, imgDelArm = null;
+  // v1.38 รูป 3 มุม: หน้า = รูปหลักเดิม (it.img) · บน (it.imgT) · หลัง (it.imgB)
+  var ANG = [['top','บน','imgT'], ['front','หน้า','img'], ['back','หลัง','imgB']];
+  var imgSlot = {};                                     // sku → มุมที่เลือกดู/ถ่ายอยู่
+  function angOf(s){ for (var i = 0; i < ANG.length; i++) if (ANG[i][0] === s) return ANG[i]; return ANG[1]; }
+  function angId(it, s){ return (it && it[angOf(s)[2]]) || ''; }
+  function angMissing(it){ return ANG.filter(function(a){ return !it[a[2]]; }).map(function(a){ return a[0]; }); }
+  function curAng(it, edit){
+    var s = imgSlot[it.sku]; if (s) return s;
+    if (it.img || edit) return 'front';
+    return it.imgT ? 'top' : (it.imgB ? 'back' : 'front');
+  }
   function photoBlock(it, canEdit){
-    var busy = imgBusy === it.sku;
-    var h = it.img
-      ? '<div class="hero"><img id="heroImg" alt="รูป ' + esc(it.name) + '" src="' + imgUrl(it.img, 800) + '"></div>'
-      : (canEdit ? '<div class="hero none">ยังไม่มีรูป</div>' : '');
-    if (canEdit && !DEPT_MODE){
+    var edit = canEdit && !DEPT_MODE;
+    var busy = imgBusy === it.sku, cur = curAng(it, edit), id = angId(it, cur), lab = angOf(cur)[1];
+    var have = ANG.length - angMissing(it).length;
+    var h = id
+      ? '<div class="hero"><img id="heroImg" alt="รูป ' + esc(it.name) + ' ด้าน' + lab + '" src="' + imgUrl(id, 800) + '"></div>'
+      : (edit ? '<div class="hero none">ยังไม่มีรูปด้าน' + lab + '</div>' : '');
+    if (edit || have > 1){
+      h += '<div class="angs">' + ANG.map(function(a){
+        var fid = it[a[2]];
+        if (!edit && !fid) return '';
+        return '<button type="button" class="ang' + (a[0] === cur ? ' on' : '') + (fid ? '' : ' empty') + '" data-ang="' + a[0] + '">'
+          + (fid ? '<img alt="" src="' + imgUrl(fid, 120) + '">' : '<span>📷</span>')
+          + '<b>' + a[1] + (fid || !edit ? '' : ' · ยังไม่มี') + '</b></button>';
+      }).join('') + '</div>';
+    }
+    if (edit){
       h += '<div class="row" style="gap:8px; margin:8px 0 12px">'
         +  '<button type="button" class="ghost" id="imgTake" style="flex:2"' + (busy ? ' disabled' : '') + '>'
-        +  (busy ? 'กำลังอัปโหลดรูป…' : (it.img ? '📷 เปลี่ยนรูป' : '📷 ถ่ายรูป / เลือกรูป')) + '</button>'
-        +  (it.img && !busy ? '<button type="button" class="ghost" id="imgDel" style="flex:1; color:var(--warn)">'
-        +     (imgDelArm === it.sku ? 'แตะอีกครั้ง ลบรูป' : 'ลบรูป') + '</button>' : '')
+        +  (busy ? 'กำลังอัปโหลดรูป…' : (id ? '📷 เปลี่ยนรูปด้าน' + lab : '📷 ถ่ายรูปด้าน' + lab)) + '</button>'
+        +  (id && !busy ? '<button type="button" class="ghost" id="imgDel" style="flex:1; color:var(--warn)">'
+        +     (imgDelArm === it.sku + cur ? 'แตะอีกครั้ง ลบ' : 'ลบรูปนี้') + '</button>' : '')
         +  '</div>';
     }
     return h;
   }
   function bindPhoto(it){
+    var edit = !DEPT_MODE, cur = curAng(it, edit);
     var hi = el('heroImg');
-    if (hi) hi.addEventListener('click', function(){ openLightbox(imgUrl(it.img, 1600)); });
+    if (hi) hi.addEventListener('click', function(){ openLightbox(imgUrl(angId(it, cur), 1600), it.sku + ' · ' + it.name + ' · ด้าน' + angOf(cur)[1]); });
+    el('hit').querySelectorAll('[data-ang]').forEach(function(b){ b.addEventListener('click', function(){
+      imgSlot[it.sku] = b.getAttribute('data-ang'); imgDelArm = null; renderHit();
+    }); });
     var t = el('imgTake');
     if (t) t.addEventListener('click', function(){
       if (!API){ toast('ต้องต่อ Google Sheet ก่อน', true); return; }
       if (nativeStop || scanner) stopCam();          // ปล่อยกล้องให้แอพถ่ายรูปใช้
-      var f = el('imgFile'); f.value = ''; f.dataset.sku = it.sku; f.click();
+      var f = el('imgFile'); f.value = ''; f.dataset.sku = it.sku; f.dataset.slot = cur; f.click();
     });
     var d = el('imgDel');
     if (d) d.addEventListener('click', function(){
-      if (imgDelArm !== it.sku){ imgDelArm = it.sku; renderHit(); setTimeout(function(){ if (imgDelArm === it.sku){ imgDelArm = null; renderHit(); } }, 5000); return; }
-      imgDelArm = null; uploadImg(it.sku, '');
+      var k = it.sku + cur;
+      if (imgDelArm !== k){ imgDelArm = k; renderHit(); setTimeout(function(){ if (imgDelArm === k){ imgDelArm = null; renderHit(); } }, 5000); return; }
+      imgDelArm = null; uploadImg(it.sku, '', cur);
     });
   }
   function shrink(file){
@@ -1113,20 +1148,23 @@
       im.src = url;
     });
   }
-  function uploadImg(sku, data){
+  function uploadImg(sku, data, slot){
+    slot = slot || 'front';
     imgBusy = sku; renderHit();
-    return api({action:'setimg', sku: sku, data: data, who: pcMode ? 'PC' : (who || 'PC')}).then(function(j){
+    return api({action:'setimg', sku: sku, data: data, slot: slot, who: pcMode ? 'PC' : (who || 'PC')}).then(function(j){
       imgBusy = null; takeServer(j);
-      toast(data ? 'บันทึกรูปแล้ว' : 'ลบรูปแล้ว');
+      var it = getSku(sku), miss = it ? angMissing(it) : [];
+      if (data && miss.length){ imgSlot[sku] = miss[0]; renderHit(); }   // ถ่ายเสร็จ → เลื่อนไปมุมที่ยังขาดเลย
+      toast(data ? 'บันทึกรูปด้าน' + angOf(slot)[1] + 'แล้ว' + (miss.length ? ' · ต่อไป ด้าน' + angOf(miss[0])[1] : ' · ครบ 3 มุม 👍') : 'ลบรูปด้าน' + angOf(slot)[1] + 'แล้ว');
     })['catch'](function(e){
       imgBusy = null; renderHit();
       toast('อัปโหลดไม่สำเร็จ — ' + ((e && e.message) || 'เช็คเน็ต'), true);
     });
   }
   el('imgFile').addEventListener('change', function(){
-    var f = this.files && this.files[0], sku = this.dataset.sku;
+    var f = this.files && this.files[0], sku = this.dataset.sku, slot = this.dataset.slot || 'front';
     if (!f || !sku) return;
-    shrink(f).then(function(d){ return uploadImg(sku, d); })['catch'](function(e){ toast(e.message, true); });
+    shrink(f).then(function(d){ return uploadImg(sku, d, slot); })['catch'](function(e){ toast(e.message, true); });
   });
   function openLightbox(src, cap, low){
     var lb = el('lb'), im = el('lbImg');
@@ -2509,7 +2547,7 @@
   function walkList(opt){
     opt = opt || {};
     var used = usedCount();
-    var rows = ITEMS.filter(function(it){ return !it.img; });
+    var rows = ITEMS.filter(function(it){ return opt.skus ? !it.img : angMissing(it).length; });
     if (opt.skus) rows = rows.filter(function(it){ return opt.skus.indexOf(it.sku) >= 0; });
     else if (opt.inStock) rows = rows.filter(function(it){ return onHand(it) > 0; });
     rows.sort(opt.order === 'sku' ? function(a, b){ return a.sku < b.sku ? -1 : 1; }
@@ -2519,7 +2557,7 @@
   function walkOpen(opt){
     if (!API){ toast('ต้องต่อ Google Sheet ก่อน', true); return; }
     opt = opt || {inStock: true, order: 'used'};
-    walk = {opt: opt, list: walkList(opt), i: 0, done: 0, skipped: 0};
+    walk = {opt: opt, list: walkList(opt), i: 0, done: 0, skipped: 0, got: {}};
     if (nativeStop || scanner) stopCam();
     el('walk').hidden = false; document.body.style.overflow = 'hidden';
     renderWalk();
@@ -2529,7 +2567,7 @@
     if (!walk) return;
     var box = el('walkBody'), sku = walk.list[walk.i], it = sku ? getSku(sku) : null;
     var used = usedCount();
-    el('walkHead').textContent = walk.opt.skus ? 'ถ่ายรูปของที่เพิ่งรับเข้า' : 'เดินถ่ายรูปของที่ยังไม่มีรูป';
+    el('walkHead').textContent = walk.opt.skus ? 'ถ่ายรูปของที่เพิ่งรับเข้า' : 'เดินถ่ายรูป 3 มุม (บน · หน้า · หลัง)';
     el('walkProg').textContent = it ? (walk.i + 1) + ' / ' + walk.list.length + (walkBusy ? ' · กำลังส่ง ' + walkBusy + ' รูป…' : '') : '';
     if (!it){
       box.innerHTML = '<div class="walkdone">🎉 ครบแล้ว</div><div class="note" style="text-align:center">ถ่ายไป ' + walk.done + ' รูป · ข้าม ' + walk.skipped + ' รายการ'
@@ -2543,13 +2581,15 @@
       + '<div class="note" style="text-align:center; margin:6px 0 0">' + (it.pack ? esc(it.pack) + ' · ' : '') + 'คงเหลือ ' + fmt(n) + ' ' + esc(it.unit || '')
       + (used[it.sku] ? ' · เบิก ' + used[it.sku] + ' ครั้ง' : '') + (it.maker ? ' · ' + esc(it.maker) : '') + '</div>'
       + (n <= 0 ? '<div class="outnote" style="text-align:center">ของหมด — ถ่ายตอนของเข้า หรือถ่ายที่ไลน์ที่ใช้อยู่</div>' : '')
-      + '<button class="primary walkshot" id="walkShot">📷 ถ่ายรูปชิ้นนี้</button>'
+      + walkAngs(it)
       + '<div class="row" style="gap:8px; margin-top:10px"><button class="ghost" id="walkBack" style="flex:1"' + (walk.i ? '' : ' disabled') + '>◀ ก่อนหน้า</button>'
       + '<button class="ghost" id="walkSkip" style="flex:1">ข้าม ▶</button></div>'
       + (walk.opt.skus ? '' : '<div class="row" style="gap:8px; margin-top:14px; align-items:center; justify-content:center; flex-wrap:wrap">'
       + '<label class="li-meta" style="display:flex; gap:6px; align-items:center"><input type="checkbox" id="walkStock"' + (walk.opt.inStock ? ' checked' : '') + ' style="width:auto; min-height:0"> เฉพาะของที่มีในคลัง</label>'
       + '<select id="walkOrder" style="width:auto"><option value="used">เบิกบ่อยก่อน</option><option value="sku"' + (walk.opt.order === 'sku' ? ' selected' : '') + '>เรียงตามรหัส</option></select></div>');
-    el('walkShot').addEventListener('click', function(){ var f = el('walkFile'); f.value = ''; f.dataset.sku = it.sku; f.click(); });
+    box.querySelectorAll('[data-wang]').forEach(function(b){ b.addEventListener('click', function(){
+      var f = el('walkFile'); f.value = ''; f.dataset.sku = it.sku; f.dataset.slot = b.getAttribute('data-wang'); f.click();
+    }); });
     el('walkSkip').addEventListener('click', function(){ walk.skipped++; walk.i++; renderWalk(); });
     el('walkBack').addEventListener('click', function(){ if (walk.i > 0){ walk.i--; renderWalk(); } });
     var ws = el('walkStock'), wo = el('walkOrder');
@@ -2557,12 +2597,30 @@
     if (ws) ws.addEventListener('change', reopt);
     if (wo) wo.addEventListener('change', reopt);
   }
+  // v1.38 มุมที่ถ่ายแล้ว = มีในทะเบียน หรือเพิ่งถ่ายในรอบนี้ (ยังส่งไม่เสร็จก็นับ)
+  function walkHas(it, s){ return !!(it[angOf(s)[2]] || (walk && walk.got[it.sku + s])); }
+  function walkNext(it){ for (var i = 0; i < ANG.length; i++){ var s = ['front','top','back'][i]; if (!walkHas(it, s)) return s; } return null; }
+  function walkAngs(it){
+    var nx = walkNext(it);
+    return (nx ? '<button class="primary walkshot" data-wang="' + nx + '">📷 ถ่ายด้าน' + angOf(nx)[1] + '</button>'
+               : '<div class="walkdone" style="font-size:18px">✓ ครบ 3 มุม</div>')
+      + '<div class="angs walkangs">' + ANG.map(function(a){
+        var ok = walkHas(it, a[0]), fid = it[a[2]];
+        return '<button type="button" class="ang' + (ok ? '' : ' empty') + (a[0] === nx ? ' on' : '') + '" data-wang="' + a[0] + '">'
+          + (fid ? '<img alt="" src="' + imgUrl(fid, 120) + '">' : '<span>' + (ok ? '✓' : '📷') + '</span>')
+          + '<b>' + a[1] + (ok ? ' ✓' : '') + '</b></button>';
+      }).join('') + '</div>'
+      + '<div class="note" style="text-align:center; margin-top:4px">แตะมุมที่มีแล้วเพื่อถ่ายใหม่</div>';
+  }
   el('walkFile').addEventListener('change', function(){
-    var f = this.files && this.files[0], sku = this.dataset.sku;
+    var f = this.files && this.files[0], sku = this.dataset.sku, slot = this.dataset.slot || 'front';
     if (!f || !sku || !walk) return;
-    walk.done++; walk.i++; walkBusy++; renderWalk();          // ไปชิ้นถัดไปทันที รูปส่งเบื้องหลัง
+    walk.done++; walk.got[sku + slot] = 1; walkBusy++;
+    var it = getSku(sku);
+    if (walk.opt.skus || !it || !walkNext(it)) walk.i++;     // ครบ 3 มุม (หรือโหมดของเพิ่งรับ) → ไปชิ้นถัดไป รูปส่งเบื้องหลัง
+    renderWalk();
     walkQ = walkQ.then(function(){ return shrink(f); }).then(function(d){
-      return api({action:'setimg', sku: sku, data: d, who: 'PC'});
+      return api({action:'setimg', sku: sku, data: d, slot: slot, who: 'PC'});
     }).then(function(j){ walkBusy--; takeServer(j); if (walk) renderWalk(); })
       ['catch'](function(e){ walkBusy--; toast('ส่งรูป ' + sku + ' ไม่สำเร็จ — ' + ((e && e.message) || 'เช็คเน็ต'), true); if (walk) renderWalk(); });
   });
@@ -2573,9 +2631,10 @@
   function renderWalkCard(){
     var c = el('walkCard'); if (!c) return;
     c.hidden = DEPT_MODE;
-    var all = ITEMS.filter(function(it){ return !it.img; }).length;
-    var inStock = ITEMS.filter(function(it){ return !it.img && onHand(it) > 0; }).length;
-    el('walkCount').textContent = all ? 'ยังไม่มีรูป ' + all + ' รายการ (มีของในคลัง ' + inStock + ')' : 'ของทุกชิ้นมีรูปแล้ว 👍';
+    var all = ITEMS.filter(function(it){ return angMissing(it).length; }).length;
+    var none = ITEMS.filter(function(it){ return angMissing(it).length === ANG.length; }).length;
+    var inStock = ITEMS.filter(function(it){ return angMissing(it).length && onHand(it) > 0; }).length;
+    el('walkCount').textContent = all ? 'รูปยังไม่ครบ 3 มุม ' + all + ' รายการ (มีของในคลัง ' + inStock + (none ? ' · ไม่มีรูปเลย ' + none : '') + ')' : 'ของทุกชิ้นมีรูปครบ 3 มุมแล้ว 👍';
     el('walkGo').hidden = !all;
   }
   el('walkGo').addEventListener('click', function(){ walkOpen({inStock: true, order: 'used'}); });
