@@ -45,7 +45,7 @@ ol.res img{width:64px;height:64px;object-fit:cover;border-radius:8px;background:
 </head>
 <body>
 <header>
-  <span class="ver">ทดลอง v0.1</span>
+  <span class="ver">ทดลอง v0.2</span>
   <h1>📷 ทดลอง AI จับคู่รูป</h1>
   <div class="sub">ถ่ายรูปของ → AI เทียบกับรูปในทะเบียน → เสนอ 5 ตัวที่หน้าตาใกล้สุด · หน้านี้แค่ทดลอง ไม่บันทึกการเบิก</div>
 </header>
@@ -83,7 +83,7 @@ ol.res img{width:64px;height:64px;object-fit:cover;border-radius:8px;background:
   <div class="card note">
     <b>ข้อจำกัดที่รู้แล้ว</b><br>
     • ของที่หน้าตาเหมือนกันแต่ขนาดต่าง (เช่น COLLET 13 / 16 มม.) AI แยกไม่ออก ต้องดูรหัสเอง<br>
-    • ของที่ยังไม่มีรูปในทะเบียน AI จะไม่รู้จัก (ตอนนี้ <span id="noImg">–</span> ตัว)<br>
+    • ยิ่งมีรูปครบ 3 มุม (บน · หน้า · หลัง) ยิ่งแม่น · ของที่ยังไม่มีรูปเลย AI จะไม่รู้จัก (ตอนนี้ <span id="noImg">–</span> ตัว)<br>
     • ทำงานในมือถือทั้งหมด ฟรี รูปไม่ถูกส่งไปไหน
   </div>
 </main>
@@ -140,17 +140,19 @@ ol.res img{width:64px;height:64px;object-fit:cover;border-radius:8px;background:
 
   function buildRefs(items){
     var cache = lsGet(K_EMB, {});
-    var withImg = items.filter(function(it){ return it.img && it.hide !== true; });
-    el('noImg').textContent = items.length - withImg.length;
+    // v0.2: ใช้รูปทุกมุม (หน้า img · บน imgT · หลัง imgB) → 1 ของมีได้หลายรูปอ้างอิง
+    var withImg = [];
+    items.forEach(function(it){ ['img','imgT','imgB'].forEach(function(k){ if (it[k]) withImg.push({it: it, id: it[k], ang: k}); }); });
+    el('noImg').textContent = items.filter(function(it){ return !it.img && !it.imgT && !it.imgB; }).length;
     var done = 0, out = [], todo = withImg.slice();
     function next(){
       if (!todo.length) return Promise.resolve();
-      var it = todo.shift();
+      var r = todo.shift(), it = r.it, id = r.id;
       var p;
-      if (cache[it.img]) { out.push({it: it, v: unpack(cache[it.img])}); p = Promise.resolve(); }
-      else p = loadImg(img(it.img, 400)).then(function(im){
+      if (cache[id]) { out.push({it: it, id: id, v: unpack(cache[id])}); p = Promise.resolve(); }
+      else p = loadImg(img(id, 400)).then(function(im){
         var e = embed(im); var a = e.dataSync(); e.dispose();
-        cache[it.img] = pack(a); out.push({it: it, v: Float32Array.from(a)});
+        cache[id] = pack(a); out.push({it: it, id: id, v: Float32Array.from(a)});
       }).catch(function(){});
       return p.then(function(){ done++; prog('กำลังให้ AI จำรูป ' + done + ' / ' + withImg.length, 0.15 + 0.85 * done / withImg.length); return next(); });
     }
@@ -168,15 +170,20 @@ ol.res img{width:64px;height:64px;object-fit:cover;border-radius:8px;background:
     var q = embed(im);
     var sc = tf.tidy(function(){ return REFM.matMul(q.reshape([-1, 1])).squeeze(); });
     var s = sc.dataSync(); q.dispose(); sc.dispose();
-    var idx = Array.from(s).map(function(v, i){ return [v, i]; }).sort(function(a, b){ return b[0] - a[0]; }).slice(0, 5);
-    return idx.map(function(x){ return {it: REF[x[1]].it, score: x[0]}; });
+    var idx = Array.from(s).map(function(v, i){ return [v, i]; }).sort(function(a, b){ return b[0] - a[0]; });
+    var seen = {}, out = [];                          // 1 ของ = เอามุมที่เหมือนที่สุด
+    for (var i = 0; i < idx.length && out.length < 5; i++){
+      var R = REF[idx[i][1]]; if (seen[R.it.sku]) continue; seen[R.it.sku] = 1;
+      out.push({it: R.it, id: R.id, score: idx[i][0]});
+    }
+    return out;
   }
 
   function render(list){
     el('res').innerHTML = list.map(function(r, i){
       var pct = Math.max(0, Math.round(r.score * 100));
       return '<li><div class="rk">' + (i + 1) + '</div>'
-        + '<img alt="" src="' + img(r.it.img, 160) + '">'
+        + '<img alt="" src="' + img(r.id, 160) + '">'
         + '<div class="nm"><b>' + esc(r.it.sku) + '</b><span>' + esc(r.it.name) + '</span><div class="sc">ความเหมือน ' + pct + '%</div></div>'
         + '<button class="pick" data-i="' + i + '">ตัวนี้</button></li>';
     }).join('');
@@ -222,7 +229,8 @@ ol.res img{width:64px;height:64px;object-fit:cover;border-radius:8px;background:
   getMaster().then(function(items){
     return mobilenet.load({version: 2, alpha: 1.0}).then(function(m){ model = m; prog('AI พร้อม · กำลังจำรูป…', 0.15); return buildRefs(items); });
   }).then(function(){
-    prog('✓ พร้อมใช้ · AI จำรูปได้ ' + REF.length + ' ตัว', 1);
+    var nk = {}; REF.forEach(function(r){ nk[r.it.sku] = 1; });
+    prog('✓ พร้อมใช้ · AI จำของได้ ' + Object.keys(nk).length + ' ตัว (' + REF.length + ' รูป)', 1);
     el('shotBtn').style.opacity = 1;
     setTimeout(function(){ el('loadCard').style.display = 'none'; }, 1500);
   }).catch(function(e){
