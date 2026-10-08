@@ -149,6 +149,16 @@
   /* v1.34 รหัสขึ้นหน้าชื่อ · จำนวนที่มีตัวใหญ่เด่น (เล็กกว่าเตือนของหมดนิดหน่อย) */
   .skutag{display:inline-block; font:700 12.5px/1.5 var(--fm); color:var(--accent); background:var(--accent-soft); padding:0 6px; border-radius:5px; margin-right:2px; vertical-align:1px;}
   .stk{margin-top:5px; font:700 15px/1.3 var(--fs);}
+  /* v1.40 บรรทัดตัวเลข */
+  .nums{margin-top:4px; font:500 14px/1.6 var(--fs); color:var(--muted); display:flex; flex-wrap:wrap; align-items:baseline; column-gap:10px;}
+  .nums .nl{white-space:nowrap;}
+  .nums .nv{font:800 18px/1 var(--fs); color:var(--ink); margin:0 1px;}
+  .nums .nv.low, .nums .nv.out{color:#d92d20;}
+  .nums .nv.ok{color:var(--ok);}
+  .nums .nv.buy{color:var(--accent);}
+  .nums .nu{font-size:13px;}
+  .nums .nmin{font-size:13px;}
+  .li-sub{font:500 12.5px/1.45 var(--fs); color:var(--muted); margin-top:2px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
   .stk.ok{color:var(--ok);}
   .stk.out{color:#c62828; font-size:16.5px;}
   /* v1.35 แท็บมีกรอบ + สีตอนเลือก · คอลัมน์รหัสซ้ายสุด · ของหมดทั้งแถวเด่น */
@@ -378,7 +388,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.39</span>
+      <span class="ver" id="appVer">v1.40</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -400,7 +410,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.39 · อัปเดต 08/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.40 · อัปเดต 08/10/2026</div>
     </div>
   </header>
 
@@ -1603,15 +1613,26 @@
     if (!q && RETIRED.length) el('qcount').textContent += ' · เลิกใช้ ' + RETIRED.length + ' (พิมพ์ค้นเพื่อดู)';
     bindRows('findList');
   }
+  // v1.40 บรรทัดตัวเลข (ต้องเติม + ค้นหาของ ใช้แบบเดียวกัน): ตัวเลขสำคัญตัวหนา+สี · ราคา/ร้านแยกบรรทัดล่างตัวเล็ก
+  function numLine(it, need){
+    var n = onHand(it), u = it.unit ? ' <span class="nu">' + esc(it.unit) + '</span>' : '';
+    var k = n <= 0 ? 'out' : (status(it).k === 'warn' ? 'low' : 'ok');
+    return '<div class="nums"><span class="skutag">' + esc(it.sku) + '</span> '
+      + '<span class="nl">คงเหลือ <b class="nv ' + k + '">' + fmt(n) + '</b>' + (need != null && need > 0 ? '' : u) + ' <span class="nmin">/ MIN ' + fmtMM(it.mn) + '</span></span>'
+      + (need != null && need > 0 ? '<span class="nl">ควรสั่ง <b class="nv buy">' + fmt(need) + '</b>' + u + '</span>' : '')
+      + '</div>';
+  }
+  function subLine(parts){ parts = parts.filter(Boolean); return parts.length ? '<div class="li-sub">' + parts.join(' · ') + '</div>' : ''; }
   function row(it){
     var st = status(it);
     return '<li class="tap" data-sku="' + esc(it.sku) + '"><div class="li-top">' + thumb(it) + '<div class="grow">'
       + '<div class="li-name">' + esc(it.name) + '</div>'
-      + '<div class="li-meta">' + esc(it.sku) + ' · คงเหลือ ' + fmt(onHand(it))
-      + (it.unit ? ' ' + esc(it.unit) : '') + ' · MIN ' + fmtMM(it.mn)
-      + (isHidden(it) ? ' · 🙈ซ่อนจากแผนก' : '')
-      + (['all','out','hide'].indexOf(el('qfilter').value) < 0 && missingOf(it).length ? ' · <span class="over">ขาด ' + missingOf(it).map(function(x){ return x[1]; }).join(', ') + '</span>' : '')
-      + (pinOk && stockPrice(it) != null ? ' · <b>' + baht(Math.max(0, onHand(it)) * stockPrice(it)) + '</b>' + (unverified(it) ? ' <span class="over">⚠ยังไม่ยืนยัน</span>' : '') : '') + '</div>'
+      + numLine(it, null)
+      + subLine([
+          isHidden(it) ? '🙈 ซ่อนจากแผนก' : '',
+          ['all','out','hide'].indexOf(el('qfilter').value) < 0 && missingOf(it).length ? '<span class="over">ขาด ' + missingOf(it).map(function(x){ return x[1]; }).join(', ') + '</span>' : '',
+          pinOk && stockPrice(it) != null ? 'มูลค่า ' + baht(Math.max(0, onHand(it)) * stockPrice(it)) + (unverified(it) ? ' <span class="over">⚠ยังไม่ยืนยัน</span>' : '') : ''
+        ])
       + '</div>' + (isOut(it) ? outChip() : '<span class="chip ' + st.k + '">' + st.t + '</span>') + '</div></li>';
   }
   function bindRows(id){
@@ -1647,9 +1668,8 @@
       var need = (+it.mx > 0) ? Math.max(0, (+it.mx) - onHand(it)) : null;
       return '<li class="tap" data-sku="' + esc(it.sku) + '"><div class="li-top">' + thumb(it) + '<div class="grow">'
         + '<div class="li-name">' + esc(it.name) + '</div>'
-        + '<div class="li-meta">' + esc(it.sku) + ' · คงเหลือ ' + fmt(onHand(it)) + ' / MIN ' + fmtMM(it.mn)
-        + (need != null ? ' · ควรสั่ง ' + fmt(need) : '') + (it.unit ? ' ' + esc(it.unit) : '')
-        + (pinOk && need && (cheapest(it) || unitPrice(it) != null) ? ' · ≈ ' + baht(need / pf(it) * (cheapest(it) ? cheapest(it).price : unitPrice(it))) + (cheapest(it) ? ' (' + esc(cheapest(it).shop) + ')' : '') : '') + '</div>'
+        + numLine(it, need)
+        + subLine([pinOk && need && (cheapest(it) || unitPrice(it) != null) ? '≈ ' + baht(need / pf(it) * (cheapest(it) ? cheapest(it).price : unitPrice(it))) + (cheapest(it) ? ' · 🏪 ' + esc(cheapest(it).shop) : '') : ''])
         + '</div><span class="chip warn">ต้องเติม</span></div></li>';
     }).join('') || '<li class="empty">ไม่มีของที่ถึงจุดต้องเติม</li>';
     bindRows('lowList');
