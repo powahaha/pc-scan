@@ -180,6 +180,8 @@
     color:var(--ink); font-size:12px; line-height:1.15; white-space:nowrap;}
   nav.pc button::before{font-size:19px; line-height:1;}
   nav.pc button.off{display:none;}
+  .masterlink{display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--ink); font-size:20px; border:1.5px solid var(--accent);}
+  .masterlink b{font-size:15px;} .masterlink .go{margin-left:auto; color:var(--accent); font-size:24px;}
   nav.pc #t-scan::before{content:'📷';} nav.pc #t-find::before{content:'🔍';} nav.pc #t-low::before{content:'🛒';}
   nav.pc #t-add::before{content:'➕';} nav.pc #t-inbox::before{content:'📋';}
   nav.pc button[aria-selected="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink); box-shadow:0 2px 6px rgba(0,0,0,.18);}
@@ -421,7 +423,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.46</span>
+      <span class="ver" id="appVer">v1.47</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -443,7 +445,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.46 · อัปเดต 08/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.47 · อัปเดต 08/10/2026</div>
     </div>
   </header>
 
@@ -484,6 +486,7 @@
 
     <!-- ── แท็บ ค้นหา ── -->
     <section id="v-find" hidden>
+      <a class="card masterlink" href="master.html">📋 <span><b>ทะเบียนหลัก (Item Master)</b><span class="note" style="display:block; margin:2px 0 0">แก้ชื่อ หน่วย MIN/MAX ผู้ขาย จุดเก็บ ราคา หลายรายการเป็นตาราง · เหมาะกับคอม</span></span><span class="go">›</span></a>
       <div class="card" id="cntCard">
         <b>🔢 เดินนับสต็อก (นับใหม่ทั้งคลัง)</b>
         <div id="cntBody"></div>
