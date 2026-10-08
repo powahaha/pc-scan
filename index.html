@@ -409,7 +409,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.44</span>
+      <span class="ver" id="appVer">v1.45</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -431,7 +431,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.44 · อัปเดต 08/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.45 · อัปเดต 08/10/2026</div>
     </div>
   </header>
 
@@ -859,8 +859,8 @@
     return n < +it.mn ? {k:'warn', t:'ต้องเติม'} : (n === +it.mn ? {k:'near', t:'ถึง MIN'} : {k:'ok', t:'ปกติ'});
   }
   function isOut(it){ return !!it && onHand(it) <= 0; }
-  // v1.44 สียอดคงเหลือ ใช้กติกาเดียวกันทุกแท็บ: หมด/ต่ำกว่า MIN = แดง · ถึง MIN พอดี = เหลือง · ปกติ = เขียว
-  function stockCls(it){ var n = onHand(it); if (n <= 0) return 'out'; var k = status(it).k; return k === 'warn' ? 'low' : (k === 'near' ? 'near' : 'ok'); }
+  // v1.45 ตัวเลขคงเหลือ = เขียวทุกแท็บ · ของหมด (0 หรือติดลบ) = แดง · สถานะ (ต้องเติม/ถึง MIN) ดูจากป้ายด้านขวา
+  function stockCls(it){ return onHand(it) <= 0 ? 'out' : 'ok'; }
   function stockNum(it, big){ return '<b class="sv ' + stockCls(it) + (big ? ' big' : '') + '">' + fmt(onHand(it)) + '</b>'; }                  // v1.15: ของหมด (คงเหลือ 0 หรือติดลบ)
   function outChip(){ return '<span class="chip out">หมด</span>'; }
   function isHidden(it){ return !!(it && it.hide); }                   // v1.15: ซ่อนจากแผนก (PC ซื้อเติมเอง เช่น กระดาษ)
