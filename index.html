@@ -401,7 +401,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.41</span>
+      <span class="ver" id="appVer">v1.42</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -423,7 +423,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.41 · อัปเดต 08/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.42 · อัปเดต 08/10/2026</div>
     </div>
   </header>
 
@@ -1246,6 +1246,7 @@
         +   '<div style="flex:1 1 150px"><label class="fld" for="pe_pf">1 หน่วยราคา = กี่ ' + esc(it.unit || 'หน่วยนับ') + '</label><input type="number" inputmode="decimal" min="0" id="pe_pf" placeholder="1" value="' + (p.pf != null ? p.pf : '') + '"></div>'
         + '</div>'
         + '<div class="note" style="margin:4px 0 0">เช่น ราคาต่อถัง แต่นับสต็อกเป็นลิตร → ราคาคิดต่อ = ถัง, 1 ถัง = 200 · ถ้าหน่วยเดียวกันเว้นว่าง</div>'
+        + '<div class="note" style="margin:6px 0 0; color:var(--accent)">💡 ร้านใหม่ ใส่ช่องที่ว่างได้เลย · กดบันทึกแล้ว <b>ราคาที่โชว์ = ร้านที่ถูกสุด</b> · ชื่อร้านเดิม เช่น HARDWAREHOUSE CORPORATION… ระบบรวมเป็นชื่อเดียวให้เอง</div>'
         + '<div class="row" style="gap:8px; margin-top:10px"><button class="primary" id="pe_save" style="flex:2">บันทึกร้าน/ราคา</button><button class="ghost" id="pe_cancel" style="flex:1">ยกเลิก</button></div>';
     } else {
       h += '<dl class="facts">'
@@ -1253,7 +1254,9 @@
         +   (unverified(it) ? '<br><span class="chip warn" style="margin-top:4px">ราคาจาก Excel เดิม — ยังไม่ยืนยัน</span>' : '') + '</dd>'
         + (f !== 1 ? '<dt>แปลงหน่วย</dt><dd class="txt">1 ' + esc(p.pu || 'หน่วยราคา') + ' = ' + fmt(f) + ' ' + esc(it.unit || '') + ' · ' + baht(u / f) + '/' + esc(it.unit || 'หน่วย') + '</dd>' : '')
         + '<dt>มูลค่าคงเหลือ</dt><dd>' + (u != null ? baht(Math.max(0, n) * u / f) : '— (ยังไม่มีราคา)') + '</dd>'
-        + '<dt>ซื้อล่าสุด</dt><dd class="txt">' + (p.lastShop || p.lastTs ? esc(p.lastShop || 'ไม่ระบุร้าน') + (p.lastTs ? ' · ' + when(p.lastTs).replace(/ \d\d:\d\d$/, '') : '') + (p.lastPo ? ' · PO ' + esc(p.lastPo) : '') : '—') + '</dd>'
+        + (p.lastPo === 'PC แก้ราคาเอง'   // v1.42 ราคาที่ PC แก้ในฟอร์ม (ยังไม่มีใบ PR)
+            ? '<dt>อัปเดตราคา</dt><dd class="txt">PC แก้เอง · ' + esc(p.lastShop || '') + (p.lastTs ? ' · ' + when(p.lastTs).replace(/ \d\d:\d\d$/, '') : '') + '</dd>'
+            : '<dt>ซื้อล่าสุด</dt><dd class="txt">' + (p.lastShop || p.lastTs ? esc(p.lastShop || 'ไม่ระบุร้าน') + (p.lastTs ? ' · ' + when(p.lastTs).replace(/ \d\d:\d\d$/, '') : '') + (p.lastPo ? ' · PO ' + esc(p.lastPo) : '') : '—') + '</dd>')
         + '</dl>'
         + '<ul class="list" style="margin-top:6px">' + [1,2,3].map(function(i){
             var sn = p['s'+i], sp = p['p'+i];
