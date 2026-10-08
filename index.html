@@ -160,7 +160,11 @@
   .nums .nmin{font-size:13px;}
   .li-sub{font:500 12.5px/1.45 var(--fs); color:var(--muted); margin-top:2px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
   .stk.ok{color:var(--ok);}
-  .stk.out{color:#c62828; font-size:16.5px;}
+  .stk.out{color:#d92d20; font-size:16.5px;}
+  /* v1.44 สีคงเหลือเดียวกันทุกแท็บ */
+  .stk.low{color:#d92d20;} .stk.near{color:#c27c00;}
+  .sv{font-weight:800;} .sv.big{font-size:20px;}
+  .sv.ok{color:var(--ok);} .sv.low, .sv.out{color:#d92d20;} .sv.near{color:#c27c00;}
   /* v1.35 แท็บมีกรอบ + สีตอนเลือก · คอลัมน์รหัสซ้ายสุด · ของหมดทั้งแถวเด่น */
   nav.dept{gap:6px; padding:7px 8px calc(7px + env(safe-area-inset-bottom, 0px));}
   nav.dept button{border:1.5px solid var(--line); border-radius:11px; background:var(--surface-2); padding:10px 4px; font-size:14px; color:var(--ink); line-height:1.25;}
@@ -405,7 +409,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.43</span>
+      <span class="ver" id="appVer">v1.44</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -427,7 +431,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.43 · อัปเดต 08/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.44 · อัปเดต 08/10/2026</div>
     </div>
   </header>
 
@@ -854,7 +858,10 @@
     // v1.43 MIN = ต้องมีเก็บไว้อย่างน้อย → ต่ำกว่า MIN = ต้องเติม · เท่ากับ MIN พอดี = "ถึง MIN" (ยังไม่ต้องซื้อ แค่เฝ้าดู)
     return n < +it.mn ? {k:'warn', t:'ต้องเติม'} : (n === +it.mn ? {k:'near', t:'ถึง MIN'} : {k:'ok', t:'ปกติ'});
   }
-  function isOut(it){ return !!it && onHand(it) <= 0; }                  // v1.15: ของหมด (คงเหลือ 0 หรือติดลบ)
+  function isOut(it){ return !!it && onHand(it) <= 0; }
+  // v1.44 สียอดคงเหลือ ใช้กติกาเดียวกันทุกแท็บ: หมด/ต่ำกว่า MIN = แดง · ถึง MIN พอดี = เหลือง · ปกติ = เขียว
+  function stockCls(it){ var n = onHand(it); if (n <= 0) return 'out'; var k = status(it).k; return k === 'warn' ? 'low' : (k === 'near' ? 'near' : 'ok'); }
+  function stockNum(it, big){ return '<b class="sv ' + stockCls(it) + (big ? ' big' : '') + '">' + fmt(onHand(it)) + '</b>'; }                  // v1.15: ของหมด (คงเหลือ 0 หรือติดลบ)
   function outChip(){ return '<span class="chip out">หมด</span>'; }
   function isHidden(it){ return !!(it && it.hide); }                   // v1.15: ซ่อนจากแผนก (PC ซื้อเติมเอง เช่น กระดาษ)
   function noStock(it){ return it && it.mn !== null && it.mn !== '' && !isNaN(+it.mn) && +it.mn <= 0; }
@@ -1014,7 +1021,7 @@
         +   (rows.length ? rows.map(function(it){
                 return '<li class="tap" data-bind="' + esc(it.sku) + '"><div class="li-top"><div>'
                   + '<div class="li-name">' + esc(it.name) + '</div>'
-                  + '<div class="li-meta">' + esc(it.sku) + ' · คงเหลือ ' + fmt(onHand(it)) + '</div>'
+                  + '<div class="li-meta">' + esc(it.sku) + ' · คงเหลือ ' + stockNum(it) + '</div>'
                   + '</div><span class="chip ok">ผูก</span></div></li>';
               }).join('')
              : '<li class="empty">' + (q ? 'ไม่พบรายการ' : 'พิมพ์ชื่อของเพื่อค้นหา') + '</li>')
@@ -1057,7 +1064,7 @@
       + sheetLink(it)
       + (itemEdit === it.sku ? editForm(it) : '')
       + '<dl class="facts">'
-      +   '<dt>คงเหลือ</dt><dd>' + fmt(n) + (it.unit ? ' <span style="font-weight:500;color:var(--muted)">' + esc(it.unit) + '</span>' : '') + '</dd>'
+      +   '<dt>คงเหลือ</dt><dd>' + stockNum(it, true) + (it.unit ? ' <span style="font-weight:500;color:var(--muted)">' + esc(it.unit) + '</span>' : '') + '</dd>'
       +   '<dt>สต็อกตั้งต้น</dt><dd>' + fmt(it.stock) + '</dd>'
       +   (m.inQ||m.outQ ? '<dt>สแกนแล้ว</dt><dd>+' + fmt(m.inQ) + ' / −' + fmt(m.outQ) + '</dd>' : '')
       +   (m.adj ? '<dt>ปรับยอดแล้ว</dt><dd>' + (m.adj > 0 ? '+' : '') + fmt(m.adj) + '</dd>' : '')
@@ -1637,9 +1644,9 @@
   // v1.40 บรรทัดตัวเลข (ต้องเติม + ค้นหาของ ใช้แบบเดียวกัน): ตัวเลขสำคัญตัวหนา+สี · ราคา/ร้านแยกบรรทัดล่างตัวเล็ก
   function numLine(it, need){
     var n = onHand(it), u = it.unit ? ' <span class="nu">' + esc(it.unit) + '</span>' : '';
-    var sk = status(it).k, k = n <= 0 ? 'out' : (sk === 'warn' ? 'low' : (sk === 'near' ? 'near' : 'ok'));
+    var k = stockCls(it);
     return '<div class="nums"><span class="skutag">' + esc(it.sku) + '</span> '
-      + '<span class="nl">คงเหลือ <b class="nv ' + k + '">' + fmt(n) + '</b>' + (need != null && need > 0 ? '' : u) + ' <span class="nmin">/ MIN ' + fmtMM(it.mn) + '</span></span>'
+      + '<span class="nl">คงเหลือ <b class="nv ' + k + '">' + fmt(n) + '</b>' + u + ' <span class="nmin">/ MIN ' + fmtMM(it.mn) + '</span></span>'
       + (need != null && need > 0 ? '<span class="nl">ควรสั่ง <b class="nv buy">' + fmt(need) + '</b>' + u + '</span>' : '')
       + '</div>';
   }
@@ -2032,7 +2039,7 @@
             return '<div class="reqline" style="grid-template-columns:1fr 88px"><div class="li-top" style="justify-content:flex-start">' + thumb(it) + '<div class="grow"><div class="li-name">' + esc(l.name) + '</div>'
               + '<div class="li-meta">' + esc(l.sku) + ' · ขอ ' + fmt(l.qty) + ' ' + esc(l.unit)
               + (paid ? ' · <b>จ่ายแล้ว ' + fmt(paid) + ' ค้าง ' + fmt(rem) + '</b>' : '')
-              + ' · ' + (n != null && n <= 0 ? '<span class="chip out">ของหมด</span>' : '<span class="' + (n != null && n < rem ? 'over' : '') + '">คงเหลือ ' + (n == null ? '—' : fmt(n)) + '</span>') + '</div>'
+              + ' · ' + (n != null && n <= 0 ? '<span class="chip out">ของหมด</span>' : '<span class="' + (n != null && n < rem ? 'over' : '') + '">คงเหลือ ' + (n == null ? '—' : stockNum(it)) + '</span>') + '</div>'
               + '<label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:4px"><input type="checkbox" data-close="' + esc(l.sku) + '" style="width:auto; min-height:0"> ปิด ไม่จ่ายส่วนที่เหลือ</label>'
               + '</div></div>'
               + '<input type="number" inputmode="decimal" min="0" max="' + rem + '" data-pay="' + esc(l.sku) + '" value="' + def + '" aria-label="จำนวนจ่ายรอบนี้"></div>';
@@ -2131,7 +2138,7 @@
       var n = onHand(it), inCart = cart.some(function(c){ return c.sku === it.sku; });
       return '<li class="tap' + (n > 0 ? '' : ' outrow') + '" data-add="' + esc(it.sku) + '"><div class="li-top"><span class="skucol">' + esc(it.sku) + '</span>' + thumb(it) + '<div class="grow">'
         + '<div class="li-name">' + esc(it.name) + '</div>'
-        + (n > 0 ? '<div class="stk ok">📦 มีของ ' + fmt(n) + ' ' + esc(it.unit || '') + '</div>' : '<div class="stk out">⛔ ของหมด</div><div class="li-meta">ขอได้ — ใบจะค้างไว้จนของเข้า</div>')
+        + (n > 0 ? '<div class="stk ' + stockCls(it) + '">📦 มีของ ' + fmt(n) + ' ' + esc(it.unit || '') + '</div>' : '<div class="stk out">⛔ ของหมด</div><div class="li-meta">ขอได้ — ใบจะค้างไว้จนของเข้า</div>')
         + '</div><span class="addbtn' + (inCart ? ' in' : '') + '" aria-label="' + (inCart ? 'อยู่ในใบแล้ว' : 'เพิ่ม') + '">' + (inCart ? '✓' : '+') + '</span></div></li>';
     }).join('') || '<li class="empty">ไม่พบ — ลองคำอื่น หรือเขียนในหมายเหตุ</li>';
     el('d_list').querySelectorAll('[data-add]').forEach(function(li){
@@ -3139,7 +3146,7 @@
       var n = onHand(it), c = cart.filter(function(x){ return x.sku === it.sku; })[0];
       return '<li class="tap' + (n > 0 ? '' : ' outrow') + '" data-ladd="' + esc(it.sku) + '"><div class="li-top"><span class="skucol">' + esc(it.sku) + '</span>' + thumb(it) + '<div class="grow">'
         + '<div class="li-name">' + esc(it.name) + '</div>'
-        + (n > 0 ? '<div class="stk ok">📦 มีของ ' + fmt(n) + ' ' + esc(it.unit || '') + '</div>' : '<div class="stk out">⛔ ของหมด</div>')
+        + (n > 0 ? '<div class="stk ' + stockCls(it) + '">📦 มีของ ' + fmt(n) + ' ' + esc(it.unit || '') + '</div>' : '<div class="stk out">⛔ ของหมด</div>')
         + '</div><span class="addbtn' + (c ? ' in' : '') + '" aria-label="' + (c ? 'อยู่ในใบ ' + fmt(c.qty) : 'เพิ่ม') + '">' + (c ? '✓<small>×' + fmt(c.qty) + '</small>' : '+') + '</span></div></li>';
     }).join('') || '<li class="empty">ยังไม่มีรายการ</li>';
     el('l_list').querySelectorAll('[data-ladd]').forEach(function(li){ li.addEventListener('click', function(){
