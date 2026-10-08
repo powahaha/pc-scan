@@ -173,6 +173,18 @@
   nav.dept #t-list[aria-selected="true"]{color:var(--accent-ink); background:var(--accent); border-style:solid;}
   nav.dept #t-list .tn{display:block; font-size:11px; margin:0;}
   nav.dept button[aria-selected="true"] .badge{background:var(--accent-ink); color:var(--accent);}
+  /* v1.46 แท็บ PC: กรอบแยกทีละปุ่ม · ไอคอนบน ชื่อล่าง · ตัวเลขเป็นวงกลมมุมขวาบน ไม่ดันชื่อ */
+  nav.pc{gap:5px; padding:7px 6px calc(7px + env(safe-area-inset-bottom, 0px));}
+  nav.pc button{position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    min-height:56px; padding:7px 2px 6px; border:1.5px solid var(--line); border-radius:11px; background:var(--surface-2);
+    color:var(--ink); font-size:12px; line-height:1.15; white-space:nowrap;}
+  nav.pc button::before{font-size:19px; line-height:1;}
+  nav.pc button.off{display:none;}
+  nav.pc #t-scan::before{content:'📷';} nav.pc #t-find::before{content:'🔍';} nav.pc #t-low::before{content:'🛒';}
+  nav.pc #t-add::before{content:'➕';} nav.pc #t-inbox::before{content:'📋';}
+  nav.pc button[aria-selected="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink); box-shadow:0 2px 6px rgba(0,0,0,.18);}
+  nav.pc .badge{position:absolute; top:-7px; right:-3px; margin:0; min-width:20px; font-size:11px; line-height:18px; box-shadow:0 0 0 2px var(--surface);}
+  @media (max-width:340px){ nav.pc button{font-size:11px;} nav.pc{gap:4px; padding-left:4px; padding-right:4px;} }
   .skucol{flex:0 0 46px; width:46px; padding-top:2px; font:700 11.5px/1.25 var(--fm); color:var(--accent); white-space:nowrap; overflow:hidden;}
   #d_list .li-top, #l_list .li-top{gap:8px;}
   #d_list .thumb, #l_list .thumb{flex-basis:38px; width:38px; height:38px;}
@@ -409,7 +421,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.45</span>
+      <span class="ver" id="appVer">v1.46</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -431,7 +443,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.45 · อัปเดต 08/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.46 · อัปเดต 08/10/2026</div>
     </div>
   </header>
 
@@ -958,6 +970,7 @@
     var nav = document.querySelector('nav');
     TABS.forEach(function(p){ el(p[0]).classList.toggle('off', MODE_TABS.indexOf(p[0]) < 0); });
     nav.style.gridTemplateColumns = 'repeat(' + MODE_TABS.length + ',1fr)';
+    if (!DEPT_MODE) nav.classList.add('pc');   // v1.46 แท็บ PC เป็นกรอบแยกกัน + ไอคอน แบบเดียวกับฝั่งแผนก
     if (DEPT_MODE){
       nav.classList.add('dept'); nav.style.gridTemplateColumns = '0.72fr 1.14fr 1.14fr';   // v1.35 รายการ ปุ่มเล็กซ้ายสุด
       el('appTitle').textContent = 'ขอเบิกวัสดุสิ้นเปลือง';
