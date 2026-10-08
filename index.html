@@ -183,6 +183,28 @@
   .walkbar{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:18px;}
   .walksku{font:600 15px var(--fm); text-align:center; color:var(--muted); margin-top:24px;}
   .walkname{font:700 24px/1.35 var(--fs); text-align:center; margin-top:8px;}
+  /* v1.39 แผนที่จุดเก็บ */
+  .locbox{margin:10px 0 4px; padding:10px; border:1px solid var(--line); border-radius:12px; background:var(--surface);}
+  .lhead{display:flex; align-items:center; gap:10px;}
+  .lpin{font-size:22px;}
+  .lname{font-size:18px; color:#d92d20;}
+  .locset{width:100%; margin:10px 0 4px; border-style:dashed;}
+  .lmap{margin-top:8px; border-radius:10px; overflow:hidden; border:1px solid var(--line); background:#fff; cursor:zoom-in;}
+  .lmapin{position:relative;}
+  .lmap img{display:block; width:100%; height:auto;}
+  .lbox{position:absolute; transform:translate(-50%,-50%); border:3px solid #ff2d20; border-radius:6px; background:rgba(255,45,32,.28); box-shadow:0 0 10px 2px rgba(255,45,32,.8); animation:lblink 1s ease-in-out infinite;}
+  .lring{position:absolute; width:46px; height:46px; margin:-23px 0 0 -23px; border-radius:50%; border:3px solid #ff2d20; animation:lring 1.4s ease-out infinite; pointer-events:none;}
+  @keyframes lblink{0%,100%{opacity:1}50%{opacity:.25}}
+  @keyframes lring{0%{transform:scale(.4); opacity:1}100%{transform:scale(2.4); opacity:0}}
+  @media (prefers-reduced-motion:reduce){ .lbox{animation:none} .lring{animation:none; opacity:.8} }
+  .lmap.full{position:fixed; inset:0; z-index:80; margin:0; border:0; border-radius:0; background:rgba(10,14,18,.92); display:flex; align-items:center; justify-content:center; cursor:zoom-out;}
+  .lmap.full .lmapin{width:min(96vw, 1000px);}
+  @media (orientation:portrait){ .lmap.full .lmapin{width:min(94vh, 1000px); transform:rotate(90deg);} }
+  .lbtns{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:8px;}
+  .lbtns .chip.on{background:#d92d20; color:#fff; border-color:#d92d20;}
+  .lshelf rect{fill:none; stroke:var(--muted); stroke-width:2;}
+  .lshelf rect.sh{fill:var(--surface-2); stroke:var(--line); stroke-width:1;}
+  .lshelf rect.sh.on{fill:#ff2d20; stroke:#ff2d20; animation:lblink 1s ease-in-out infinite;}
   .walkshot{margin-top:28px; min-height:72px; font-size:20px;}
   .walkdone{font:700 28px var(--fs); text-align:center; margin:40px 0 10px;}
   #nudge{position:fixed; left:12px; right:12px; bottom:76px; z-index:55; background:var(--surface); border:2px solid var(--accent); border-radius:12px; padding:12px; box-shadow:var(--shadow); max-width:520px; margin:0 auto;}
@@ -356,7 +378,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.38</span>
+      <span class="ver" id="appVer">v1.39</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -378,7 +400,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.38 · อัปเดต 07/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.39 · อัปเดต 08/10/2026</div>
     </div>
   </header>
 
@@ -1001,6 +1023,7 @@
       + (n <= 0 ? '<div class="outbar">⛔ ของหมด — คงเหลือ ' + fmt(n) + (it.unit ? ' ' + esc(it.unit) : '')
           + (n < 0 ? '<span>ยอดติดลบ = ของจริงอาจไม่ตรงระบบ ลองกด "นับจริง/ปรับยอด"</span>' : '<span>แผนกยังขอได้ ใบจะค้างไว้จนกว่าของเข้า</span>') + '</div>' : '')
       + (isHidden(it) ? '<div class="note" style="margin:6px 0 0">🙈 <b>ซ่อนจากแผนก</b> — แผนกค้นไม่เจอ และไม่ขึ้นในรายการต้องเติม (แก้ได้ที่ ✎ แก้ข้อมูลของ)</div>' : '')
+      + locView(it)
       + missingBlock(it)
       + countBlock(it, n)
       + sheetLink(it)
@@ -1052,6 +1075,7 @@
     el('qp').addEventListener('click', function(){ step(1); });
     el('q_').addEventListener('input', function(){ qty = Math.max(0, +el('q_').value || 0); });
     el('save').addEventListener('click', save);
+    bindLocView(it);
     bindPhoto(it);
     bindLink(it);
     bindPrice(it);
@@ -2784,8 +2808,9 @@
         + '<div class="row" style="gap:6px; margin-top:6px; align-items:center; flex-wrap:wrap"><input type="number" inputmode="decimal" min="0" id="cw_pk" placeholder="กี่แพ็ค" style="flex:1 1 70px">'
         + '<span>×</span><select id="cw_sz" style="flex:1 1 80px; width:auto">' + sizes.map(function(n){ return '<option value="' + n + '">' + fmt(n) + '</option>'; }).join('') + '</select>'
         + '<span>+ เศษ</span><input type="number" inputmode="decimal" min="0" id="cw_rs" placeholder="0" style="flex:1 1 60px"></div></div>' : '')
-      + '<details class="cntmore"' + (it.loc ? '' : ' open') + '><summary class="li-meta">จุดเก็บ' + (it.loc ? ': ' + esc(it.loc) : ' (ยังไม่มี)') + ' · หน่วยนับ: ' + esc(it.unit || '-') + '</summary>'
-      + '<label class="fld" for="cw_loc" style="margin-top:6px">จุดเก็บ (ชั้น/ตู้)</label><input type="text" id="cw_loc" list="locList" value="' + esc(it.loc || '') + '" placeholder="เช่น A-2, ตู้เหล็ก 1" autocomplete="off">' + locChips('cw_loc')
+      + '<div class="fld" style="margin-top:14px">📍 จุดเก็บ <span class="li-meta">(แตะเลือกตู้ / ชั้น)</span></div>'
+      + '<input type="hidden" id="cw_loc" value="' + esc(it.loc || '') + '"><div class="lpick" id="cw_lp"></div>'
+      + '<details class="cntmore"><summary class="li-meta">หน่วยนับ: ' + esc(it.unit || '-') + ' (แตะถ้าต้องเปลี่ยน)</summary>'
       + '<label class="fld" for="cw_unit" style="margin-top:8px">หน่วยที่นับจริง (ถ้าไม่ใช่ ' + esc(it.unit || '-') + ' ให้เปลี่ยน)</label><input type="text" id="cw_unit" list="units" value="' + esc(it.unit || '') + '" autocomplete="off">' + unitChips('cw_unit')
       + '</details>'
       + (!it.img ? '<button type="button" class="ghost" id="cw_shot" style="margin-top:10px">📷 ถ่ายรูปชิ้นนี้ด้วย' + (cntImg[it.sku] ? ' ✓' : '') + '</button>' : '')
@@ -2798,6 +2823,7 @@
       + '<select id="cw_order" style="width:auto"><option value="sku">เรียงตามรหัส</option><option value="loc"' + (cnt.opt.order === 'loc' ? ' selected' : '') + '>เรียงตามจุดเก็บ</option></select>'
       + '<label class="li-meta" style="display:flex; gap:6px; align-items:center"><input type="checkbox" id="cw_all"' + (cnt.opt.all ? ' checked' : '') + ' style="width:auto; min-height:0"> รวมที่นับแล้ว</label></div>';
     var q = el('cw_q');
+    bindPicker('cw_lp', it.loc || '', function(v){ el('cw_loc').value = v; });
     function calc(){ var p = el('cw_pk'); if (!p || p.value === '') return; q.value = Math.round(((+p.value) * (+el('cw_sz').value) + (+el('cw_rs').value || 0)) * 1000) / 1000; }
     ['cw_pk', 'cw_sz', 'cw_rs'].forEach(function(id){ var x = el(id); if (x) x.addEventListener('input', calc); if (x) x.addEventListener('change', calc); });
     q.addEventListener('keydown', function(e){ if (e.key === 'Enter') el('cw_save').click(); });
@@ -2833,6 +2859,90 @@
     ['cw_part', 'cw_order', 'cw_all'].forEach(function(id){ el(id).addEventListener('change', reopt); });
     if (!who) el('cw_who').focus(); else q.focus();
   }
+  /* ================= v1.39 แผนที่จุดเก็บ (ผังโรงงาน 1) — กระพริบที่ตู้/ห้องที่เก็บ ================= */
+  var MAP_IMG = 'plant1-map.jpg';
+  var SPOTS = [   // ตำแหน่งเป็น % ของรูปผัง · sh = จำนวนชั้น (0 = ไม่มีชั้น)
+    {k:'ตู้ 1', b:'ตู้ 1', x:59.7, y:52.3, w:3.6, h:8, sh:2},
+    {k:'ตู้ 2', b:'ตู้ 2', x:63.5, y:52.3, w:3.6, h:8, sh:3},
+    {k:'ตู้ 3', b:'ตู้ 3', x:67.1, y:52.3, w:3.6, h:8, sh:3},
+    {k:'ตู้ 4', b:'ตู้ 4 (ห้อง QA)', x:90.7, y:60.2, w:3.6, h:8, sh:0},
+    {k:'ห้องเก็บสารเคมี', b:'ห้องสารเคมี', x:17.2, y:77.3, w:15.4, h:12, sh:0}
+  ];
+  function parseLoc(s){
+    s = String(s || ''); var sp = null;
+    if (/สารเคมี/.test(s)) sp = SPOTS[4];
+    else { var m = s.match(/ตู้\s*(\d+)/); if (m) sp = SPOTS.filter(function(x){ return x.k === 'ตู้ ' + m[1]; })[0] || null; }
+    if (!sp) return null;
+    var c = s.match(/ชั้น\s*(\d+)/);
+    return {spot: sp, shelf: c && sp.sh ? Math.min(+c[1], sp.sh) : 0};
+  }
+  function fmtLoc(sp, shelf){ return sp ? sp.k + (sp.sh && shelf ? ' · ชั้น ' + shelf : '') : ''; }
+  function shelfSvg(sp, shelf){
+    if (!sp || !sp.sh) return '';
+    var rh = 52 / sp.sh, o = '<svg class="lshelf" viewBox="0 0 44 60" width="40" height="54" aria-hidden="true"><rect x="2" y="2" width="40" height="56" rx="3"/>';
+    for (var i = 1; i <= sp.sh; i++) o += '<rect class="sh' + (i === shelf ? ' on' : '') + '" x="6" y="' + (5 + (i - 1) * rh) + '" width="32" height="' + (rh - 3) + '" rx="2"/>';
+    return o + '</svg>';
+  }
+  function mapHtml(p){
+    var s = p && p.spot;
+    return '<div class="lmap" data-lmap title="แตะเพื่อขยาย"><div class="lmapin"><img src="' + MAP_IMG + '" alt="ผังโรงงาน 1" loading="lazy">'
+      + (s ? '<span class="lring" style="left:' + s.x + '%; top:' + s.y + '%"></span>'
+           + '<span class="lbox" style="left:' + s.x + '%; top:' + s.y + '%; width:' + s.w + '%; height:' + s.h + '%"></span>' : '')
+      + '</div></div>';
+  }
+  // การ์ดของฝั่ง PC: โชว์แผนที่ + ปุ่มเปลี่ยน (แก้แล้วบันทึกลง Master คอลัมน์ 17)
+  var locEdit = null, locDraft = '';
+  function locView(it){
+    if (DEPT_MODE) return '';
+    if (locEdit === it.sku)
+      return '<div class="locbox"><div class="lhead">📍 <b>เลือกจุดเก็บ</b></div><div class="lpick" id="lv_lp"></div>'
+        + '<div class="row" style="gap:8px; margin-top:8px"><button type="button" class="ghost" id="lv_cancel" style="flex:1">ยกเลิก</button>'
+        + '<button type="button" class="primary" id="lv_save" style="flex:2">บันทึกจุดเก็บ</button></div></div>';
+    var p = parseLoc(it.loc);
+    if (!it.loc) return '<button type="button" class="ghost locset" id="lv_edit">📍 ยังไม่ระบุจุดเก็บ · แตะเพื่อเลือกจากแผนที่</button>';
+    return '<div class="locbox"><div class="lhead"><span class="lpin">📍</span><div style="flex:1"><div class="li-meta">เก็บอยู่ที่</div><b class="lname">' + esc(p ? fmtLoc(p.spot, p.shelf) : it.loc) + '</b>'
+      + (p && p.spot.sh ? '<div class="li-meta">ชั้น 1 = บนสุด</div>' : '') + '</div>'
+      + (p ? shelfSvg(p.spot, p.shelf) : '') + '<button type="button" class="ghost" id="lv_edit" style="width:auto; padding:0 12px">เปลี่ยน</button></div>'
+      + mapHtml(p) + '</div>';
+  }
+  function bindLocView(it){
+    var e = el('lv_edit'), c = el('lv_cancel'), s = el('lv_save');
+    if (e) e.addEventListener('click', function(){ locEdit = it.sku; locDraft = it.loc || ''; renderHit(); });
+    if (c) c.addEventListener('click', function(){ locEdit = null; renderHit(); });
+    if (el('lv_lp')) bindPicker('lv_lp', locDraft, function(v){ locDraft = v; });
+    if (s) s.addEventListener('click', function(){
+      reqAction({action:'edititem', item:{sku: it.sku, loc: locDraft, who:'PC'}}, locDraft ? 'บันทึกจุดเก็บ: ' + locDraft : 'ล้างจุดเก็บแล้ว', s)
+        .then(function(j){ if (j){ locEdit = null; renderHit(); } });
+    });
+  }
+  // ตัวเลือกจุดเก็บ: ปุ่มตู้ + ปุ่มชั้น + แผนที่กระพริบตามที่เลือก
+  function bindPicker(id, loc, onChange){
+    var box = el(id); if (!box) return;
+    var p = parseLoc(loc), st = {spot: p ? p.spot.k : '', shelf: p ? p.shelf : 0, raw: p ? '' : (loc || '')};
+    function val(){ var sp = SPOTS.filter(function(x){ return x.k === st.spot; })[0]; return sp ? fmtLoc(sp, st.shelf) : st.raw; }
+    function draw(){
+      var sp = SPOTS.filter(function(x){ return x.k === st.spot; })[0];
+      box.innerHTML = mapHtml(sp ? {spot: sp, shelf: st.shelf} : null)
+        + '<div class="lbtns">' + SPOTS.map(function(x){ return '<button type="button" class="chip tapchip' + (x.k === st.spot ? ' on' : '') + '" data-spot="' + esc(x.k) + '">' + esc(x.b) + '</button>'; }).join('')
+        + (st.spot || st.raw ? '<button type="button" class="chip na tapchip" data-spot="">✕ ไม่ระบุ</button>' : '') + '</div>'
+        + (sp && sp.sh ? '<div class="lbtns"><span class="li-meta">ชั้น (1 = บนสุด):</span>' + Array.apply(null, Array(sp.sh)).map(function(_, i){
+            return '<button type="button" class="chip tapchip' + (st.shelf === i + 1 ? ' on' : '') + '" data-shelf="' + (i + 1) + '">ชั้น ' + (i + 1) + '</button>'; }).join('') + shelfSvg(sp, st.shelf) + '</div>' : '')
+        + (st.raw && !sp ? '<div class="li-meta">ค่าเดิม: ' + esc(st.raw) + '</div>' : '')
+        + (sp && sp.sh && !st.shelf ? '<div class="li-meta" style="color:var(--warn)">เลือกชั้นด้วย</div>' : '');
+    }
+    box.addEventListener('click', function(e){
+      var b = e.target.closest('[data-spot],[data-shelf]'); if (!b) return;
+      if (b.hasAttribute('data-spot')){ st.spot = b.getAttribute('data-spot'); st.shelf = 0; st.raw = ''; }
+      else st.shelf = +b.getAttribute('data-shelf');
+      draw(); onChange(val());
+    });
+    draw();
+  }
+  // แตะแผนที่ = ขยายเต็มจอ (แตะอีกครั้งปิด)
+  document.addEventListener('click', function(e){
+    var m = e.target.closest && e.target.closest('[data-lmap]'); if (!m) return;
+    m.classList.toggle('full'); document.body.style.overflow = m.classList.contains('full') ? 'hidden' : '';
+  });
   function locList(){ var s = {}; ITEMS.forEach(function(it){ if (it.loc) s[it.loc] = (s[it.loc] || 0) + 1; }); return Object.keys(s).sort(function(a, b){ return s[b] - s[a]; }); }
   function locChips(id){
     var l = locList().slice(0, 8); if (!l.length) return '';
