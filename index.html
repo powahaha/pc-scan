@@ -341,6 +341,10 @@
   .stats .l{font-size:11.5px; color:var(--muted); line-height:1.3; margin-top:2px;}
   .stats .n.warn{color:var(--warn);}
   .chip.warn{background:var(--warn-soft); color:var(--warn);}
+  .chip.near{background:rgba(245,166,35,.16); color:#a86500;}
+  .nums .nv.near{color:#c27c00;}
+  ul.list li.lowsep{background:rgba(245,166,35,.10); color:#8a5400; font-size:13px; padding:10px 12px; border-radius:8px; margin-top:10px; cursor:default;}
+  ul.list li.nearrow{opacity:.85;}
   .chip.out{background:#c62828; color:#fff; font-weight:700;}
   .outbar{margin:10px 0 0; padding:10px 12px; border-radius:10px; background:#fdecea; color:#b71c1c; border:1.5px solid #e53935; font-weight:700; font-size:16px;}
   .outbar span{display:block; font-weight:500; font-size:13px; margin-top:2px;}
@@ -401,7 +405,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.42</span>
+      <span class="ver" id="appVer">v1.43</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -423,7 +427,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.42 · อัปเดต 08/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.43 · อัปเดต 08/10/2026</div>
     </div>
   </header>
 
@@ -494,7 +498,7 @@
     <!-- ── แท็บ ต้องเติม ── -->
     <section id="v-low" hidden>
       <div class="card">
-        <h2>ของที่ถึงจุดต้องเติม</h2>
+        <h2>ของที่ต่ำกว่า MIN (ต้องเติม)</h2>
         <div class="row" style="justify-content:space-between; align-items:flex-end">
           <div><div class="big" id="lowCount">0</div><div class="note" style="margin:0">รายการ</div></div>
           <div style="text-align:right"><div class="big" id="unknownCount">0</div><div class="note" style="margin:0">ยังไม่รู้ของจริง<br>(สต็อกตั้งต้น 0)</div></div>
@@ -847,7 +851,8 @@
     var n = onHand(it);
     if (it.mn == null || it.mn === '' || isNaN(+it.mn)) return {k:'na', t:'ยังไม่ตั้ง MIN'};
     if (+it.mn <= 0) return {k:'na', t:'ไม่ต้องสต็อก'};          // v1.10: MIN = 0 คือไม่ต้องเก็บสต็อก
-    return n <= +it.mn ? {k:'warn', t:'ต้องเติม'} : {k:'ok', t:'ปกติ'};
+    // v1.43 MIN = ต้องมีเก็บไว้อย่างน้อย → ต่ำกว่า MIN = ต้องเติม · เท่ากับ MIN พอดี = "ถึง MIN" (ยังไม่ต้องซื้อ แค่เฝ้าดู)
+    return n < +it.mn ? {k:'warn', t:'ต้องเติม'} : (n === +it.mn ? {k:'near', t:'ถึง MIN'} : {k:'ok', t:'ปกติ'});
   }
   function isOut(it){ return !!it && onHand(it) <= 0; }                  // v1.15: ของหมด (คงเหลือ 0 หรือติดลบ)
   function outChip(){ return '<span class="chip out">หมด</span>'; }
@@ -1398,7 +1403,7 @@
       +   '<div style="flex:1 1 120px"><label class="fld" for="ie_pack">ขนาดบรรจุ (โน้ต)</label><input type="text" id="ie_pack" value="' + esc(it.pack || '') + '" autocomplete="off"></div>'
       + '</div>'
       + '<div class="row" style="gap:6px; margin-top:8px">'
-      +   '<div style="flex:1"><label class="fld" for="ie_mn">MIN (จุดสั่งเติม)</label><input type="number" inputmode="decimal" min="0" id="ie_mn" value="' + (blank(it.mn) ? '' : it.mn) + '"' + (sug ? ' placeholder="แนะนำ ' + sug + '"' : '') + '></div>'
+      +   '<div style="flex:1"><label class="fld" for="ie_mn">MIN (ต้องมีเก็บอย่างน้อย)</label><input type="number" inputmode="decimal" min="0" id="ie_mn" value="' + (blank(it.mn) ? '' : it.mn) + '"' + (sug ? ' placeholder="แนะนำ ' + sug + '"' : '') + '></div>'
       +   '<div style="flex:1"><label class="fld" for="ie_mx">MAX</label><input type="number" inputmode="decimal" min="0" id="ie_mx" value="' + (blank(it.mx) ? '' : it.mx) + '"></div>'
       + '</div>'
       + '<div class="note" id="ie_sug" style="margin:4px 0 0"></div>'
@@ -1632,7 +1637,7 @@
   // v1.40 บรรทัดตัวเลข (ต้องเติม + ค้นหาของ ใช้แบบเดียวกัน): ตัวเลขสำคัญตัวหนา+สี · ราคา/ร้านแยกบรรทัดล่างตัวเล็ก
   function numLine(it, need){
     var n = onHand(it), u = it.unit ? ' <span class="nu">' + esc(it.unit) + '</span>' : '';
-    var k = n <= 0 ? 'out' : (status(it).k === 'warn' ? 'low' : 'ok');
+    var sk = status(it).k, k = n <= 0 ? 'out' : (sk === 'warn' ? 'low' : (sk === 'near' ? 'near' : 'ok'));
     return '<div class="nums"><span class="skutag">' + esc(it.sku) + '</span> '
       + '<span class="nl">คงเหลือ <b class="nv ' + k + '">' + fmt(n) + '</b>' + (need != null && need > 0 ? '' : u) + ' <span class="nmin">/ MIN ' + fmtMM(it.mn) + '</span></span>'
       + (need != null && need > 0 ? '<span class="nl">ควรสั่ง <b class="nv buy">' + fmt(need) + '</b>' + u + '</span>' : '')
@@ -1680,6 +1685,9 @@
       lc.hidden = !pinOk;
       lc.textContent = 'งบเติมถึง MAX ประมาณ ' + baht(cost) + ' (คิดจากร้านถูกสุด)' + (miss ? ' · ไม่มีราคา ' + miss + ' รายการ' : '');
     }
+    // v1.43 ของที่เหลือเท่ากับ MIN พอดี: อยู่ท้ายรายการ ไม่นับในตัวเลขบนแท็บ/งบ (ยังไม่ต้องซื้อ แค่ให้รู้ว่าใกล้แล้ว)
+    var near = ITEMS.filter(function(it){ return status(it).k === 'near' && !isHidden(it); });
+    near.sort(function(a, b){ return a.sku < b.sku ? -1 : 1; });
     el('lowList').innerHTML = low.map(function(it){
       var need = (+it.mx > 0) ? Math.max(0, (+it.mx) - onHand(it)) : null;
       return '<li class="tap" data-sku="' + esc(it.sku) + '"><div class="li-top">' + thumb(it) + '<div class="grow">'
@@ -1687,7 +1695,13 @@
         + numLine(it, need)
         + subLine([pinOk && need && (cheapest(it) || unitPrice(it) != null) ? '≈ ' + baht(need / pf(it) * (cheapest(it) ? cheapest(it).price : unitPrice(it))) + (cheapest(it) ? ' · 🏪 ' + esc(cheapest(it).shop) : '') : ''])
         + '</div><span class="chip warn">ต้องเติม</span></div></li>';
-    }).join('') || '<li class="empty">ไม่มีของที่ถึงจุดต้องเติม</li>';
+    }).join('') + (low.length ? '' : '<li class="empty">ไม่มีของที่ต่ำกว่า MIN 👍</li>')
+      + (near.length ? '<li class="lowsep">⏳ <b>ถึง MIN พอดี ' + near.length + ' รายการ</b> — ยังไม่ต้องซื้อ เบิกออกอีกชิ้นจะขึ้นต้องเติม</li>'
+        + near.map(function(it){
+          return '<li class="tap nearrow" data-sku="' + esc(it.sku) + '"><div class="li-top">' + thumb(it) + '<div class="grow">'
+            + '<div class="li-name">' + esc(it.name) + '</div>' + numLine(it, null)
+            + '</div><span class="chip near">ถึง MIN</span></div></li>';
+        }).join('') : '');
     bindRows('lowList');
   }
 
