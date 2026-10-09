@@ -354,8 +354,8 @@
   .grpchip b{font:800 14px/1 var(--fs); color:var(--ok);}
   .grpchip.out b{color:#d92d20;}
   .grpchip.on{border-color:var(--accent); background:var(--accent-soft); box-shadow:0 0 0 1px var(--accent) inset; font-weight:700;}
-  .grphead{list-style:none; padding:10px 4px 4px; font:700 13.5px/1.3 var(--fs); color:var(--accent); border-bottom:1px solid var(--line);}
-  .grphead span{color:var(--muted); font-weight:500;}
+  .ghead{list-style:none; padding:10px 4px 4px; font:700 13.5px/1.3 var(--fs); color:var(--accent); border-bottom:1px solid var(--line);}
+  .ghead > span{color:var(--muted); font-weight:500;}   /* v1.50 เดิมชื่อ .grphead ชนกับหัวใบเบิก (ป้ายแผนกตัวหนังสือเทากลืนพื้นน้ำเงิน) */
   .grpend{list-style:none; height:0; margin:0 0 8px; border-bottom:2px solid var(--line); padding:0 !important;}
   .gsug{margin-top:8px; padding:9px 10px; border:1px solid var(--accent); border-radius:8px; background:var(--accent-soft); font-size:14px;}
   .bcbox{margin:10px 0 0; padding:6px 10px; border:1px solid var(--line); border-radius:10px;}
@@ -444,7 +444,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.49</span>
+      <span class="ver" id="appVer">v1.50</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -466,7 +466,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.49 · อัปเดต 09/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.50 · อัปเดต 09/10/2026</div>
     </div>
   </header>
 
@@ -754,7 +754,7 @@
     while (i < list.length){
       var k = gk(list[i]), j = i;
       if (k && GRP[k]) while (j + 1 < list.length && gk(list[j + 1]) === k) j++;
-      if (j > i) h += '<li class="grphead">🗂 ' + esc(grpLabel(GRP[k])) + ' <span>(' + (j - i + 1) + ')</span></li>';
+      if (j > i) h += '<li class="ghead">🗂 ' + esc(grpLabel(GRP[k])) + ' <span>(' + (j - i + 1) + ')</span></li>';
       for (var t = i; t <= j; t++) h += rowFn(list[t]);
       if (j > i && j + 1 < list.length) h += '<li class="grpend" aria-hidden="true"></li>';   // ปิดกลุ่ม ไม่ให้ดูเหมือนตัวถัดไปอยู่กลุ่มเดียวกัน
       i = j + 1;
