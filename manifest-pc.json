@@ -1,0 +1,23 @@
+{
+ "name": "สแกนเบิก-รับ โรงงาน 1 (PC)",
+ "short_name": "สแกน PC",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "background_color": "#ffffff",
+ "theme_color": "#0b5d8f",
+ "icons": [
+  {
+   "src": "icon-pc-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any maskable"
+  },
+  {
+   "src": "icon-pc-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any maskable"
+  }
+ ]
+}

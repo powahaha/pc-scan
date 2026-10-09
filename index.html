@@ -6,6 +6,11 @@
 <meta name="theme-color" content="#0b5d8f">
 <style>:root{color-scheme:light dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html,body{height:100%}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>สแกนเบิกของ โรงงาน 1</title>
+<!-- v1.54 ไอคอนหน้าจอโฮม: PC = น้ำเงิน "PC" · แผนก (?v=dept) = เขียว "เบิก" -->
+<link rel="manifest" id="mf" href="manifest-pc.json">
+<link rel="icon" id="fav" href="icon-pc-192.png">
+<link rel="apple-touch-icon" id="ati" href="icon-pc-180.png">
+<script>(function(){ if (/[?&]v=dept/.test(location.search)) { document.getElementById('mf').href = 'manifest-dept.json'; document.getElementById('fav').href = 'icon-dept-192.png'; document.getElementById('ati').href = 'icon-dept-180.png'; var t = document.querySelector('meta[name="theme-color"]'); if (t) t.content = '#1e7f45'; } })();</script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
   :root{
@@ -366,6 +371,14 @@
   .bcbtns input{width:110px; min-height:34px; padding:4px 8px;}
   .bcbtns button{width:auto; min-height:34px; padding:0 10px; font-size:13px;}
   .bcx{color:var(--warn);}
+  /* v1.54 แท็บค้นหาของ: เครื่องมือย่อเป็นปุ่มแถวเดียว */
+  .toolrow{display:flex; gap:5px; flex-wrap:nowrap; margin:0 0 10px;}
+  .toolrow .tool{flex:1 1 0; justify-content:center; white-space:nowrap; text-decoration:none; font-size:13px; min-height:34px; padding:0 6px; display:inline-flex; align-items:center; gap:4px; background:var(--surface-2); color:var(--ink); border:1px solid var(--line);}
+  .toolrow .tool.on{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+  .toolrow .tool small{font-weight:700; color:var(--warn);} .toolrow .tool.on small{color:inherit;}
+  .toolcard.shut{display:none;}
+  #valBox{margin-top:8px !important; padding-top:8px !important;} #valBox .big{font-size:22px;} #valBox #valNote{font-size:12px;}
+  .angtag{color:var(--warn); font-weight:600;} .angtag.none{color:#d92d20;}
   /* v1.52 ดาวน์โหลด Excel อยู่ในการ์ดบนสุดของแท็บใบเบิก (พับไว้) */
   .xbox{margin-top:10px; border:1.5px solid var(--accent); border-radius:10px; padding:4px 12px 10px; background:var(--accent-soft);}
   .xbox summary{cursor:pointer; font-weight:700; color:var(--accent); padding:8px 0 4px; font-size:15px;}
@@ -447,7 +460,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.53</span>
+      <span class="ver" id="appVer">v1.54</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -469,7 +482,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.53 · อัปเดต 09/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.54 · อัปเดต 09/10/2026</div>
     </div>
   </header>
 
@@ -510,22 +523,13 @@
 
     <!-- ── แท็บ ค้นหา ── -->
     <section id="v-find" hidden>
-      <a class="card masterlink" href="master.html">📋 <span><b>ทะเบียนหลัก (Item Master)</b><span class="note" style="display:block; margin:2px 0 0">แก้ชื่อ หน่วย MIN/MAX ผู้ขาย จุดเก็บ ราคา หลายรายการเป็นตาราง · 🔒 แก้ได้เมื่อใส่ PIN · เหมาะกับคอม</span></span><span class="go">›</span></a>
-      <div class="card" id="cntCard">
-        <b>🔢 เดินนับสต็อก (นับใหม่ทั้งคลัง)</b>
-        <div id="cntBody"></div>
-      </div>
-      <div class="card" id="walkCard">
-        <div class="row" style="justify-content:space-between; gap:8px; align-items:center"><div><b>📷 เดินถ่ายรูป</b><div class="note" id="walkCount" style="margin:2px 0 0"></div></div>
-        <button class="primary" id="walkGo" style="width:auto; padding:0 16px">เริ่ม</button></div>
-        <div class="note" style="margin:6px 0 0">ถือมือถือเดินตามชั้น ระบบโชว์ชื่อของทีละชิ้น กดถ่าย → ไปชิ้นถัดไปเอง (เบิกบ่อยขึ้นก่อน) · ของหมดจะเตือนให้ถ่ายตอนของเข้า</div>
-      </div>
       <div class="card">
+        <div class="toolrow"><a class="chip tapchip tool" href="master.html">📋 ทะเบียน</a><button type="button" class="chip tapchip tool" data-tool="cntCard">🔢 เดินนับ <small id="cntDot"></small></button><button type="button" class="chip tapchip tool" data-tool="walkCard">📷 ถ่ายรูป <small id="walkDot"></small></button></div>
         <label class="fld" for="q">ค้นหาชื่อของหรือรหัส</label>
         <input type="text" id="q" placeholder="เช่น ถุงมือ, สีสเปรย์, CS-017" autocomplete="off">
         <div class="row" style="gap:8px; margin-top:8px; align-items:center">
           <label class="fld" for="qfilter" style="margin:0; white-space:nowrap">แสดง</label>
-          <select id="qfilter"><option value="all">ทั้งหมด</option><option value="any">ข้อมูลยังไม่ครบ</option><option value="nomin">ยังไม่ตั้ง MIN/MAX</option><option value="img">ยังไม่มีรูป</option><option value="maker">ยังไม่มีผู้ขาย (MK)</option><option value="unit">ยังไม่มีหน่วยนับ</option><option value="price">ยังไม่มีราคา</option><option value="out">ของหมด (คงเหลือ 0)</option><option value="hide">ซ่อนจากแผนก</option></select>
+          <select id="qfilter"><option value="all">ทั้งหมด</option><option value="any">ข้อมูลยังไม่ครบ</option><option value="nomin">ยังไม่ตั้ง MIN/MAX</option><option value="img">ยังไม่มีรูป</option><option value="ang">รูปยังไม่ครบ 3 มุม (บน·หน้า·หลัง)</option><option value="maker">ยังไม่มีผู้ขาย (MK)</option><option value="unit">ยังไม่มีหน่วยนับ</option><option value="price">ยังไม่มีราคา</option><option value="out">ของหมด (คงเหลือ 0)</option><option value="hide">ซ่อนจากแผนก</option></select>
         </div>
         <div class="note" id="qcount"></div>
         <div id="valBox" hidden style="margin-top:10px; padding-top:10px; border-top:1px solid var(--line)">
@@ -534,6 +538,15 @@
             <select id="qsort" style="width:auto"><option value="name">เรียงตามลำดับ</option><option value="value">มูลค่าสูงสุด</option><option value="unv">ราคายังไม่ยืนยัน</option></select>
           </div>
         </div>
+      </div>
+      <div class="card toolcard shut" id="cntCard">
+        <b>🔢 เดินนับสต็อก (นับใหม่ทั้งคลัง)</b>
+        <div id="cntBody"></div>
+      </div>
+      <div class="card toolcard shut" id="walkCard">
+        <div class="row" style="justify-content:space-between; gap:8px; align-items:center"><div><b>📷 เดินถ่ายรูป</b><div class="note" id="walkCount" style="margin:2px 0 0"></div></div>
+        <button class="primary" id="walkGo" style="width:auto; padding:0 16px">เริ่ม</button></div>
+        <div class="note" style="margin:6px 0 0">ถือมือถือเดินตามชั้น ระบบโชว์ชื่อของทีละชิ้น กดถ่าย → ไปชิ้นถัดไปเอง (เบิกบ่อยขึ้นก่อน) · ของหมดจะเตือนให้ถ่ายตอนของเข้า</div>
       </div>
       <div class="card"><ul class="list" id="findList"></ul></div>
     </section>
@@ -1805,6 +1818,7 @@
       rows = rows.filter(function(it){
         if (qf === 'out') return isOut(it);
         if (qf === 'hide') return isHidden(it);
+        if (qf === 'ang') return angMissing(it).length > 0;   // v1.54 รูปยังไม่ครบ 3 มุม
         var m = missingOf(it).map(function(x){ return x[0]; });
         if (qf === 'any') return m.length > 0;
         if (qf === 'nomin') return m.indexOf('mn') >= 0 || m.indexOf('mx') >= 0;
@@ -1844,6 +1858,7 @@
       + numLine(it, null)
       + subLine([
           isHidden(it) ? '🙈 ซ่อนจากแผนก' : '',
+          angMissing(it).length ? '<span class="angtag' + (angMissing(it).length === ANG.length ? ' none' : '') + '">📷 ' + (ANG.length - angMissing(it).length) + '/3</span>' : '',   // v1.54 รูปกี่มุมแล้ว
           ['all','out','hide'].indexOf(el('qfilter').value) < 0 && missingOf(it).length ? '<span class="over">ขาด ' + missingOf(it).map(function(x){ return x[1]; }).join(', ') + '</span>' : '',
           pinOk && stockPrice(it) != null ? 'มูลค่า ' + baht(Math.max(0, onHand(it)) * stockPrice(it)) + (unverified(it) ? ' <span class="over">⚠ยังไม่ยืนยัน</span>' : '') : ''
         ])
@@ -1855,6 +1870,16 @@
     });
   }
   el('q').addEventListener('input', renderFind);
+  // v1.54 แท็บค้นหาของ: ทะเบียนหลัก / เดินนับ / เดินถ่ายรูป ย่อเป็นปุ่มแถวเดียว แตะเพื่อเปิด-ปิด (จำค่าในเครื่อง)
+  (function(){
+    var open = lsGet('pcscan_tools', {});
+    function apply(){ document.querySelectorAll('[data-tool]').forEach(function(b){ var id = b.getAttribute('data-tool'), on = !!open[id];
+      var c = el(id); if (c) c.classList.toggle('shut', !on); b.classList.toggle('on', on); b.setAttribute('aria-expanded', on); }); }
+    document.querySelectorAll('[data-tool]').forEach(function(b){ b.addEventListener('click', function(){
+      var id = b.getAttribute('data-tool'); open[id] = !open[id]; lsSet('pcscan_tools', open); apply();
+      if (open[id] && el(id)) el(id).scrollIntoView({block: 'nearest', behavior: 'smooth'}); }); });
+    apply();
+  })();
   el('qsort').addEventListener('change', renderFind);
   el('qfilter').addEventListener('change', renderFind);
 
@@ -3038,6 +3063,7 @@
     var all = ITEMS.filter(function(it){ return angMissing(it).length; }).length;
     var none = ITEMS.filter(function(it){ return angMissing(it).length === ANG.length; }).length;
     var inStock = ITEMS.filter(function(it){ return angMissing(it).length && onHand(it) > 0; }).length;
+    if (el('walkDot')) el('walkDot').textContent = all ? all : '';   // v1.54 ตัวเลขบนปุ่มเครื่องมือ
     el('walkCount').textContent = all ? 'รูปยังไม่ครบ 3 มุม ' + all + ' รายการ (มีของในคลัง ' + inStock + (none ? ' · ไม่มีรูปเลย ' + none : '') + ')' : 'ของทุกชิ้นมีรูปครบ 3 มุมแล้ว 👍';
     el('walkGo').hidden = !all;
   }
@@ -3129,6 +3155,7 @@
   }
   function renderCountCard(){
     var c = el('cntCard'); if (!c) return;
+    if (el('cntDot')) el('cntDot').textContent = COUNT ? '●' : '';   // v1.54
     c.hidden = DEPT_MODE; if (DEPT_MODE) return;
     var b = el('cntBody');
     if (!COUNT){
