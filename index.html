@@ -377,6 +377,11 @@
   .toolrow .tool.on{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
   .toolrow .tool small{font-weight:700; color:var(--warn);} .toolrow .tool.on small{color:inherit;}
   .toolcard.shut{display:none;}
+  /* v1.61 รูปแนบใบขอเบิก + ของนอกระบบ */
+  .dphoto{position:relative; width:72px; height:72px;} .dphoto img{width:72px; height:72px; object-fit:cover; border-radius:8px; border:1px solid var(--line);}
+  .dphoto button{position:absolute; top:-6px; right:-6px; width:24px; height:24px; min-height:0; padding:0; border-radius:50%; font-size:14px; line-height:1;}
+  .reqpics{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;} .reqpics img.thumb{width:64px; height:64px; object-fit:cover;}
+  .xline{display:flex; gap:8px; align-items:center; justify-content:space-between; padding:6px 8px; margin-top:6px; border:1px dashed var(--warn); border-radius:8px;}
   #valBox{margin-top:8px !important; padding-top:8px !important;} #valBox .big{font-size:22px;} #valBox #valNote{font-size:12px;}
   .angtag{color:var(--warn); font-weight:600;} .angtag.none{color:#d92d20;}
   /* v1.52 ดาวน์โหลด Excel อยู่ในการ์ดบนสุดของแท็บใบเบิก (พับไว้) */
@@ -462,7 +467,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.60</span>
+      <span class="ver" id="appVer">v1.61</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -484,7 +489,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.60 · อัปเดต 09/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.61 · อัปเดต 09/10/2026</div>
     </div>
   </header>
 
@@ -643,8 +648,16 @@
       <div class="card">
         <h2>ใบขอเบิก <span id="d_n" class="note" style="margin:0"></span></h2>
         <div id="d_cart"></div>
+        <div class="xbox2" style="margin-top:12px"><b>🆕 ของที่ไม่มีในระบบ</b> <span class="note" style="margin:0">ค้นไม่เจอ — เขียนบอก PC ไว้ในใบ</span>
+          <div id="d_extra"></div>
+          <div class="row" style="gap:6px; margin-top:6px"><input type="text" id="d_xname" placeholder="ชื่อของ / ยี่ห้อ / ขนาด" autocomplete="off" style="flex:3; min-width:0">
+            <input type="number" id="d_xqty" inputmode="decimal" min="0" placeholder="จำนวน" style="flex:1; min-width:64px"><input type="text" id="d_xunit" list="units" placeholder="หน่วย" autocomplete="off" style="flex:1; min-width:56px"></div>
+          <button type="button" class="ghost" id="d_xadd" style="margin-top:6px; width:100%">+ เพิ่มของนอกระบบเข้าใบ</button></div>
         <div style="margin-top:10px"><label class="fld" for="d_note">หมายเหตุ (ถ้ามี)</label>
-          <input type="text" id="d_note" placeholder="เช่น ใช้กับงานซ่อมไลน์ 2" autocomplete="off"></div>
+          <input type="text" id="d_note" placeholder="เช่น ใช้กับงานซ่อมไลน์ 2" autocomplete="off">
+          <div class="row" style="gap:8px; margin-top:6px; align-items:center"><button type="button" class="ghost" id="d_photoBtn" style="width:auto; padding:0 14px; white-space:nowrap; flex:none">📷 แนบรูป</button><span class="note" style="margin:0">ใบละไม่เกิน 3 รูป เช่น ของเก่าที่พัง / จุดที่จะใช้</span></div>
+          <input type="file" id="d_photo" accept="image/*" multiple hidden>
+          <div id="d_photos" class="row" style="gap:6px; margin-top:6px; flex-wrap:wrap"></div></div>
         <div style="margin-top:14px"><button class="primary" id="d_send">ส่งใบขอเบิกให้ PC</button></div>
       </div>
     </section>
@@ -2333,7 +2346,7 @@
   function groupReq(list){
     var g = {}, order = [];
     list.forEach(function(r){
-      if (!g[r.no]){ g[r.no] = {no:r.no, ts:r.ts, dept:r.dept, who:r.who, round:r.round, note:r.note, lines:[]}; order.push(r.no); }
+      if (!g[r.no]){ g[r.no] = {no:r.no, ts:r.ts, dept:r.dept, who:r.who, round:r.round, note:r.note, photos:r.photos || '', lines:[]}; order.push(r.no); }
       g[r.no].lines.push(r);
     });
     return order.map(function(k){ return g[k]; }).sort(function(a,b){ return a.ts < b.ts ? 1 : -1; });
@@ -2363,11 +2376,20 @@
          : l.st === 'จ่ายบางส่วน' ? 'ได้ ' + fmt(pd) + u + ' (ขอ ' + fmt(l.qty) + ') · ส่วนที่เหลือไม่จ่าย'
          : l.st + ' (ขอ ' + fmt(l.qty) + u + ')';
   }
+  // v1.61 รูปแนบใบ + ของที่ไม่มีในระบบ (บันทึกไว้ในใบ ไม่ตัดสต็อก)
+  function reqPics(g){
+    var ids = String(g.photos || '').split(',').filter(Boolean); if (!ids.length) return '';
+    return '<div class="reqpics">' + ids.map(function(id, i){ return '<img class="thumb" loading="lazy" alt="รูปแนบ" src="' + imgUrl(id, 160) + '" data-big="' + esc(id) + '" data-cap="' + esc(g.no + ' · ' + g.dept + ' · รูป ' + (i + 1)) + '">'; }).join('') + '</div>';
+  }
+  function reqExtra(g){
+    var x = g.lines.filter(function(l){ return l.st === 'นอกระบบ'; }); if (!x.length) return '';
+    return '<div class="outnote soft" style="margin-top:6px">🆕 <b>ของที่ไม่มีในระบบ</b> (แผนกเขียนมา): ' + x.map(function(l){ return esc(l.name) + ' × ' + fmt(l.qty) + (l.unit ? ' ' + esc(l.unit) : ''); }).join(' · ') + '</div>';
+  }
   function histCard(g){          // v1.15: ใบย้อนหลังแบบพับ — แตะหัวใบถึงเปิดดูรายการ
     var st = grpState(g);
     return '<details class="card reqgrp hist"><summary>' + grpHead(g, st) + '</summary>'
-      + (g.note ? '<div class="note" style="margin:6px 0 0">หมายเหตุ: ' + esc(g.note) + '</div>' : '')
-      + '<ul class="list" style="margin-top:6px">' + g.lines.map(function(l){
+      + (g.note ? '<div class="note" style="margin:6px 0 0">หมายเหตุ: ' + esc(g.note) + '</div>' : '') + reqPics(g) + reqExtra(g)
+      + '<ul class="list" style="margin-top:6px">' + g.lines.filter(function(l){ return l.st !== 'นอกระบบ'; }).map(function(l){
           var it = getSku(l.sku);
           return '<li><div class="li-top" style="justify-content:flex-start">' + thumb(it) + '<div class="grow"><div class="li-name" style="font-weight:500">' + esc(l.name) + '</div>'
             + '<div class="li-meta">' + lineText(l)
@@ -2377,7 +2399,8 @@
       + '</details>';
   }
   function grpState(g){
-    var st = g.lines.map(function(l){ return l.st; });
+    var st = g.lines.map(function(l){ return l.st; }).filter(function(x){ return x !== 'นอกระบบ'; });
+    if (!st.length) return {k:'na', t:'นอกระบบ'};   // v1.61 ใบที่มีแต่ของนอกระบบ
     if (st.indexOf('รอจ่าย') >= 0){
       var some = g.lines.some(function(l){ return (+l.paid || 0) > 0; });
       return {k:'warn', t: some ? 'ค้างจ่าย' : 'รอจ่าย'};        // v1.14: จ่ายไปบางส่วนแล้ว ที่เหลือรอของ
@@ -2411,7 +2434,7 @@
         + '<div class="grphead"><div class="grow">' + deptChip(g.dept) + '<div class="grpdate">📅 ' + whenTH(g.ts) + '</div>'
         +   '<div class="li-meta">' + esc(g.no) + ' · ' + esc(g.who) + '</div></div>'
         +   '<span class="chip ' + (urgent ? 'warn' : 'na') + '">' + esc(g.round || 'ในรอบศุกร์') + '</span></div>'
-        + (g.note ? '<div class="note" style="margin:4px 0 0">หมายเหตุ: ' + esc(g.note) + '</div>' : '')
+        + (g.note ? '<div class="note" style="margin:4px 0 0">หมายเหตุ: ' + esc(g.note) + '</div>' : '') + reqPics(g) + reqExtra(g)
         + g.lines.filter(function(l){ return l.st === 'รอจ่าย'; }).map(function(l){
             var it = getSku(l.sku), n = it ? onHand(it) : null;
             var paid = +l.paid || 0, rem = Math.max(0, l.qty - paid);
@@ -2430,7 +2453,10 @@
         +     (cancelArm === g.no ? 'แตะอีกครั้ง ยกเลิกใบ' : 'ยกเลิกใบ') + '</button>'
         + '</div></div>';
     }).join('') : '<div class="card"><div class="note" style="margin:0">ไม่มีใบค้าง 👍</div></div>';
-    el('i_list').querySelectorAll('.reqgrp').forEach(function(box){
+    // v1.61 ใบที่มีแต่ของนอกระบบ (14 วันล่าสุด) — ไม่ต้องจ่าย แต่ให้ PC เห็น
+    var xo = groups.filter(function(g){ return grpState(g).t === 'นอกระบบ' && Date.now() - Date.parse(g.ts) < 14 * 864e5; });
+    if (xo.length) el('i_list').innerHTML += '<div class="note" style="margin:12px 0 4px"><b>🆕 ใบที่มีแต่ของนอกระบบ</b> (บันทึกไว้ ไม่ตัดสต็อก · 14 วันล่าสุด)</div>' + xo.map(histCard).join('');
+    el('i_list').querySelectorAll('.reqgrp[data-no]').forEach(function(box){
       var no = box.getAttribute('data-no');
       box.querySelector('[data-act="pay"]').addEventListener('click', function(){ payReq(no, box, this); });
       box.querySelector('[data-act="cancel"]').addEventListener('click', function(){
@@ -2520,7 +2546,9 @@
         + '<div class="li-name">' + esc(it.name) + '</div>' + descLine(it)
         + (n > 0 ? '<div class="stk ' + stockCls(it) + '">📦 มีของ ' + fmt(n) + ' ' + esc(it.unit || '') + '</div>' : '<div class="stk out">⛔ ของหมด</div><div class="li-meta">ขอได้ — ใบจะค้างไว้จนของเข้า</div>')
         + '</div><span class="addbtn' + (inCart ? ' in' : '') + '" aria-label="' + (inCart ? 'อยู่ในใบแล้ว' : 'เพิ่ม') + '">' + (inCart ? '✓' : '+') + '</span></div></li>';
-    }).join('') || '<li class="empty">ไม่พบ — ลองคำอื่น หรือเขียนในหมายเหตุ</li>';
+    }).join('') || '<li class="empty">ไม่พบ "' + esc(q) + '" — ลองคำอื่น หรือ <button type="button" class="ghost" data-xfill style="width:auto; min-height:32px; padding:0 10px">🆕 ขอเป็นของนอกระบบ</button></li>';   // v1.61
+    var xf = el('d_list').querySelector('[data-xfill]');
+    if (xf) xf.addEventListener('click', function(){ el('d_xname').value = el('d_q').value.trim(); el('d_xqty').focus(); el('d_xname').scrollIntoView({block:'center', behavior:'smooth'}); });
     el('d_list').querySelectorAll('[data-add]').forEach(function(li){
       li.addEventListener('click', function(){
         var it = getSku(li.getAttribute('data-add')); if (!it) return;
@@ -2563,17 +2591,50 @@
       var lines = cart.filter(function(c){ return c.qty > 0; }).map(function(c){ var it = getSku(c.sku); return {sku: c.sku, name: it ? it.name : c.name, unit: it ? (it.unit || '') : c.unit, qty: c.qty}; });
       if (!dept){ toast('เลือกแผนกก่อน', true); el('d_dept').focus(); return; }
       if (!rw){ toast('ใส่ชื่อผู้ขอก่อน', true); el('d_who').focus(); return; }
-      if (!lines.length){ toast('ยังไม่มีของในใบ', true); el('d_q').focus(); return; }
+      if ((el('d_xname').value || '').trim() && +el('d_xqty').value > 0) dxAdd();   // พิมพ์ของนอกระบบไว้แต่ลืมกดเพิ่ม
+      if (!lines.length && !dExtra.length){ toast('ยังไม่มีของในใบ', true); el('d_q').focus(); return; }
       lsSetRaw(K_DEPT, dept); lsSetRaw(K_RWHO, rw);
-      reqAction({action:'request', req:{dept:dept, who:rw, round:el('d_round').value, note:(el('d_note').value || '').trim(), lines:lines}},
+      reqAction({action:'request', req:{dept:dept, who:rw, round:el('d_round').value, note:(el('d_note').value || '').trim(), lines:lines, extra:dExtra, photos:dPhotos}},
                 '', el('d_send')).then(function(j){
         if (!j) return;
         if (!j.reqNo){ toast('ส่งไม่สำเร็จ — ระบบฝั่ง Sheet ยังไม่อัปเดต แจ้ง PC', true); return; }
         toast('ส่งใบ ' + j.reqNo + ' ให้ PC แล้ว');
         cart = []; saveCart(); el('d_note').value = ''; el('d_q').value = ''; el('d_round').value = 'ในรอบศุกร์';
+        dExtra = []; lsSet('pcscan_dextra', dExtra); dPhotos = []; renderDExtra(); renderDPhotos();   // v1.61
         show('t-mine');
       });
     });
+  }
+
+  /* ---------- v1.61 มุมมองแผนก: ของที่ไม่มีในระบบ + รูปแนบใบ ---------- */
+  var dExtra = lsGet('pcscan_dextra', []), dPhotos = [];
+  function renderDExtra(){
+    var box = el('d_extra'); if (!box) return;
+    box.innerHTML = dExtra.map(function(x, i){ return '<div class="xline"><span>🆕 <b>' + esc(x.name) + '</b> × ' + fmt(x.qty) + (x.unit ? ' ' + esc(x.unit) : '') + '</span><button type="button" class="ghost qb del" data-xdel="' + i + '" aria-label="ลบ">×</button></div>'; }).join('');
+    box.querySelectorAll('[data-xdel]').forEach(function(b){ b.addEventListener('click', function(){ dExtra.splice(+b.getAttribute('data-xdel'), 1); lsSet('pcscan_dextra', dExtra); renderDExtra(); }); });
+  }
+  function dxAdd(){
+    var n = (el('d_xname').value || '').trim(), q = +el('d_xqty').value || 0, u = (el('d_xunit').value || '').trim();
+    if (!n){ toast('ใส่ชื่อของก่อน', true); el('d_xname').focus(); return false; }
+    if (!(q > 0)){ toast('ใส่จำนวนก่อน', true); el('d_xqty').focus(); return false; }
+    dExtra.push({name: n, qty: q, unit: u}); lsSet('pcscan_dextra', dExtra);
+    el('d_xname').value = ''; el('d_xqty').value = ''; el('d_xunit').value = ''; renderDExtra(); return true;
+  }
+  function renderDPhotos(){
+    var box = el('d_photos'); if (!box) return;
+    box.innerHTML = dPhotos.map(function(d, i){ return '<div class="dphoto"><img src="' + d + '" alt="รูปแนบ ' + (i + 1) + '"><button type="button" class="ghost" data-pdel="' + i + '" aria-label="ลบรูป">×</button></div>'; }).join('');
+    box.querySelectorAll('[data-pdel]').forEach(function(b){ b.addEventListener('click', function(){ dPhotos.splice(+b.getAttribute('data-pdel'), 1); renderDPhotos(); }); });
+    if (el('d_photoBtn')) el('d_photoBtn').textContent = '📷 แนบรูป' + (dPhotos.length ? ' (' + dPhotos.length + '/3)' : '');
+  }
+  if (DEPT_MODE && el('d_xadd')){
+    el('d_xadd').addEventListener('click', function(){ if (dxAdd()) toast('เพิ่มของนอกระบบเข้าใบแล้ว'); });
+    el('d_photoBtn').addEventListener('click', function(){ if (dPhotos.length >= 3){ toast('แนบได้ใบละ 3 รูป — ลบรูปเดิมก่อน', true); return; } el('d_photo').click(); });
+    el('d_photo').addEventListener('change', function(){
+      var fs = [].slice.call(this.files || [], 0, 3 - dPhotos.length), inp = this;
+      Promise.all(fs.map(shrink)).then(function(ds){ dPhotos = dPhotos.concat(ds).slice(0, 3); renderDPhotos(); })['catch'](function(e){ toast((e && e.message) || 'อ่านรูปไม่ได้', true); })
+        .then(function(){ inp.value = ''; });
+    });
+    renderDExtra(); renderDPhotos();
   }
 
   /* ---------- มุมมองแผนก: ใบของแผนก ---------- */
