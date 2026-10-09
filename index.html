@@ -398,7 +398,9 @@
   .chip.warn{background:var(--warn-soft); color:var(--warn);}
   .chip.near{background:rgba(245,166,35,.16); color:#a86500;}
   .nums .nv.near{color:#c27c00;}
+  ul.list li.shortrow{box-shadow:inset 3px 0 0 #d92d20;}
   ul.list li.lowsep{background:rgba(245,166,35,.10); color:#8a5400; font-size:13px; padding:10px 12px; border-radius:8px; margin-top:10px; cursor:default;}
+  ul.list li.lowsep.shortsep{background:rgba(217,45,32,.10); color:#b42318; margin-top:0;}   /* v1.55 */
   ul.list li.nearrow{opacity:.85;}
   .chip.out{background:#c62828; color:#fff; font-weight:700;}
   .outbar{margin:10px 0 0; padding:10px 12px; border-radius:10px; background:#fdecea; color:#b71c1c; border:1.5px solid #e53935; font-weight:700; font-size:16px;}
@@ -460,7 +462,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.54</span>
+      <span class="ver" id="appVer">v1.55</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -482,7 +484,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.54 · อัปเดต 09/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.55 · อัปเดต 09/10/2026</div>
     </div>
   </header>
 
@@ -1884,8 +1886,24 @@
   el('qfilter').addEventListener('change', renderFind);
 
   /* ================= ต้องเติม ================= */
+  // v1.55 ยอดที่ใบขอเบิกยังรอจ่าย (รอจ่าย/จ่ายไม่ครบ) ต่อรหัส → ใช้บอก "ของไม่พอจ่ายใบเบิก"
+  function pendingDemand(){
+    var d = {};
+    (requests || []).forEach(function(l){
+      if (l.st !== 'รอจ่าย') return;
+      var left = (+l.qty || 0) - (+l.paid || 0); if (!(left > 0)) return;
+      var k = String(l.sku).toUpperCase(), x = d[k] = d[k] || {q: 0, depts: {}, nos: {}};
+      x.q += left; if (l.dept) x.depts[l.dept] = 1; x.nos[l.no] = 1;
+    });
+    return d;
+  }
   function renderLow(){
-    var low = ITEMS.filter(function(it){ return status(it).k === 'warn' && !isHidden(it); });   // v1.15: ของที่ซ่อนจากแผนก ไม่ขึ้นต้องเติม
+    var DEM = pendingDemand();
+    var short = ITEMS.filter(function(it){ var x = DEM[String(it.sku).toUpperCase()]; return x && x.q > Math.max(0, onHand(it)); });
+    var shortK = {}; short.forEach(function(it){ shortK[it.sku] = 1; });
+    short.sort(function(a, b){ var xa = DEM[String(a.sku).toUpperCase()], xb = DEM[String(b.sku).toUpperCase()];
+      return (xb.q - Math.max(0, onHand(b))) - (xa.q - Math.max(0, onHand(a))); });
+    var low = ITEMS.filter(function(it){ return status(it).k === 'warn' && !isHidden(it) && !shortK[it.sku]; });   // v1.15: ของที่ซ่อนจากแผนก ไม่ขึ้นต้องเติม · v1.55 ตัวที่ไม่พอจ่ายใบเบิก ขึ้นด้านบนแยก
     var unk = low.filter(function(it){ return !(+it.stock > 0); }).length;
     low.sort(function(a,b){ return (onHand(a) - (+a.mn||0)) - (onHand(b) - (+b.mn||0)); });
     el('lowCount').textContent = low.length;
@@ -1894,12 +1912,14 @@
     el('sTotal').textContent = ITEMS.length;
     var today0 = new Date(); today0.setHours(0,0,0,0);
     el('sScans').textContent = log.filter(function(r){ return new Date(r.ts) >= today0; }).length;
-    var b = el('tabBadge'); b.hidden = low.length === 0; b.textContent = low.length;
+    var b = el('tabBadge'), bn = low.length + short.length; b.hidden = bn === 0; b.textContent = bn;   // v1.55 + ของไม่พอจ่ายใบเบิก
     var lc = el('lowCost');
     if (lc){
       var cost = 0, miss = 0;
       low.forEach(function(it){ var need = (+it.mx > 0) ? Math.max(0, (+it.mx) - onHand(it)) : 0; var c = cheapest(it), u = c ? c.price : unitPrice(it);
         if (!need) return; if (u == null) miss++; else cost += need / pf(it) * u; });
+      short.forEach(function(it){ var x = DEM[String(it.sku).toUpperCase()], need = +it.mx > 0 ? Math.max(x.q - Math.max(0, onHand(it)), (+it.mx) - onHand(it) + x.q) : x.q - Math.max(0, onHand(it));   // v1.55 รวมของไม่พอจ่ายใบเบิก
+        var c = cheapest(it), u = c ? c.price : unitPrice(it); if (!(need > 0)) return; if (u == null) miss++; else cost += need / pf(it) * u; });
       lc.hidden = !pinOk;
       lc.textContent = 'งบเติมถึง MAX ประมาณ ' + baht(cost) + ' (คิดจากร้านถูกสุด)' + (miss ? ' · ไม่มีราคา ' + miss + ' รายการ' : '');
     }
@@ -1907,14 +1927,26 @@
     var near = ITEMS.filter(function(it){ return status(it).k === 'near' && !isHidden(it); });
     near.sort(function(a, b){ return a.sku < b.sku ? -1 : 1; });
     low = clusterByGroup(low);   // v1.49 ของกลุ่มเดียวกันอยู่ติดกัน + หัวกลุ่ม
-    el('lowList').innerHTML = grpHeads(low, function(it){
+    var shortHtml = short.length ? '<li class="lowsep shortsep">⛔ <b>ของไม่พอจ่ายใบเบิก ' + short.length + ' รายการ</b> — แผนกขอมาแล้ว ของในคลังไม่พอ ต้องสั่งด่วน</li>'
+      + short.map(function(it){
+        var x = DEM[String(it.sku).toUpperCase()], n = Math.max(0, onHand(it)), gap = x.q - n, u = esc(it.unit || '');
+        var buy = +it.mx > 0 ? Math.max(gap, (+it.mx) - onHand(it) + x.q) : gap;
+        return '<li class="tap shortrow" data-sku="' + esc(it.sku) + '"><div class="li-top">' + thumb(it) + '<div class="grow">'
+          + '<div class="li-name">' + esc(it.name) + '</div>'
+          + '<div class="nums"><span class="skutag">' + esc(it.sku) + '</span> <span class="nl">ใบเบิกรอ <b class="nv">' + fmt(x.q) + '</b></span>'
+          + '<span class="nl">มี <b class="nv ' + (n > 0 ? 'ok' : 'out') + '">' + fmt(n) + '</b></span><span class="nl">ขาด <b class="nv out">' + fmt(gap) + '</b> <span class="nu">' + u + '</span></span></div>'
+          + subLine(['📋 ' + esc(Object.keys(x.depts).join(', ') || 'ไม่ระบุแผนก') + ' · ' + Object.keys(x.nos).length + ' ใบ', 'ควรสั่ง <b>' + fmt(buy) + '</b> ' + u + (+it.mx > 0 ? ' (รวมเติมถึง MAX)' : '')])
+          + '</div><span class="chip out">ไม่พอจ่าย</span></div></li>';
+      }).join('') + (low.length ? '<li class="lowsep">🛒 <b>ต่ำกว่า MIN ' + low.length + ' รายการ</b></li>' : '') : '';
+    el('lowList').innerHTML = shortHtml + grpHeads(low, function(it){
       var need = (+it.mx > 0) ? Math.max(0, (+it.mx) - onHand(it)) : null;
       return '<li class="tap" data-sku="' + esc(it.sku) + '"><div class="li-top">' + thumb(it) + '<div class="grow">'
         + '<div class="li-name">' + esc(it.name) + '</div>'
         + numLine(it, need)
-        + subLine([pinOk && need && (cheapest(it) || unitPrice(it) != null) ? '≈ ' + baht(need / pf(it) * (cheapest(it) ? cheapest(it).price : unitPrice(it))) + (cheapest(it) ? ' · 🏪 ' + esc(cheapest(it).shop) : '') : ''])
+        + subLine([pinOk && need && (cheapest(it) || unitPrice(it) != null) ? '≈ ' + baht(need / pf(it) * (cheapest(it) ? cheapest(it).price : unitPrice(it))) + (cheapest(it) ? ' · 🏪 ' + esc(cheapest(it).shop) : '') : '',
+          DEM[String(it.sku).toUpperCase()] ? '📋 ใบเบิกรอ ' + fmt(DEM[String(it.sku).toUpperCase()].q) + ' (ยังพอจ่าย)' : ''])
         + '</div><span class="chip warn">ต้องเติม</span></div></li>';
-    }) + (low.length ? '' : '<li class="empty">ไม่มีของที่ต่ำกว่า MIN 👍</li>')
+    }) + (low.length || short.length ? '' : '<li class="empty">ไม่มีของที่ต่ำกว่า MIN 👍</li>')
       + (near.length ? '<li class="lowsep">⏳ <b>ถึง MIN พอดี ' + near.length + ' รายการ</b> — ยังไม่ต้องซื้อ เบิกออกอีกชิ้นจะขึ้นต้องเติม</li>'
         + near.map(function(it){
           return '<li class="tap nearrow" data-sku="' + esc(it.sku) + '"><div class="li-top">' + thumb(it) + '<div class="grow">'
