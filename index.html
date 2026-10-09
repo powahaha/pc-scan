@@ -345,6 +345,27 @@
   .qty input{text-align:center; font-size:20px; font-weight:600;}
 
   .itemname{font-size:17px; font-weight:700; line-height:1.35; margin:0 0 3px; text-wrap:balance;}
+  /* v1.49 คำอธิบาย + กลุ่ม + บาร์โค้ด */
+  .itemdesc{font-size:14px; line-height:1.45; color:var(--ink); background:var(--surface-2); border-left:3px solid var(--accent); padding:5px 9px; border-radius:6px; margin:2px 0 6px;}
+  .li-desc{font-size:12.5px; line-height:1.4; color:var(--muted); margin-top:1px;}
+  .grpbox{margin:8px 0 2px; padding:8px 10px; border:1px dashed var(--line); border-radius:10px;}
+  .grpchips{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;}
+  .grpchip{display:inline-flex; align-items:center; gap:6px; min-height:34px; padding:4px 10px; border-radius:999px; border:1.5px solid var(--line); background:var(--surface); color:var(--ink); font:500 13px/1.25 var(--fs); cursor:pointer; text-align:left;}
+  .grpchip b{font:800 14px/1 var(--fs); color:var(--ok);}
+  .grpchip.out b{color:#d92d20;}
+  .grpchip.on{border-color:var(--accent); background:var(--accent-soft); box-shadow:0 0 0 1px var(--accent) inset; font-weight:700;}
+  .grphead{list-style:none; padding:10px 4px 4px; font:700 13.5px/1.3 var(--fs); color:var(--accent); border-bottom:1px solid var(--line);}
+  .grphead span{color:var(--muted); font-weight:500;}
+  .grpend{list-style:none; height:0; margin:0 0 8px; border-bottom:2px solid var(--line); padding:0 !important;}
+  .gsug{margin-top:8px; padding:9px 10px; border:1px solid var(--accent); border-radius:8px; background:var(--accent-soft); font-size:14px;}
+  .bcbox{margin:10px 0 0; padding:6px 10px; border:1px solid var(--line); border-radius:10px;}
+  .bcbox summary{cursor:pointer; font-weight:600; font-size:14px; padding:4px 0;}
+  .bcrow{display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:6px 0; border-top:1px solid var(--line);}
+  .bcrow code{font-size:14px; flex:1 1 130px;}
+  .bcbtns{display:flex; gap:6px; flex-wrap:wrap; align-items:center;}
+  .bcbtns input{width:110px; min-height:34px; padding:4px 8px;}
+  .bcbtns button{width:auto; min-height:34px; padding:0 10px; font-size:13px;}
+  .bcx{color:var(--warn);}
   .sku{font:600 12px var(--fm); color:var(--muted); letter-spacing:.04em;}
   dl.facts{display:grid; grid-template-columns:auto 1fr; gap:4px 12px; margin:12px 0 0;}
   dl.facts dt{font-size:12px; color:var(--muted);}
@@ -423,7 +444,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.48</span>
+      <span class="ver" id="appVer">v1.49</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -445,7 +466,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.48 · อัปเดต 08/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.49 · อัปเดต 09/10/2026</div>
     </div>
   </header>
 
@@ -550,6 +571,12 @@
         <label class="fld" for="a_name">ชื่อรายการ *</label>
         <input type="text" id="a_name" placeholder="เช่น แปรงถ่าน Makita CB-411A" autocomplete="off">
         <div id="a_dup" hidden style="margin-top:8px; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--warn-soft)"></div>
+        <div id="a_gsug" class="gsug" hidden></div>
+        <div style="margin-top:10px"><label class="fld" for="a_desc">คำอธิบาย (คืออะไร ใช้ทำอะไร · ไม่บังคับ)</label>
+          <input type="text" id="a_desc" placeholder="เช่น แปรงถ่านอะไหล่มอเตอร์เครื่องมือไฟฟ้า" autocomplete="off"></div>
+        <div style="margin-top:10px"><label class="fld" for="a_grp">กลุ่ม (ของคล้ายกัน ต่างขนาด/สี · ไม่บังคับ)</label>
+          <select id="a_grp"><option value="">— ไม่มีกลุ่ม —</option></select>
+          <input type="text" id="a_gnew" hidden placeholder="ชื่อกลุ่มใหม่ เช่น ดอกสว่านเจาะเหล็ก" autocomplete="off" style="margin-top:6px"></div>
         <div class="row" style="margin-top:12px; gap:8px; flex-wrap:wrap">
           <div style="flex:1 1 130px"><label class="fld" for="a_unit">หน่วยนับ *</label>
             <input type="text" id="a_unit" list="units" placeholder="ชิ้น / กล่อง / ลิตร" autocomplete="off"><div class="shopchips"><button type="button" class="chip na tapchip" data-fill="a_unit">ชิ้น</button><button type="button" class="chip na tapchip" data-fill="a_unit">กก.</button><button type="button" class="chip na tapchip" data-fill="a_unit">กล่อง</button><button type="button" class="chip na tapchip" data-fill="a_unit">แพ็ค</button><button type="button" class="chip na tapchip" data-fill="a_unit">ม้วน</button><button type="button" class="chip na tapchip" data-fill="a_unit">ลิตร</button><button type="button" class="chip na tapchip" data-fill="a_unit">ถัง</button><button type="button" class="chip na tapchip" data-fill="a_unit">กระป๋อง</button><button type="button" class="chip na tapchip" data-fill="a_unit">ชุด</button><button type="button" class="chip na tapchip" data-fill="a_unit">อัน</button><button type="button" class="chip na tapchip" data-fill="a_unit">เมตร</button><button type="button" class="chip na tapchip" data-fill="a_unit">โหล</button></div></div>
@@ -609,7 +636,7 @@
       <div class="card">
         <h2>รายการที่ขอเบิกได้ <span class="note" id="l_n" style="margin:0"></span></h2>
         <div class="note" id="l_dept" style="margin:0"></div>
-        <div class="row" id="l_sortrow" style="gap:6px; margin-top:8px; align-items:center; flex-wrap:wrap"><span class="li-meta">เรียง:</span><button type="button" class="chip na tapchip" data-lsort="name">ชื่อ ก-ฮ</button><button type="button" class="chip na tapchip" data-lsort="sku">รหัส</button></div>
+        <div class="row" id="l_sortrow" style="gap:6px; margin-top:8px; align-items:center; flex-wrap:wrap"><span class="li-meta">เรียง:</span><button type="button" class="chip na tapchip" data-lsort="grp">ตามกลุ่ม</button><button type="button" class="chip na tapchip" data-lsort="name">ชื่อ ก-ฮ</button><button type="button" class="chip na tapchip" data-lsort="sku">รหัส</button></div>
       </div>
       <div class="card"><ul class="list" id="l_list"></ul></div>
     </section>
@@ -708,6 +735,108 @@
       : '<span class="thumb none" aria-hidden="true"></span>';
   }
   function getSku(s){ s = String(s || '').toUpperCase(); return BY_SKU[s] || OFF_SKU[s] || null; }
+  // v1.49 กลุ่มของ (รหัสแม่ → รหัสลูก) + คำอธิบายของ · รหัส CS-xxx เดิมไม่เปลี่ยน
+  var GROUPS = [], GRP = {};
+  function setGroups(list){ GROUPS = (list || []).slice(); GRP = {}; GROUPS.forEach(function(g){ GRP[String(g.g).toUpperCase()] = g; }); }
+  function gk(it){ return String((it && it.grp) || '').toUpperCase(); }
+  function grpOf(it){ var k = gk(it); return (k && GRP[k]) || null; }
+  function grpMembers(g){ g = String(g || '').toUpperCase(); return g ? ITEMS.filter(function(x){ return gk(x) === g; }) : []; }
+  function grpLabel(g){ return g ? (g.cat ? g.cat + ' › ' : '') + g.name : ''; }
+  function grpText(it){ var g = grpOf(it); return g ? [g.name, g.kw, g.cat].join(' ') : ''; }
+  function clusterByGroup(list){      // ของกลุ่มเดียวกันมาอยู่ติดกัน (ลำดับตามตัวแรกของกลุ่มที่เจอ)
+    var seen = {}, out = [];
+    list.forEach(function(it){ var k = gk(it); if (!k || !GRP[k]){ out.push(it); return; } if (seen[k]) return; seen[k] = 1;
+      list.forEach(function(x){ if (gk(x) === k) out.push(x); }); });
+    return out;
+  }
+  function grpHeads(list, rowFn){     // หัวกลุ่มคั่น เมื่อของกลุ่มเดียวกันติดกัน ≥ 2 ตัว
+    var h = '', i = 0;
+    while (i < list.length){
+      var k = gk(list[i]), j = i;
+      if (k && GRP[k]) while (j + 1 < list.length && gk(list[j + 1]) === k) j++;
+      if (j > i) h += '<li class="grphead">🗂 ' + esc(grpLabel(GRP[k])) + ' <span>(' + (j - i + 1) + ')</span></li>';
+      for (var t = i; t <= j; t++) h += rowFn(list[t]);
+      if (j > i && j + 1 < list.length) h += '<li class="grpend" aria-hidden="true"></li>';   // ปิดกลุ่ม ไม่ให้ดูเหมือนตัวถัดไปอยู่กลุ่มเดียวกัน
+      i = j + 1;
+    }
+    return h;
+  }
+  function descLine(it){ return it && it.desc ? '<div class="li-desc">' + esc(it.desc) + '</div>' : ''; }
+  function shortIn(x, mem){           // ตัดคำหน้าที่ทุกตัวในกลุ่มเหมือนกัน เหลือส่วนที่ต่าง (ขนาด/สี/รุ่น)
+    var a = mem.map(function(m){ return String(m.name); }), p = a[0] || '';
+    a.forEach(function(s){ var i = 0; while (i < p.length && i < s.length && p[i] === s[i]) i++; p = p.slice(0, i); });
+    var cut = p.lastIndexOf(' '); cut = cut > 2 ? cut : 0;
+    var s = String(x.name).slice(cut).trim();
+    return s.length > 28 ? s.slice(0, 27) + '…' : s;
+  }
+  function grpStrip(it){
+    var g = grpOf(it); if (!g) return '';
+    var mem = grpMembers(g.g).sort(function(a, b){ return a.sku < b.sku ? -1 : 1; });
+    return '<div class="grpbox"><div class="li-meta">🗂 กลุ่ม <b>' + esc(grpLabel(g)) + '</b>' + (mem.length > 1 ? ' · ' + mem.length + ' ตัว — แตะเพื่อสลับ' : '') + '</div>'
+      + (mem.length > 1 ? '<div class="grpchips">' + mem.map(function(x){ var n = onHand(x);
+          return '<button type="button" class="grpchip' + (x.sku === it.sku ? ' on' : '') + (n <= 0 ? ' out' : '') + '" data-gsku="' + esc(x.sku) + '">'
+            + '<span>' + esc(shortIn(x, mem)) + '</span><b>' + fmt(n) + '</b></button>'; }).join('') + '</div>' : '')
+      + '</div>';
+  }
+  function bindGrp(it){
+    el('hit').querySelectorAll('[data-gsku]').forEach(function(b){ b.addEventListener('click', function(){
+      var x = getSku(b.getAttribute('data-gsku')); if (x && x.sku !== it.sku) pick(x, false); }); });
+  }
+  function suggestGrp(name){          // เดากลุ่มจากชื่อ (เทียบทีละ 3 ตัวอักษร) — แค่แนะนำ คนยืนยันเสมอ
+    var a = triG(name), ka = Object.keys(a); if (ka.length < 3 || !GROUPS.length) return null;
+    var best = null;
+    function sc(t){ var b = triG(t), kb = Object.keys(b), c = 0; ka.forEach(function(x){ if (b[x]) c++; }); return kb.length ? 2 * c / (ka.length + kb.length) : 0; }
+    ITEMS.forEach(function(it){ var g = grpOf(it); if (!g) return; var s = sc(it.name); if (!best || s > best.sc) best = {g: g, sc: s}; });
+    GROUPS.forEach(function(g){ var s = Math.max(sc(g.name), sc(g.name + ' ' + String(g.kw).split(',')[0])); if (!best || s > best.sc) best = {g: g, sc: s}; });
+    return best && best.sc >= 0.32 ? best.g : null;
+  }
+  function grpOptions(cur){
+    return '<option value="">— ไม่มีกลุ่ม —</option>' + GROUPS.slice().sort(function(a, b){ return a.g < b.g ? -1 : 1; }).map(function(g){
+      return '<option value="' + esc(g.g) + '"' + (String(cur || '').toUpperCase() === String(g.g).toUpperCase() ? ' selected' : '') + '>' + esc(g.g + ' · ' + grpLabel(g)) + '</option>'; }).join('')
+      + '<option value="__new">＋ สร้างกลุ่มใหม่…</option>';
+  }
+  function newGroup(name){            // สร้างกลุ่มใหม่ (ต้อง PIN) → คืนรหัสกลุ่ม
+    name = String(name || '').trim();
+    if (!name) return Promise.reject(new Error('ใส่ชื่อกลุ่มใหม่ก่อน'));
+    if (!pinOk) return Promise.reject(new Error('สร้างกลุ่มใหม่ต้องใส่ PIN ของ PC'));
+    var ex = GROUPS.filter(function(g){ return String(g.name).toLowerCase() === name.toLowerCase(); })[0];
+    if (ex) return Promise.resolve(ex.g);
+    return api({action:'setgroup', group:{name: name, kw: '', cat: ''}}).then(function(j){ takeServer(j); return j.group; });
+  }
+  // v1.49 บาร์โค้ดที่ผูกกับรหัสนี้ + ยกเลิกผูก / ย้ายไปรหัสอื่น (ต้อง PIN)
+  var bcArm = null, bcOpen = null;
+  function bcList(it){ var s = String(it.sku).toUpperCase(); return Object.keys(bcMap).filter(function(k){ return String(bcMap[k]).toUpperCase() === s; }); }
+  function bcBlock(it){
+    if (DEPT_MODE) return '';
+    var L = bcList(it); if (!L.length) return '';
+    return '<details class="bcbox" id="bcbox"' + (bcOpen === it.sku ? ' open' : '') + '><summary>🏷 บาร์โค้ดที่ผูกไว้ (' + L.length + ')</summary>'
+      + L.map(function(c){ return '<div class="bcrow"><code>' + esc(c) + '</code>'
+        + (pinOk ? '<span class="bcbtns"><input type="text" class="bcmv" data-mvin="' + esc(c) + '" placeholder="ย้ายไป CS-…" autocomplete="off">'
+          + '<button type="button" class="ghost" data-mv="' + esc(c) + '">↪ ย้าย</button>'
+          + '<button type="button" class="ghost bcx" data-unbind="' + esc(c) + '">' + (bcArm === c ? 'แตะอีกครั้ง ยืนยัน' : '✕ ยกเลิกผูก') + '</button></span>' : '')
+        + '</div>'; }).join('')
+      + (pinOk ? '<div class="note" style="margin:4px 0 0">ผูกผิดตัว → ใส่รหัสที่ถูกแล้วกด "ย้าย" · 1 รหัสผูกได้หลายบาร์โค้ด</div>' : '<div class="note" style="margin:4px 0 0">ใส่ PIN ถึงยกเลิกผูก/ย้ายได้</div>')
+      + '</details>';
+  }
+  function bindBc(it){
+    var d = el('bcbox'); if (!d) return;
+    d.addEventListener('toggle', function(){ bcOpen = d.open ? it.sku : null; });
+    d.querySelectorAll('[data-unbind]').forEach(function(b){ b.addEventListener('click', function(){
+      var c = b.getAttribute('data-unbind');
+      if (bcArm !== c){ bcArm = c; renderHit(); setTimeout(function(){ if (bcArm === c){ bcArm = null; renderHit(); } }, 5000); return; }
+      bcArm = null; b.disabled = true;
+      api({action:'unbind', barcode: c}).then(function(j){ takeServer(j); toast('ยกเลิกผูกบาร์โค้ด ' + c + ' แล้ว'); })
+        ['catch'](function(e){ b.disabled = false; toast('ไม่สำเร็จ — ' + ((e && e.message) || 'เช็คเน็ต'), true); });
+    }); });
+    d.querySelectorAll('[data-mv]').forEach(function(b){ b.addEventListener('click', function(){
+      var c = b.getAttribute('data-mv'), inp = d.querySelector('[data-mvin="' + c + '"]'), to = lookup(inp ? inp.value : '');
+      if (!to || to.off){ toast('ไม่พบรหัสปลายทาง — พิมพ์เช่น CS-003', true); if (inp) inp.focus(); return; }
+      if (to.sku === it.sku){ toast('ผูกกับรหัสนี้อยู่แล้ว', true); return; }
+      b.disabled = true;
+      api({action:'movebind', barcode: c, sku: to.sku, who: 'PC'}).then(function(j){ takeServer(j); toast('ย้ายบาร์โค้ด ' + c + ' ไป ' + to.sku + ' แล้ว'); pick(getSku(to.sku), false); })
+        ['catch'](function(e){ b.disabled = false; toast('ไม่สำเร็จ — ' + ((e && e.message) || 'เช็คเน็ต'), true); });
+    }); });
+  }
   function pr(it){ return (it && PRICES[String(it.sku).toUpperCase()]) || null; }
   function unitPrice(it){
     var p = pr(it); if (!p) return null;
@@ -751,6 +880,7 @@
   pending = lsGet(K_PEND, []);
   bcMap = lsGet(K_BC, {});
   setItems(lsGet(K_MASTER, null) || SEED);
+  setGroups(lsGet('pcscan_groups', []));   // v1.49
   setRetired(lsGet(K_OFF, []));
   requests = lsGet(K_REQ, []);
   var SHEETINFO = lsGet('pcscan_sheet', null);   // v1.11: {id, gid} สำหรับปุ่มเปิด Sheet
@@ -798,6 +928,7 @@
     (j.barcode || []).forEach(function(b){ if (nz(b.barcode)) bcMap[nz(b.barcode)] = b.sku; });
     lsSet(K_LOG, log); lsSet(K_BC, bcMap);
     if (j.retired){ setRetired(j.retired); lsSet(K_OFF, j.retired); }
+    if (j.groups){ setGroups(j.groups); lsSet('pcscan_groups', j.groups); }   // v1.49
     if (j.requests){ requests = j.requests; lsSet(K_REQ, requests); }
     if (j.prs) PRS = j.prs; if (j.prmap) PRMAP = j.prmap;   // v1.17 ใบ PR
     if (j.cyl) CYL = j.cyl;   // v1.18 ถังแก๊ส
@@ -849,7 +980,11 @@
     bcMap[nz(code)] = it.sku;
     lsSet(K_BC, bcMap);
     var row = { barcode:String(code).trim(), sku:it.sku, name:it.name, ts:new Date().toISOString(), who: pcMode ? 'PC' : who };
-    if (API) api({action:'bind', rows:[row]}).then(takeServer)['catch'](function(){ online = false; renderStatus(); });
+    if (API) api({action:'bind', rows:[row]}).then(function(j){
+      takeServer(j);
+      var cf = (j.bindConflict || [])[0];   // v1.49 บาร์โค้ดนี้ผูกกับรหัสอื่นอยู่แล้วในระบบ
+      if (cf) toast('บาร์โค้ด ' + cf.barcode + ' ผูกกับ ' + cf.sku + ' อยู่แล้ว — เปิด ' + cf.sku + ' แล้วกด "ย้าย" ในส่วนบาร์โค้ด', true);
+    })['catch'](function(){ online = false; renderStatus(); });
     toast('ผูกบาร์โค้ดกับ ' + it.name.slice(0,26) + ' แล้ว');
   }
 
@@ -937,7 +1072,7 @@
   // v1.31 ค้นหา: ไม่ต้องพิมพ์ขีด — cs071, CS 71, 071, 71 เจอ CS-071 · ชื่อเว้นวรรคหรือไม่เว้นก็เจอ
   function qNorm(x){ return String(x == null ? '' : x).toLowerCase().replace(/[\s\-_.]/g, ''); }
   function exactFirst(rows, q){      // รหัสตรงตัวขึ้นก่อน (พิมพ์ 3 → CS-003 อยู่บนสุด)
-    var m = qNorm(q).match(/^(?:cs)?0*(\d{1,3})$/); if (!m) return rows;
+    var m = /[.,]\d/.test(String(q)) ? null : qNorm(q).match(/^(?:cs)?0*(\d{1,3})$/); if (!m) return rows;   // v1.49 "2.4" = ขนาด ไม่ใช่รหัส 024
     var n = +m[1];
     return rows.filter(function(it){ return +String(it.sku).replace(/\D/g, '') === n; }).concat(rows.filter(function(it){ return +String(it.sku).replace(/\D/g, '') !== n; }));
   }
@@ -945,12 +1080,17 @@
     if (!q) return true;
     var ql = String(q).toLowerCase().trim(), qn = qNorm(q);
     if (String(it.name).toLowerCase().indexOf(ql) >= 0) return true;
+    // v1.49 ค้นจากคำอธิบาย / ชื่อกลุ่ม / คำค้นของกลุ่ม / หมวด · หลายคำ = ต้องเจอทุกคำ (เช่น "collet 2.4")
+    var hay = (it.name + ' ' + (it.desc || '') + ' ' + grpText(it)).toLowerCase();
+    if (hay.indexOf(ql) >= 0) return true;
+    var toks = ql.split(/\s+/).filter(Boolean);
+    if (toks.length > 1 && toks.every(function(t){ return hay.indexOf(t) >= 0; })) return true;
     if (!qn) return false;
-    var num = +String(it.sku).replace(/\D/g, ''), m = qn.match(/^(?:cs)?0*(\d{1,3})$/);
+    var num = +String(it.sku).replace(/\D/g, ''), m = /[.,]\d/.test(String(q)) ? null : qn.match(/^(?:cs)?0*(\d{1,3})$/);
     if (m && (+m[1] === num || String(it.old) === m[1])) return true;     // เลขตรงตัว: 71 / 071 / cs71 / cs071
     if (/^\d+$/.test(qn)) return false;                                     // พิมพ์เลขล้วน ไม่เอาที่แค่มีเลขนี้อยู่ข้างใน
     if (qNorm(it.sku).indexOf(qn) >= 0) return true;
-    return qn.length >= 2 && qNorm(it.name).indexOf(qn) >= 0;
+    return qn.length >= 2 && qNorm(hay).indexOf(qn) >= 0;
   }
 
   /* ================= toast ================= */
@@ -1067,10 +1207,12 @@
       + photoBlock(it, true)
       + linkBlock(it)
       + '<p class="itemname">' + esc(it.name) + '</p>'
+      + (it.desc ? '<div class="itemdesc">' + esc(it.desc) + '</div>' : '')
       + '<div class="row" style="justify-content:space-between">'
       +   '<span class="sku">' + esc(it.sku) + (it.old != null && it.old !== '' ? ' · ลำดับเดิม ' + esc(it.old) : '') + '</span>'
       +   (st.k === 'na' ? '<button type="button" class="chip na tapchip" data-miss="mn">' + st.t + ' ✎</button>' : '<span class="chip ' + st.k + '">' + st.t + '</span>')
       + '</div>'
+      + grpStrip(it)
       + (n <= 0 ? '<div class="outbar">⛔ ของหมด — คงเหลือ ' + fmt(n) + (it.unit ? ' ' + esc(it.unit) : '')
           + (n < 0 ? '<span>ยอดติดลบ = ของจริงอาจไม่ตรงระบบ ลองกด "นับจริง/ปรับยอด"</span>' : '<span>แผนกยังขอได้ ใบจะค้างไว้จนกว่าของเข้า</span>') + '</div>' : '')
       + (isHidden(it) ? '<div class="note" style="margin:6px 0 0">🙈 <b>ซ่อนจากแผนก</b> — แผนกค้นไม่เจอ และไม่ขึ้นในรายการต้องเติม (แก้ได้ที่ ✎ แก้ข้อมูลของ)</div>' : '')
@@ -1078,6 +1220,7 @@
       + missingBlock(it)
       + countBlock(it, n)
       + sheetLink(it)
+      + bcBlock(it)
       + (itemEdit === it.sku ? editForm(it) : '')
       + '<dl class="facts">'
       +   '<dt>คงเหลือ</dt><dd>' + stockNum(it, true) + (it.unit ? ' <span style="font-weight:500;color:var(--muted)">' + esc(it.unit) + '</span>' : '') + '</dd>'
@@ -1132,6 +1275,7 @@
     bindPrice(it);
     bindMissing(it);
     bindCount(it, n);
+    bindGrp(it); bindBc(it);   // v1.49
     el('retire').addEventListener('click', function(){
       if (retireArm !== it.sku){
         retireArm = it.sku; renderHit();
@@ -1432,6 +1576,9 @@
       + '<div class="note" id="ie_sug" style="margin:4px 0 0"></div>'
       + '<div class="note" style="margin:2px 0 0">ใส่ MIN = 0 คือ<b>ไม่ต้องเก็บสต็อก</b> (ซื้อเมื่อมีคนขอ) · ช่องว่าง = ยังไม่ได้ตั้ง</div>'
       + '<div style="margin-top:8px"><label class="fld" for="ie_maker">ผู้ขาย / MK หลัก</label><input type="text" id="ie_maker" list="shopList" value="' + esc(it.maker || '') + '" autocomplete="off">' + shopChips('ie_maker') + '</div>'
+      + '<div style="margin-top:8px"><label class="fld" for="ie_desc">คำอธิบาย (คืออะไร ใช้ทำอะไร)</label><input type="text" id="ie_desc" value="' + esc(it.desc || '') + '" placeholder="เช่น ดอกเจียรคาร์ไบด์ ใส่เครื่องเจียรลม" autocomplete="off"></div>'
+      + '<div style="margin-top:8px"><label class="fld" for="ie_grp">กลุ่ม (ของคล้ายกัน ต่างขนาด/สี)</label><select id="ie_grp">' + grpOptions(it.grp) + '</select>'
+      +   '<input type="text" id="ie_gnew" hidden placeholder="ชื่อกลุ่มใหม่ เช่น ดอกสว่านเจาะเหล็ก" autocomplete="off" style="margin-top:6px"></div>'
       + '<div style="margin-top:8px"><label class="fld" for="ie_loc">จุดเก็บ (ชั้น/ตู้)</label><input type="text" id="ie_loc" list="locList" value="' + esc(it.loc || '') + '" placeholder="เช่น A-2, ตู้เหล็ก 1" autocomplete="off"></div>'
       + '<div style="margin-top:8px"><label class="fld" for="ie_link">ลิงก์ดูรูปสินค้า (หน้าเว็บผู้ขาย ไม่บังคับ)</label><input type="url" id="ie_link" value="' + esc(linkOf(it) ? linkOf(it).url : '') + '" placeholder="https://..." autocomplete="off"></div>'
       + '<label class="hidebox"><input type="checkbox" id="ie_hide"' + (isHidden(it) ? ' checked' : '') + '> <span><b>ซ่อนจากแผนก</b><br><span class="note" style="margin:0">ของที่ PC ซื้อเติมเองเรื่อยๆ (เช่น กระดาษ) — แผนกค้นไม่เจอ + ไม่ขึ้นในรายการ "ต้องเติม"</span></span></label>'
@@ -1460,13 +1607,17 @@
     }
     el('ie_mx').addEventListener('input', showSug); el('ie_mn').addEventListener('input', showSug); showSug();
     el('ie_cancel').addEventListener('click', function(){ itemEdit = null; renderHit(); });
+    el('ie_grp').addEventListener('change', function(){ var nw = el('ie_grp').value === '__new'; el('ie_gnew').hidden = !nw; if (nw) el('ie_gnew').focus(); });
     el('ie_save').addEventListener('click', function(){
       var mn = el('ie_mn').value, mx = el('ie_mx').value;
       if (mn !== '' && mx !== '' && +mn > +mx){ toast('MIN มากกว่า MAX — เช็คอีกที', true); return; }
       var body = {sku: it.sku, unit: stdUnit(el('ie_unit').value), pack: el('ie_pack').value, mn: mn, mx: mx, maker: el('ie_maker').value, link: (el('ie_link').value || '').trim(), loc: (el('ie_loc').value || '').trim(), hide: (rememberShop(el('ie_maker').value), el('ie_hide').checked), who: pcMode ? 'PC' : (who || 'PC')};
       if (!API){ toast('ต้องต่อ Google Sheet ก่อน', true); return; }
+      body.desc = (el('ie_desc').value || '').trim();   // v1.49
+      var gsel = el('ie_grp').value;
       var btn = el('ie_save'); btn.disabled = true; btn.textContent = 'กำลังบันทึก…';
-      api({action:'edititem', item: body}).then(function(j){ itemEdit = null; takeServer(j); toast('บันทึกข้อมูล ' + it.sku + ' แล้ว'); })
+      (gsel === '__new' ? newGroup(el('ie_gnew').value) : Promise.resolve(gsel)).then(function(g){ body.grp = g || ''; return api({action:'edititem', item: body}); })
+        .then(function(j){ itemEdit = null; takeServer(j); toast('บันทึกข้อมูล ' + it.sku + ' แล้ว'); })
         ['catch'](function(e){ btn.disabled = false; btn.textContent = 'บันทึกข้อมูลของ'; toast('ไม่สำเร็จ — ' + ((e && e.message) || 'เช็คเน็ต'), true); });
     });
   }
@@ -1670,7 +1821,7 @@
   function row(it){
     var st = status(it);
     return '<li class="tap" data-sku="' + esc(it.sku) + '"><div class="li-top">' + thumb(it) + '<div class="grow">'
-      + '<div class="li-name">' + esc(it.name) + '</div>'
+      + '<div class="li-name">' + esc(it.name) + '</div>' + descLine(it)
       + numLine(it, null)
       + subLine([
           isHidden(it) ? '🙈 ซ่อนจากแผนก' : '',
@@ -1711,14 +1862,15 @@
     // v1.43 ของที่เหลือเท่ากับ MIN พอดี: อยู่ท้ายรายการ ไม่นับในตัวเลขบนแท็บ/งบ (ยังไม่ต้องซื้อ แค่ให้รู้ว่าใกล้แล้ว)
     var near = ITEMS.filter(function(it){ return status(it).k === 'near' && !isHidden(it); });
     near.sort(function(a, b){ return a.sku < b.sku ? -1 : 1; });
-    el('lowList').innerHTML = low.map(function(it){
+    low = clusterByGroup(low);   // v1.49 ของกลุ่มเดียวกันอยู่ติดกัน + หัวกลุ่ม
+    el('lowList').innerHTML = grpHeads(low, function(it){
       var need = (+it.mx > 0) ? Math.max(0, (+it.mx) - onHand(it)) : null;
       return '<li class="tap" data-sku="' + esc(it.sku) + '"><div class="li-top">' + thumb(it) + '<div class="grow">'
         + '<div class="li-name">' + esc(it.name) + '</div>'
         + numLine(it, need)
         + subLine([pinOk && need && (cheapest(it) || unitPrice(it) != null) ? '≈ ' + baht(need / pf(it) * (cheapest(it) ? cheapest(it).price : unitPrice(it))) + (cheapest(it) ? ' · 🏪 ' + esc(cheapest(it).shop) : '') : ''])
         + '</div><span class="chip warn">ต้องเติม</span></div></li>';
-    }).join('') + (low.length ? '' : '<li class="empty">ไม่มีของที่ต่ำกว่า MIN 👍</li>')
+    }) + (low.length ? '' : '<li class="empty">ไม่มีของที่ต่ำกว่า MIN 👍</li>')
       + (near.length ? '<li class="lowsep">⏳ <b>ถึง MIN พอดี ' + near.length + ' รายการ</b> — ยังไม่ต้องซื้อ เบิกออกอีกชิ้นจะขึ้นต้องเติม</li>'
         + near.map(function(it){
           return '<li class="tap nearrow" data-sku="' + esc(it.sku) + '"><div class="li-top">' + thumb(it) + '<div class="grow">'
@@ -1885,40 +2037,65 @@
     el('a_msg').textContent = code ? 'ใส่บาร์โค้ดที่สแกนไว้ให้แล้ว กรอกชื่อกับหน่วยนับแล้วกดเพิ่มได้เลย' : '';
     setTimeout(function(){ el('a_name').focus(); }, 50);
   }
+  var gDismiss = '';
+  function fillAddGrp(){ var s = el('a_grp'); if (!s) return; var v = s.value; s.innerHTML = grpOptions(v === '__new' ? '' : v); if (v === '__new') s.value = '__new'; }
+  function grpSuggest(){              // v1.49 แนะนำกลุ่มจากชื่อที่พิมพ์
+    var box = el('a_gsug'), nm = el('a_name').value, g = el('a_grp').value ? null : suggestGrp(nm);
+    if (!g || gDismiss === g.g){ box.hidden = true; return; }
+    var mem = grpMembers(g.g);
+    box.hidden = false;
+    box.innerHTML = '💡 น่าจะอยู่กลุ่ม <b>' + esc(grpLabel(g)) + '</b>' + (mem.length ? ' <span class="li-meta">(มีแล้ว ' + mem.length + ' ตัว: ' + esc(mem.slice(0, 4).map(function(m){ return shortIn(m, mem.length > 1 ? mem : [m, {name:''}]); }).join(' · ')) + ')</span>' : '')
+      + '<div class="row" style="gap:6px; margin-top:6px"><button type="button" class="chip ok tapchip" id="a_gyes">✓ ใส่กลุ่มนี้</button><button type="button" class="chip na tapchip" id="a_gno">ไม่ใช่</button></div>';
+    el('a_gyes').addEventListener('click', function(){ fillAddGrp(); el('a_grp').value = g.g; box.hidden = true; });
+    el('a_gno').addEventListener('click', function(){ gDismiss = g.g; box.hidden = true; });
+  }
   function dupCheck(){
+    grpSuggest();
     var q = normName(el('a_name').value), box = el('a_dup');
     if (q.length < 3){ box.hidden = true; return; }
     var hits = ITEMS.filter(function(it){
       var n = normName(it.name);
       return n.indexOf(q) >= 0 || (n.length >= 4 && q.indexOf(n) >= 0);
-    }).slice(0,4);
+    });
+    similar(el('a_name').value, 3).forEach(function(it){ if (hits.indexOf(it) < 0) hits.push(it); });   // v1.49 + ชื่อคล้าย (เทียบทีละ 3 ตัวอักษร)
+    hits = hits.slice(0, 4);
     if (!hits.length){ box.hidden = true; return; }
     box.hidden = false;
     box.innerHTML = '<div class="note" style="margin:0 0 6px;color:var(--warn);font-weight:600">มีชื่อคล้ายกันอยู่แล้ว — เช็คก่อนว่าไม่ใช่ของตัวเดียวกัน</div>'
       + hits.map(function(it){
-          return '<div class="li-meta tap" data-dup="' + esc(it.sku) + '" style="padding:4px 0">' + esc(it.sku) + ' · ' + esc(it.name) + ' (แตะเพื่อเปิด)</div>';
+          return '<div class="li-meta tap" data-dup="' + esc(it.sku) + '" style="padding:4px 0">⚠ อาจซ้ำกับ ' + esc(it.sku) + ' · ' + esc(it.name) + ' (คงเหลือ ' + fmt(onHand(it)) + ') — แตะเพื่อเปิด</div>';
         }).join('');
     box.querySelectorAll('[data-dup]').forEach(function(d){
       d.addEventListener('click', function(){ pick(BY_SKU[d.getAttribute('data-dup').toUpperCase()], false); });
     });
   }
   el('a_name').addEventListener('input', dupCheck);
+  el('a_grp').addEventListener('focus', fillAddGrp);
+  el('a_grp').addEventListener('change', function(){ var nw = el('a_grp').value === '__new'; el('a_gnew').hidden = !nw; el('a_gsug').hidden = true; if (nw) el('a_gnew').focus(); });
+  fillAddGrp();
   el('a_save').addEventListener('click', function(){
     var item = {
       name: (el('a_name').value || '').trim(), unit: stdUnit(el('a_unit').value),
       stock: el('a_stock').value, mn: el('a_mn').value, mx: el('a_mx').value,
       pack: (el('a_pack').value || '').trim(), maker: (el('a_maker').value || '').trim(),
-      bc: (el('a_bc').value || '').trim(), who: 'PC'
+      bc: (el('a_bc').value || '').trim(), who: 'PC',
+      desc: (el('a_desc').value || '').trim()   // v1.49
     };
+    var gsel = el('a_grp').value;
     if (!item.name){ toast('ใส่ชื่อรายการก่อน', true); el('a_name').focus(); return; }
     if (!item.unit){ toast('ใส่หน่วยนับก่อน', true); el('a_unit').focus(); return; }
     if (item.bc && lookup(item.bc)){ toast('บาร์โค้ดนี้ผูกกับ ' + lookup(item.bc).sku + ' อยู่แล้ว', true); return; }
     if (!API){ toast('ต้องต่อ Google Sheet ก่อนถึงจะเพิ่มของใหม่ได้', true); return; }
     var btn = el('a_save'); btn.disabled = true; btn.textContent = 'กำลังเพิ่ม…';
-    api({action:'additem', item:item}).then(function(j){
+    var gerr = null;
+    (gsel === '__new' ? newGroup(el('a_gnew').value)['catch'](function(e){ gerr = e; return ''; }) : Promise.resolve(gsel)).then(function(g){
+      item.grp = g || ''; return api({action:'additem', item:item});
+    }).then(function(j){
       takeServer(j);
       rememberShop(item.maker);
-      ['a_name','a_unit','a_stock','a_mn','a_mx','a_pack','a_bc'].forEach(function(id){ el(id).value = ''; });   // v1.16: ผู้ขายคงไว้ ของล็อตเดียวกันไม่ต้องพิมพ์ซ้ำ
+      if (gerr) toast('เพิ่มของแล้ว แต่สร้างกลุ่มไม่สำเร็จ — ' + gerr.message, true);
+      ['a_name','a_unit','a_stock','a_mn','a_mx','a_pack','a_bc','a_desc','a_gnew'].forEach(function(id){ el(id).value = ''; });
+      el('a_grp').value = ''; el('a_gnew').hidden = true; el('a_gsug').hidden = true; gDismiss = '';   // v1.16: ผู้ขายคงไว้ ของล็อตเดียวกันไม่ต้องพิมพ์ซ้ำ
       fillShops();
       el('a_dup').hidden = true; el('a_msg').textContent = '';
       toast('เพิ่ม ' + j.newSku + ' เข้าทะเบียนแล้ว');
@@ -2153,7 +2330,7 @@
     lst.innerHTML = rows.map(function(it){
       var n = onHand(it), inCart = cart.some(function(c){ return c.sku === it.sku; });
       return '<li class="tap' + (n > 0 ? '' : ' outrow') + '" data-add="' + esc(it.sku) + '"><div class="li-top"><span class="skucol">' + esc(it.sku) + '</span>' + thumb(it) + '<div class="grow">'
-        + '<div class="li-name">' + esc(it.name) + '</div>'
+        + '<div class="li-name">' + esc(it.name) + '</div>' + descLine(it)
         + (n > 0 ? '<div class="stk ' + stockCls(it) + '">📦 มีของ ' + fmt(n) + ' ' + esc(it.unit || '') + '</div>' : '<div class="stk out">⛔ ของหมด</div><div class="li-meta">ขอได้ — ใบจะค้างไว้จนของเข้า</div>')
         + '</div><span class="addbtn' + (inCart ? ' in' : '') + '" aria-label="' + (inCart ? 'อยู่ในใบแล้ว' : 'เพิ่ม') + '">' + (inCart ? '✓' : '+') + '</span></div></li>';
     }).join('') || '<li class="empty">ไม่พบ — ลองคำอื่น หรือเขียนในหมายเหตุ</li>';
@@ -3152,19 +3329,23 @@
   }
   function renderList(){
     if (!DEPT_MODE || el('v-list').hidden) return;
-    var dept = el('d_dept').value, srt = lsGetRaw('pcscan_dsort') || 'name';
-    var rows = ITEMS.filter(function(it){ return !isHidden(it); }).sort(srt === 'sku' ? function(a, b){ return a.sku < b.sku ? -1 : 1; }
-             : function(a, b){ return String(a.name).localeCompare(String(b.name), 'th'); });
+    var dept = el('d_dept').value, srt = lsGetRaw('pcscan_dsort') || 'grp';
+    var byName = function(a, b){ return String(a.name).localeCompare(String(b.name), 'th'); };
+    var rows = ITEMS.filter(function(it){ return !isHidden(it); }).sort(srt === 'sku' ? function(a, b){ return a.sku < b.sku ? -1 : 1; } : byName);
+    if (srt === 'grp') rows.sort(function(a, b){   // v1.49 เรียงตามกลุ่ม (มีหัวกลุ่ม) · ของไม่มีกลุ่มเรียงชื่อต่อท้ายในตำแหน่งตามชื่อ
+      var ga = grpOf(a), gb = grpOf(b), ka = ga ? grpLabel(ga) : a.name, kb = gb ? grpLabel(gb) : b.name;
+      return String(ka).localeCompare(String(kb), 'th') || byName(a, b); });
     el('l_n').textContent = '(' + rows.length + ')';
     el('l_dept').innerHTML = dept ? 'แตะของ = เพิ่มเข้าใบของ <b>' + esc(dept) + '</b> แล้วพาไปดูใบ' : '<span class="deptwarn">⚠ ยังไม่ได้เลือกไลน์ — ดูได้ แต่จะเพิ่มของต้องเลือกไลน์ที่แท็บขอเบิกก่อน</span>';
     el('l_sortrow').querySelectorAll('[data-lsort]').forEach(function(b){ b.className = 'chip tapchip ' + (b.getAttribute('data-lsort') === srt ? 'ok' : 'na'); });
-    el('l_list').innerHTML = rows.map(function(it){
+    var lrow = function(it){
       var n = onHand(it), c = cart.filter(function(x){ return x.sku === it.sku; })[0];
       return '<li class="tap' + (n > 0 ? '' : ' outrow') + '" data-ladd="' + esc(it.sku) + '"><div class="li-top"><span class="skucol">' + esc(it.sku) + '</span>' + thumb(it) + '<div class="grow">'
-        + '<div class="li-name">' + esc(it.name) + '</div>'
+        + '<div class="li-name">' + esc(it.name) + '</div>' + descLine(it)
         + (n > 0 ? '<div class="stk ' + stockCls(it) + '">📦 มีของ ' + fmt(n) + ' ' + esc(it.unit || '') + '</div>' : '<div class="stk out">⛔ ของหมด</div>')
         + '</div><span class="addbtn' + (c ? ' in' : '') + '" aria-label="' + (c ? 'อยู่ในใบ ' + fmt(c.qty) : 'เพิ่ม') + '">' + (c ? '✓<small>×' + fmt(c.qty) + '</small>' : '+') + '</span></div></li>';
-    }).join('') || '<li class="empty">ยังไม่มีรายการ</li>';
+    };
+    el('l_list').innerHTML = (srt === 'grp' ? grpHeads(rows, lrow) : rows.map(lrow).join('')) || '<li class="empty">ยังไม่มีรายการ</li>';
     el('l_list').querySelectorAll('[data-ladd]').forEach(function(li){ li.addEventListener('click', function(){
       var it = getSku(li.getAttribute('data-ladd')); if (!it) return;
       if (!addToCart(it, 1)) return;

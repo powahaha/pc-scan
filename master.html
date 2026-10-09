@@ -65,15 +65,17 @@ td input[readonly]{cursor:default;color:var(--ink)} td input[readonly]:focus{bac
 <header>
   <a class="back" href="./">← แอปหลัก</a>
   <h1>📋 ทะเบียนหลัก (Item Master)</h1>
-  <span class="ver">v1.48</span>
+  <span class="ver">v1.49</span>
   <div class="tools">
-    <input type="search" id="q" placeholder="ค้นหา รหัส / ชื่อ / ผู้ขาย / จุดเก็บ" autocomplete="off">
+    <input type="search" id="q" placeholder="ค้นหา รหัส / ชื่อ / คำอธิบาย / กลุ่ม / ผู้ขาย" autocomplete="off">
     <select id="flt">
       <option value="all">ทั้งหมด</option>
       <option value="chg">ที่แก้ (ยังไม่บันทึก)</option>
       <option value="nomin">ยังไม่ตั้ง MIN/MAX</option>
       <option value="nomaker">ยังไม่มีผู้ขาย</option>
       <option value="noloc">ยังไม่มีจุดเก็บ</option>
+      <option value="nogrp">ยังไม่มีกลุ่ม</option>
+      <option value="nodesc">ยังไม่มีคำอธิบาย</option>
       <option value="hide">ซ่อนจากแผนก</option>
       <option value="noprice">ยังไม่มีราคา (PIN)</option>
     </select>
@@ -88,7 +90,7 @@ td input[readonly]{cursor:default;color:var(--ink)} td input[readonly]:focus{bac
 <div class="help">คลิกช่องแล้วพิมพ์ได้เลย · <b>Enter</b> = ลงแถวล่าง · <b>Tab</b> = ไปช่องขวา · วางข้อมูลหลายช่องจาก Excel ได้ (<b>Ctrl+V</b> จากช่องเริ่มต้น) · ช่องที่แก้เป็น<b style="background:var(--chg)">สีเหลือง</b> แก้ครบแล้วกด <b>บันทึก</b> ทีเดียว · คงเหลือแก้ที่นี่ไม่ได้ (ใช้ปุ่มนับจริงในแอป)</div>
 <div class="ronly" id="ronly" hidden>🔒 <b>โหมดดูอย่างเดียว</b> — การแก้ทะเบียนหลักต้องใช้ PIN (ใส่ช่องด้านบน หรือใส่ในแอปหลักที่ปุ่มตั้งค่า)</div>
 <div class="wrap" id="wrap"><div class="loading">กำลังโหลดทะเบียน…</div></div>
-<datalist id="units"></datalist><datalist id="shops"></datalist><datalist id="locs"></datalist>
+<datalist id="units"></datalist><datalist id="shops"></datalist><datalist id="locs"></datalist><datalist id="grps"></datalist>
 <div class="toast" id="toast"></div>
 <script>
 (function(){
@@ -96,7 +98,7 @@ td input[readonly]{cursor:default;color:var(--ink)} td input[readonly]:focus{bac
   function ls(k){ try { return localStorage.getItem(k) || ''; } catch(e){ return ''; } }
   var API = ls('pcscan_api') || DEFAULT_API, PIN = ls('pcscan_pin');
   var el = function(id){ return document.getElementById(id); };
-  var ITEMS = [], PRICES = {}, LOG = [], pinOk = false, saving = false;
+  var ITEMS = [], PRICES = {}, LOG = [], pinOk = false, saving = false, GROUPS = [], GRP = {};   // v1.49 กลุ่ม
   var orig = {}, cur = {};          // sku -> {field: value} (ค่าเป็นข้อความ)
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function toast(t, bad){ var x = el('toast'); x.textContent = t; x.className = 'toast on' + (bad ? ' bad' : ''); clearTimeout(x._t); x._t = setTimeout(function(){ x.className = 'toast'; }, bad ? 6000 : 2600); }
@@ -111,6 +113,8 @@ td input[readonly]{cursor:default;color:var(--ink)} td input[readonly]:focus{bac
   var BASE = [
     {k:'sku', t:'รหัส', ro:1, cls:'c-sku', w:78},
     {k:'name', t:'ชื่อรายการ', cls:'c-name', w:300},
+    {k:'desc', t:'คำอธิบาย (คืออะไร)', w:280},
+    {k:'grp', t:'กลุ่ม', w:96, list:'grps'},
     {k:'unit', t:'หน่วยนับ', w:82, list:'units'},
     {k:'pack', t:'ขนาดบรรจุ', w:120},
     {k:'mn', t:'MIN', num:1, w:64},
@@ -129,7 +133,7 @@ td input[readonly]{cursor:default;color:var(--ink)} td input[readonly]:focus{bac
     {k:'s3', t:'ร้าน 3', w:140, list:'shops', pr:1}, {k:'p3', t:'ราคา 3', num:1, w:80, pr:1}
   ];
   function cols(){ return pinOk ? BASE.concat(PRICE) : BASE; }
-  var EDIT_ITEM = ['name','unit','pack','mn','mx','maker','loc','hide'], EDIT_PRICE = ['pu','pf','s1','p1','s2','p2','s3','p3'];
+  var EDIT_ITEM = ['name','desc','grp','unit','pack','mn','mx','maker','loc','hide'], EDIT_PRICE = ['pu','pf','s1','p1','s2','p2','s3','p3'];
 
   function onHand(it){
     var n = +it.stock || 0;
@@ -139,7 +143,7 @@ td input[readonly]{cursor:default;color:var(--ink)} td input[readonly]:focus{bac
   }
   function rowVals(it){
     var p = PRICES[String(it.sku).toUpperCase()] || {};
-    return { sku: it.sku, name: str(it.name), unit: str(it.unit), pack: str(it.pack), mn: str(it.mn), mx: str(it.mx),
+    return { sku: it.sku, name: str(it.name), desc: str(it.desc), grp: str(it.grp), unit: str(it.unit), pack: str(it.pack), mn: str(it.mn), mx: str(it.mx),
       maker: str(it.maker), loc: str(it.loc), hide: it.hide ? '1' : '',
       pu: str(p.pu), pf: p.pf == null ? '' : str(p.pf), s1: str(p.s1), p1: p.p1 == null ? '' : str(p.p1),
       s2: str(p.s2), p2: p.p2 == null ? '' : str(p.p2), s3: str(p.s3), p3: p.p3 == null ? '' : str(p.p3) };
@@ -149,6 +153,7 @@ td input[readonly]{cursor:default;color:var(--ink)} td input[readonly]:focus{bac
     el('wrap').innerHTML = '<div class="loading">' + (msg || 'กำลังโหลดทะเบียน…') + '</div>';
     return api({action:'sync'}).then(function(j){
       ITEMS = (j.master || []).slice().sort(function(a, b){ return a.sku < b.sku ? -1 : 1; });
+      GROUPS = j.groups || []; GRP = {}; GROUPS.forEach(function(g){ GRP[String(g.g).toUpperCase()] = g; });
       LOG = j.log || []; pinOk = j.pin === true; PRICES = pinOk ? (j.prices || {}) : {};
       orig = {}; cur = {};
       ITEMS.forEach(function(it){ var v = rowVals(it); orig[it.sku] = v; cur[it.sku] = JSON.parse(JSON.stringify(v)); });
@@ -168,6 +173,7 @@ td input[readonly]{cursor:default;color:var(--ink)} td input[readonly]:focus{bac
     Object.keys(PRICES).forEach(function(k){ var p = PRICES[k]; ['s1','s2','s3'].forEach(function(f){ if (p[f]) S[p[f]] = 1; }); });
     el('units').innerHTML = U.map(function(x){ return '<option>' + esc(x) + '</option>'; }).join('');
     el('shops').innerHTML = Object.keys(S).sort().map(function(x){ return '<option>' + esc(x) + '</option>'; }).join('');
+    el('grps').innerHTML = GROUPS.slice().sort(function(a, b){ return a.g < b.g ? -1 : 1; }).map(function(g){ return '<option value="' + esc(g.g) + '">' + esc((g.cat ? g.cat + ' › ' : '') + g.name) + '</option>'; }).join('');
     el('locs').innerHTML = Object.keys(L).sort().map(function(x){ return '<option>' + esc(x) + '</option>'; }).join('');
   }
 
@@ -177,6 +183,7 @@ td input[readonly]{cursor:default;color:var(--ink)} td input[readonly]:focus{bac
     if ((k === 'mn' || k === 'mx' || k === 'pf' || /^p\d$/.test(k)) && c[k] !== '' && !(+c[k] >= 0)) return 'ต้องเป็นตัวเลข 0 ขึ้นไป';
     if ((k === 'mn' || k === 'mx') && c.mn !== '' && c.mx !== '' && +c.mn > +c.mx) return 'MIN มากกว่า MAX';
     if (k === 'name' && !String(c.name).trim()) return 'ชื่อว่างไม่ได้';
+    if (k === 'grp' && String(c.grp).trim() && !GRP[String(c.grp).trim().toUpperCase()]) return 'ไม่มีรหัสกลุ่มนี้ (สร้างกลุ่มใหม่ได้ในแอปหลัก)';
     if (/^p\d$/.test(k) && c[k] !== '' && !String(c['s' + k.slice(1)]).trim()) return 'มีราคาแต่ไม่มีชื่อร้าน';
     return '';
   }
@@ -185,11 +192,14 @@ td input[readonly]{cursor:default;color:var(--ink)} td input[readonly]:focus{bac
     var q = el('q').value.trim().toLowerCase(), f = el('flt').value;
     return ITEMS.filter(function(it){
       var c = cur[it.sku];
-      if (q && [c.sku, c.name, c.maker, c.loc].join(' ').toLowerCase().indexOf(q) < 0) return false;
+      var g = GRP[String(c.grp).toUpperCase()];
+      if (q && [c.sku, c.name, c.desc, c.grp, g ? g.name + ' ' + g.kw + ' ' + g.cat : '', c.maker, c.loc].join(' ').toLowerCase().indexOf(q) < 0) return false;
       if (f === 'chg') return dirtyFields(it.sku).length > 0;
       if (f === 'nomin') return c.mn === '' || c.mx === '';
       if (f === 'nomaker') return !c.maker.trim();
       if (f === 'noloc') return !c.loc.trim();
+      if (f === 'nogrp') return !c.grp.trim();
+      if (f === 'nodesc') return !c.desc.trim();
       if (f === 'hide') return c.hide === '1';
       if (f === 'noprice') return pinOk && !(PRICES[String(it.sku).toUpperCase()] || {}).last && c.p1 === '' && c.p2 === '' && c.p3 === '';
       return true;
