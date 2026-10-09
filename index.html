@@ -462,7 +462,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.59</span>
+      <span class="ver" id="appVer">v1.60</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -484,7 +484,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.59 · อัปเดต 09/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.60 · อัปเดต 09/10/2026</div>
     </div>
   </header>
 
@@ -2912,11 +2912,35 @@
       return {it:it, sc: 2 * c / (ka.length + kb.length)};
     }).filter(function(x){ return x.sc >= 0.22; }).sort(function(x, y){ return y.sc - x.sc; }).slice(0, n || 3).map(function(x){ return x.it; });
   }
+  /* v1.60 เดาของจากชื่อในใบ: ชื่อคล้าย (triGram) + ตัวเลขขนาดตรง (15x125, 8x3/4, A36, No.60) + ยี่ห้อตรง
+     → ✅ มั่นใจ = เลือกให้เลย (ติดป้าย "ระบบเดา") · 🆕 ยี่ห้อ/ขนาดไม่ตรงกับตัวใกล้สุด = น่าจะเป็นของใหม่ · ❓ ไม่แน่ใจ = ให้คนเลือก */
+  var PR_STOP = {mm:1, cm:1, size:1, pcs:1, kgs:1, set:1, box:1, ltd:1, for:1, and:1, the:1, with:1, type:1, new:1, spool:1, roll:1, inch:1, sheet:1, pack:1};
+  function prNums(t){ return (String(t || '').toLowerCase().replace(/\*/g, 'x').replace(/["”″]/g, ' ').match(/\d+(?:\.\d+)?(?:\/\d+)?/g) || []).map(function(n){ return n.replace(/\.$/, '').replace(/\./g, ''); }); }   // เทียบแบบไม่สนจุด: 12.mm ในใบ = 1.2 mm
+  function prBrands(t){ return (String(t || '').toLowerCase().match(/[a-z]{3,}/g) || []).filter(function(w){ return !PR_STOP[w]; }); }
+  function prSuggest(desc, hint, n){
+    var text = (hint ? hint + ' ' : '') + String(desc || ''), a = triG(text), ka = Object.keys(a); if (ka.length < 3) return [];
+    var D = prNums(desc), B = prBrands(desc);
+    return ITEMS.filter(function(it){ return !it.off; }).map(function(it){
+      var b = triG(it.name), kb = Object.keys(b), c = 0; ka.forEach(function(x){ if (b[x]) c++; });
+      var base = kb.length ? 2 * c / (ka.length + kb.length) : 0, I = prNums(it.name), IB = prBrands(it.name);
+      var miss = D.filter(function(x){ return I.indexOf(x) < 0; }), hit = D.length - miss.length;
+      var bad = B.length && IB.length && !B.some(function(w){ return IB.indexOf(w) >= 0; });
+      return {it: it, base: base, sc: base + (D.length ? 0.4 * hit / D.length : 0) - (bad ? 0.15 : 0), miss: miss, bad: bad ? [B.join(' ').toUpperCase(), IB.join(' ').toUpperCase()] : null};
+    }).filter(function(x){ return x.base >= 0.2; }).sort(function(x, y){ return y.sc - x.sc; }).slice(0, n || 3);
+  }
+  function prVerdict(l){
+    var s = prSuggest(l.desc, l.hint, 3), t = s[0];
+    if (!t) return {k:'new', s:s, why:'ไม่เจอของที่คล้ายในทะเบียน'};
+    if (t.bad || t.miss.length) return {k:'new', s:s, why:'ตัวใกล้สุด ' + t.it.sku + ' แต่' + (t.bad ? ' ยี่ห้อ/รุ่นในใบ ' + t.bad[0] + ' ≠ ' + t.bad[1] : '') + (t.miss.length ? ' เลข/ขนาด ' + t.miss.join(', ') + ' ไม่มีในชื่อ' : '')};
+    if (t.sc >= 0.75 && (!s[1] || t.sc - s[1].sc >= 0.08)) return {k:'sure', s:s};
+    return {k:'ask', s:s};
+  }
   function prPrev(no, ln){ for (var i = 0; i < PRS.length; i++) if (PRS[i].no === no && PRS[i].ln === ln) return PRS[i]; return null; }
   function prSave(){ lsSet(K_PRDRAFT, prDoc); }
   function prLineInit(l, no, doc){
     var m = prMapOf(l), prev = no ? prPrev(no, l.ln) : null;
     l.sku = l.sku || l.auto || (prev && prev.sku) || (m && m.sku) || (l.code && bcMap[nz(l.code)]) || '';
+    if (!l.sku && !(prev && /รับครบ|ปิด|ไม่เข้าสต็อก/.test(prev.st))){ var vd = prVerdict(l); if (vd.k === 'sure'){ l.sku = vd.s[0].it.sku; l.guess = true; } }   // v1.60 มั่นใจ → เลือกให้ (ติดป้าย)
     l.factor = l.factor || (prev && prev.factor) || (m && m.factor) || 1;
     if (!m && !prev && l.sku && l.sku !== 'SKIP'){ var it = getSku(l.sku); if (it && normUnit(it.unit) !== normUnit(l.unit)) l.factorAsk = true; }
     l.prev = prev ? prev.recv : 0;
@@ -3029,11 +3053,13 @@
     } else if (l.sku === 'SKIP'){
       h += '<div class="row" style="gap:6px; margin-top:6px"><span class="chip na">ไม่เข้าสต็อก</span><button type="button" class="ghost" data-act="change">เปลี่ยน</button></div>';
     } else if (it && l.mode === 'ok'){
-      h += '<div class="prmatch"><span>→ <b>' + esc(it.sku) + '</b> ' + esc(it.name) + '</span><button type="button" class="ghost" data-act="change">เปลี่ยน</button></div>';
+      h += '<div class="prmatch"><span>→ <b>' + esc(it.sku) + '</b> ' + esc(it.name) + '</span><button type="button" class="ghost" data-act="change">เปลี่ยน</button></div>'
+        + (l.guess ? '<div class="outnote soft">🤖 ระบบเดาให้ (ชื่อ+ขนาดตรง แต่ยังไม่เคยจับคู่) — ดูให้แน่ใจ ถ้าไม่ใช่กด "เปลี่ยน" · รับแล้วระบบจำไว้</div>' : '');   // v1.60
     } else {
-      var sug = similar(l.desc, 3);
-      if (l.hint){ var hs = similar(l.hint + ' ' + l.desc, 3).concat(similar(l.hint, 3)), seen = {}; sug = hs.concat(sug).filter(function(s){ return seen[s.sku] ? false : (seen[s.sku] = 1); }).slice(0, 3); }   // v1.56 ใช้ชื่อไทยในช่อง Remark ช่วยเดา
-      h += '<div class="prpick"><div class="li-meta" style="margin:6px 0 4px">ยังไม่รู้ว่าเป็นของตัวไหน — เลือก:</div>'
+      var vd = prVerdict(l), sug = vd.s.map(function(x){ return x.it; });   // v1.60 เรียงตามชื่อ+ขนาด+ยี่ห้อ
+      h += '<div class="prpick">' + (vd.k === 'new' ? '<div class="outnote">🆕 <b>น่าจะเป็นของใหม่</b> — ' + esc(vd.why) + ' → กด "+ เพิ่มเป็นของใหม่" (ถ้าใช่ตัวเดิม แตะเลือกด้านล่างได้)</div>'
+          : '<div class="outnote soft">❓ <b>ยังไม่เคยจับคู่</b> — เลือกตัวที่ใช่ (เรียงจากใกล้สุด)</div>')
+        + '<div class="li-meta" style="margin:6px 0 4px">' + (sug.length ? 'ตัวที่ใกล้:' : '') + '</div>'
         + (sug.length ? sug.map(function(s){ return '<button type="button" class="chip na tapchip" data-pick="' + esc(s.sku) + '" style="margin:0 6px 6px 0">' + esc(s.sku) + ' ' + esc(s.name.slice(0, 34)) + '</button>'; }).join('') : '')
         + '<input type="text" data-f="q" placeholder="ค้นในทะเบียน เช่น ใบเจียร" autocomplete="off" style="margin-top:4px"><div class="prres"></div>'
         + '<div class="row" style="gap:6px; margin-top:6px"><button type="button" class="ghost" data-act="new" style="flex:1">+ เพิ่มเป็นของใหม่</button><button type="button" class="ghost" data-act="skip" style="flex:1">ไม่เข้าสต็อก</button></div></div>';
@@ -3053,6 +3079,27 @@
     }
     return h + '</div>';
   }
+  function prSummary(d){
+    var c = {ok:0, guess:0, ask:0, nw:0, newSet:0, price:0, dup:0, flag:0, skip:0};
+    d.lines.forEach(function(l){
+      if (l.done) return;
+      var it = l.sku && l.sku !== 'SKIP' && l.sku !== 'NEW' ? getSku(l.sku) : null;
+      if (l.sku === 'SKIP') c.skip++; else if (l.mode === 'new') c.newSet++; else if (it){ if (l.guess) c.guess++; else c.ok++; if (prPriceWarn(l, it, d.shop)) c.price++; if (prDupWarn(l, it)) c.dup++; }
+      else { if (prVerdict(l).k === 'new') c.nw++; else c.ask++; }
+      if (l.flags && l.flags.length) c.flag++;
+    });
+    var p = [];
+    if (c.ok) p.push('✔ จับคู่แล้ว ' + c.ok);
+    if (c.guess) p.push('<b>🤖 ระบบเดา ' + c.guess + '</b> (ตรวจ)');
+    if (c.ask) p.push('<b>❓ ต้องเลือก ' + c.ask + '</b>');
+    if (c.nw) p.push('<b style="color:#d92d20">🆕 น่าจะของใหม่ ' + c.nw + '</b>');
+    if (c.newSet) p.push('➕ เพิ่มของใหม่ ' + c.newSet);
+    if (c.skip) p.push('ไม่เข้าสต็อก ' + c.skip);
+    if (c.price) p.push('<b style="color:#b54708">⚠ ราคาเปลี่ยน ' + c.price + '</b>');
+    if (c.dup) p.push('<b style="color:#d92d20">⚠ อาจรับซ้ำ ' + c.dup + '</b>');
+    if (c.flag) p.push('<b style="color:#d92d20">⚠ อ่านไม่ครบ ' + c.flag + '</b>');
+    return p.length ? '<div class="pricebox" style="margin-top:10px; line-height:1.7"><b>สรุปใบนี้:</b> ' + p.join(' · ') + '</div>' : '';
+  }
   function renderPR(){
     var box = el('pr_review'); if (!box) return;
     if (!prDoc || DEPT_MODE || !pinOk){ box.innerHTML = ''; box.hidden = true; return; }
@@ -3069,6 +3116,7 @@
       + (d.so || d.note ? '<div class="li-meta" style="margin-top:6px">' + (d.so ? 'Sys. Order ' + esc(d.so) : '') + (d.ref ? ' · ใบส่งของ ' + esc(d.ref) : '') + (d.note ? ' · ' + esc(d.note) : '') + '</div>' : '')
       + (d.seen ? '<div class="note" style="margin:8px 0 0">ℹ ใบนี้เคยรับไปแล้วบางส่วน — ระบบนับต่อจากที่รับไปแล้ว ไม่รับซ้ำ</div>' : '')
       + (d.warn && d.warn.length ? '<div class="outnote" style="margin-top:8px">⚠ ' + d.warn.map(esc).join('<br>⚠ ') + '</div>' : '')
+      + prSummary(d)   // v1.60 สรุปทั้งใบก่อนไล่ทีละบรรทัด
       + '<div id="pr_lines">' + d.lines.map(prLineHtml).join('') + '</div>'
       + '<div class="note" style="margin:10px 0 0">จะรับ <b>' + on.length + '</b> บรรทัด' + (val ? ' · มูลค่า ' + baht(val) + ' (ก่อน VAT)' : '') + '</div>'
       + '<div class="row" style="gap:8px; margin-top:10px"><button class="primary" id="pr_go" style="flex:2">✅ รับเข้าทั้งใบ</button><button class="ghost" id="pr_cancel" style="flex:1">ยกเลิก</button></div></div>';
@@ -3098,13 +3146,13 @@
       });
       function bindPick(b){ b.addEventListener('click', function(){
         var it = getSku(b.getAttribute('data-pick')); if (!it) return;
-        l.sku = it.sku; l.mode = 'ok'; l.factorAsk = normUnit(it.unit) !== normUnit(l.unit); if (!l.factorAsk) l.factor = 1;
+        l.sku = it.sku; l.mode = 'ok'; l.guess = false; l.factorAsk = normUnit(it.unit) !== normUnit(l.unit); if (!l.factorAsk) l.factor = 1;
         l.on = !l.done && (+l.recv > 0); prSave(); var y = window.scrollY; renderPR(); window.scrollTo(0, y);
       }); }
       div.querySelectorAll('[data-pick]').forEach(bindPick);
       div.querySelectorAll('[data-act]').forEach(function(b){ b.addEventListener('click', function(){
         var a = b.getAttribute('data-act');
-        if (a === 'change'){ l.sku = ''; l.mode = 'pick'; l.on = false; }
+        if (a === 'change'){ l.sku = ''; l.mode = 'pick'; l.on = false; l.guess = false; }
         if (a === 'skip'){ l.sku = 'SKIP'; l.mode = 'ok'; l.on = false; }
         if (a === 'new'){ l.sku = 'NEW'; l.mode = 'new'; l.on = !l.done; l.factor = 1; l.factorAsk = false; }
         if (a === 'back'){ l.sku = ''; l.mode = 'pick'; l.on = false; }
