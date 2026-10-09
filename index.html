@@ -1090,7 +1090,13 @@
     if (m && (+m[1] === num || String(it.old) === m[1])) return true;     // เลขตรงตัว: 71 / 071 / cs71 / cs071
     if (/^\d+$/.test(qn)) return false;                                     // พิมพ์เลขล้วน ไม่เอาที่แค่มีเลขนี้อยู่ข้างใน
     if (qNorm(it.sku).indexOf(qn) >= 0) return true;
-    return qn.length >= 2 && qNorm(hay).indexOf(qn) >= 0;
+    if (qn.length >= 2 && qNorm(hay).indexOf(qn) >= 0) return true;
+    if (ql.length >= 6){   // v1.49 คำไทยไม่ติดกันพอดี (เช่น "น้ำมันรางเลื่อน" เจอ "น้ำมันหล่อลื่นรางเลื่อน") — ตัวอักษร 3 ตัวต่อกันเจอ ≥ 80%
+      var ta = triG(ql), ka = Object.keys(ta), tb = triG(hay), c = 0;
+      ka.forEach(function(x){ if (tb[x]) c++; });
+      if (ka.length >= 4 && c / ka.length >= 0.8) return true;
+    }
+    return false;
   }
 
   /* ================= toast ================= */
