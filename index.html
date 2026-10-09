@@ -462,7 +462,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.56</span>
+      <span class="ver" id="appVer">v1.57</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -484,7 +484,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.56 · อัปเดต 09/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.57 · อัปเดต 09/10/2026</div>
     </div>
   </header>
 
@@ -571,7 +571,7 @@
     <section id="v-add" hidden>
       <div class="card" id="prCard">
         <h2>📄 รับของตามใบ PR / อินวอยซ์</h2>
-        <div class="note" style="margin:0">ถ่ายรูปใบ PR, อินวอยซ์ หรือใบส่งของ Linde (หรือเลือก PDF สแกน / <b>ไฟล์ Excel ของใบ PR</b> ที่ export จากระบบ — อ่านแม่นสุด) → ระบบรู้เองว่าเป็นใบอะไร อ่านให้ → ตรวจทีละบรรทัด → กดรับเข้าทั้งใบ (ตัดสต็อก + ราคา + ร้าน + เลข PR ให้เอง)</div>
+        <div class="note" style="margin:0">ถ่ายรูป<b>สำเนาใบ PO</b>, ใบ PR, อินวอยซ์ หรือใบส่งของ Linde (หรือเลือก PDF สแกน / <b>ไฟล์ Excel ของใบ PR</b> ที่ export จากระบบ — อ่านแม่นสุด) → ระบบรู้เองว่าเป็นใบอะไร อ่านให้ → ตรวจทีละบรรทัด → กดรับเข้าทั้งใบ (ตัดสต็อก + ราคา + ร้าน + เลข PR ให้เอง)</div>
         <div class="note" id="pr_lock" style="margin:8px 0 0">🔒 ต้องใส่ PIN ของ PC ในปุ่มตั้งค่าก่อน (ในใบมีราคา)</div>
         <div class="row" id="pr_btns" style="gap:8px; margin-top:10px"><button class="primary" id="pr_cam" style="flex:1">📷 ถ่ายรูปใบ</button><button class="ghost" id="pr_pick" style="flex:1">📎 ไฟล์ / PDF / Excel</button></div>
         <input type="file" id="pr_file_cam" accept="image/*" capture="environment" hidden>
@@ -2661,6 +2661,7 @@
   /* ---------- v1.18 อินวอยซ์ / ใบส่งของ Linde (ถังแก๊ส) ---------- */
   function docKind(text){
     var t = String(text || '');
+    if ((/RFPU-GE-006|Purchase\s*Order/i.test(t)) && !/REQUISITION/i.test(t)) return 'PO';   // v1.57 สำเนาใบ PO ของเรา
     if (/PURCHASE\s*REQUISITION|RFPU-GE/i.test(t)) return 'PR';
     if (/DELIVERY\s*DOCKET/i.test(t)) return 'DD';
     if (/INVOICE/i.test(t) && /Linde|ลินเด้/i.test(t)) return 'INV';
@@ -2780,7 +2781,72 @@
     if (!out.lines.length) out.warn.push('หาบรรทัดสินค้าในไฟล์ไม่เจอ');
     return out;
   }
-  function parseDoc(text){ var k = docKind(text); if (k === 'PR'){ var d = parsePR(text); d.kind = 'PR'; return d; } return parseLinde(text); }
+  /* ---------- v1.57 สำเนาใบ PO ของเรา (ฟอร์ม RFPU-GE-006) — ไม่มีรหัสของ ไม่มีเลข PR → จับคู่จากชื่อ ----------
+     OCR อาจเรียงข้อความทีละแถว หรือทีละคอลัมน์ → ลองทั้ง 2 แบบ เลือกแบบที่ จำนวน×ราคา = ยอด มากที่สุด · ลายมือที่เขียนทับ OCR อ่านไม่ได้ → ให้คนแก้ในหน้าตรวจ */
+  var UNIT_RE = /^(PCS?|EA|EACH|SETS?|BOX(ES)?|BX|PACKS?|PK|PAC|ROLLS?|RL|CANS?|BOTTLES?|BTL|BT|KGS?|KG|M|MTR|L|LTR|DOZ|DZ|PAIRS?|PR|SHEETS?|SHT|TUBES?|BAGS?|GAL|DRUMS?|PAIL|LOT|REAM|UNITS?|CYL|SPOOL|ม้วน|ชิ้น|อัน|กล่อง|ถัง|กก\.?)\.?$/i;
+  function parsePO(text){
+    var raw = String(text || '').replace(/\\([*_!"'#])/g, '$1').replace(/\r/g, '');
+    var toks0 = raw.split('\n').map(function(x){ return x.replace(/^\*\*|\*\*$/g, '').replace(/\|/g, ' ').trim(); }).filter(Boolean);
+    var out = {kind:'PO', no:'', date:'', shop:'', lines:[], sub:null, warn:[], note:''};
+    var m = raw.match(/P\s*O\s*-?\s*(\d{7,})/i); if (m) out.no = 'PO' + m[1];
+    var ds = (raw.match(/\b\d{1,2}\/\d{1,2}\/\d{4}\b/g) || []).map(function(d){ var p = d.split('/'); return {d:d, k:+p[2] * 10000 + +p[1] * 100 + +p[0]}; }).sort(function(a, b){ return a.k - b.k; });
+    if (ds.length) out.date = ds[0].d;                                   // วันที่ PO = วันที่น้อยสุดในใบ (Request Date มาทีหลัง)
+    toks0.forEach(function(t){ if (!out.shop && /(CO\.|CORPORATION|LTD|LIMITED|บจก|ห้างหุ้นส่วน|หจก)/i.test(t) && !/delica|เดลิก้า/i.test(t)) out.shop = t.replace(/^[:\s]+/, '').replace(/^Supplier\s*code\s*\S+\s*/i, ''); });
+    var sc = raw.match(/Supplier\s*code\s*:?\s*([A-Z0-9]{3,})/i);
+    // ตัดช่วงตาราง: หลังหัว Amount → ก่อน Remark/Subtotal
+    var s = -1, e = toks0.length;
+    for (var i = 0; i < toks0.length; i++){
+      if (s < 0 && /^Amount$/i.test(toks0[i])) s = i + 1;
+      else if (s >= 0 && /^(Remark|Sub\s*total|Less|\(?[A-Z ]+BAHT)/i.test(toks0[i])){ e = i; break; }
+    }
+    if (s < 0) for (i = 0; i < toks0.length; i++) if (/Item\s*\/?\s*Description/i.test(toks0[i])){ s = i + 1; break; }
+    if (s < 0){ out.warn.push('หาตารางในใบ PO ไม่เจอ'); return out; }
+    var NUM = /^[\d,]+\.\d{2}$/, toks = [];
+    toks0.slice(s, e).forEach(function(t){
+      if (/already\s*rec|received\s*po|^delivery|^sign\b|^date\b|^\d{1,2}\s*[A-Z]{3}\s*\d{4}$|^(No\.?|Quantity|Unit\s*Price|Item\s*\/?\s*Description)$/i.test(t)) return;   // ตรายาง/หัวตาราง
+      var parts = t.split(/\s+/);
+      if (parts.length > 1 && parts.every(function(p){ return NUM.test(p) || UNIT_RE.test(p); }) && parts.some(function(p){ return NUM.test(p); })){ parts.forEach(function(p){ toks.push(p); }); return; }
+      var lm = t.match(/^(\d{1,2})\s+(\D.*)$/); if (lm){ toks.push(lm[1]); toks.push(lm[2]); return; }
+      toks.push(t);
+    });
+    var L = [], D = [], N = [], U = [], next = 1, prevKind = '';
+    toks.forEach(function(t, k){
+      if (/^\d{1,2}$/.test(t)){ if (+t === next){ L.push(k); next++; prevKind = 'L'; } return; }   // เลขบรรทัดต้องเรียง 1,2,3… (กันเลขลายมือ)
+      if (NUM.test(t)){ N.push(prNum(t)); prevKind = 'N'; return; }
+      if (UNIT_RE.test(t)){ U.push(t.toUpperCase().replace(/\.$/, '')); prevKind = 'U'; return; }
+      if (prevKind === 'D' && D.length) D[D.length - 1].push(t); else D.push([t]);   // ข้อความติดกัน = ก้อนเดียวกัน
+      prevKind = 'D';
+    });
+    var n = Math.max(L.length, U.length, Math.round(N.length / 3));
+    if (!n){ out.warn.push('หาบรรทัดสินค้าในใบ PO ไม่เจอ'); return out; }
+    function tryRow(){ var r = []; for (var j = 0; j < n; j++) r.push({q:N[3 * j], p:N[3 * j + 1], a:N[3 * j + 2]}); return r; }
+    function tryCol(){ var r = []; for (var j = 0; j < n; j++) r.push({q:N[j], p:N[n + j], a:N[2 * n + j]}); return r; }
+    function okCnt(r){ return r.filter(function(x){ return x.q != null && x.p != null && x.a != null && Math.abs(x.q * x.p - x.a) < 0.05; }).length; }
+    var A = tryRow(), B = tryCol(), V = okCnt(B) > okCnt(A) ? B : A;
+    // ชื่อ: ก้อนข้อความเท่าจำนวนบรรทัด = บรรทัดละก้อน · ถ้าเป็นคอลัมน์เดียวยาวๆ = แยกทีละข้อความ
+    var segs = D.map(function(x){ return x.join(' '); }), descs = [];
+    if (segs.length === n) descs = segs;
+    else {
+      var flat = []; D.forEach(function(x){ x.forEach(function(y){ flat.push(y); }); });
+      if (flat.length === n) descs = flat;
+      else if (flat.length === 2 * n) for (var j = 0; j < n; j++) descs.push(flat[j] + ' ' + flat[n + j]);
+      else { for (j = 0; j < n; j++) descs.push(flat[j] || ''); if (flat.length > n) out.warn.push('ชื่อของบางบรรทัดอาจสลับ/ขาด — เทียบกับใบจริง (ข้อความเกิน: ' + flat.slice(n).join(' / ').slice(0, 120) + ')'); }
+    }
+    for (var j = 0; j < n; j++){
+      var x = V[j] || {}, l = {ln:j + 1, code:'', desc:(descs[j] || '').trim(), qty: x.q != null ? x.q : null, unit: U[j] || '', price: x.p != null ? x.p : null, total: x.a != null ? x.a : null, flags:[]};
+      if (l.qty == null || !l.unit) l.flags.push('อ่านจำนวน/หน่วยไม่ครบ');
+      if (l.qty != null && l.price != null && l.total != null && Math.abs(l.qty * l.price - l.total) > 0.05) l.flags.push('จำนวน×ราคา ไม่เท่ายอด');
+      out.lines.push(l);
+    }
+    var si = toks0.findIndex(function(t){ return /Sub\s*total/i.test(t); });
+    if (si >= 0) for (var q = si; q < Math.min(toks0.length, si + 8); q++){ var v = toks0[q].split(/\s+/).map(prNum).filter(function(z){ return z != null; })[0]; if (v != null && v > 0){ out.sub = v; break; } }
+    var sum = out.lines.reduce(function(a, l){ return a + (l.total || 0); }, 0);
+    if (out.sub != null && Math.abs(out.sub - sum) > 0.05) out.warn.push('ยอดรวมทุกบรรทัด (' + sum.toFixed(2) + ') ไม่ตรงกับ Subtotal ในใบ (' + out.sub.toFixed(2) + ') — อาจอ่านตกหล่น หรือในใบเขียนแก้');
+    out.note = sc ? 'รหัสผู้ขาย ' + sc[1] : '';
+    if (!out.no) out.warn.push('อ่านเลข PO ไม่ได้ — พิมพ์เอง');
+    return out;
+  }
+  function parseDoc(text){ var k = docKind(text); if (k === 'PO') return parsePO(text); if (k === 'PR'){ var d = parsePR(text); d.kind = 'PR'; return d; } return parseLinde(text); }
 
   /* ================= v1.17 รับของตามใบ PR ================= */
   var K_PRDRAFT = 'pcscan_prdraft';
@@ -2790,7 +2856,33 @@
     SHEET:'แผ่น', SHT:'แผ่น', TUBE:'หลอด', BAG:'ถุง', GAL:'แกลลอน', DRUM:'ถัง', PAIL:'ถัง', LOT:'ล็อต', REAM:'รีม', UNIT:'ชิ้น', CYL:'ถัง', CYLINDER:'ถัง'};
   function normUnit(u){ return stdUnit(u).replace(/\s*\(.*\)$/, '').toLowerCase(); }   // v1.20 ใช้หน่วยมาตรฐานเดียวกันทั้งระบบ
   function prKey(l){ return String(l.code || '').trim() || ('#' + String(l.desc || '').trim().slice(0, 60)); }
-  function prMapOf(l){ var k = prKey(l); for (var i = 0; i < PRMAP.length; i++) if (PRMAP[i].code === k) return PRMAP[i]; return null; }
+  function prMapOf(l){
+    var k = prKey(l); for (var i = 0; i < PRMAP.length; i++) if (PRMAP[i].code === k) return PRMAP[i];
+    if (k.charAt(0) !== '#') return null;   // v1.57 ใบที่ไม่มีรหัส (PO) → ชื่อที่ OCR อ่านเพี้ยนนิดหน่อย ยังจำได้
+    var a = triG(k), ka = Object.keys(a), best = null; if (ka.length < 4) return null;
+    PRMAP.forEach(function(m){ if (String(m.code).charAt(0) !== '#') return; var b = triG(m.code), kb = Object.keys(b), c = 0; ka.forEach(function(x){ if (b[x]) c++; });
+      var sc = 2 * c / (ka.length + kb.length); if (sc >= 0.82 && (!best || sc > best.sc)) best = {m:m, sc:sc}; });
+    return best ? best.m : null;
+  }
+  // v1.57 ราคาในใบ เทียบราคาครั้งก่อนของร้านนี้ (ลายมือแก้ราคา OCR อ่านไม่ได้ → เตือนให้ดูใบจริง)
+  function prPriceWarn(l, it, shop){
+    if (!it || l.price == null || !(+l.price > 0)) return '';
+    var p = pr(it); if (!p) return '';
+    var f = +l.factor || 1, pp = Math.round(+l.price / f * pf(it) * 100) / 100, w = String(shop || '').toLowerCase().split(/[\s.,(]+/)[0], ref = null, who = '';
+    [[p.s1,p.p1],[p.s2,p.p2],[p.s3,p.p3]].forEach(function(x){ if (ref == null && x[0] && x[1] > 0 && w.length >= 2 && String(x[0]).toLowerCase().indexOf(w) >= 0){ ref = +x[1]; who = x[0]; } });
+    if (ref == null && p.last > 0){ ref = +p.last; who = p.lastShop || 'ครั้งก่อน'; }
+    if (ref == null || Math.abs(pp - ref) / ref < 0.005) return '';
+    return '<div class="outnote soft">⚠ ราคาในใบ ' + baht(pp) + (p.pu ? '/' + esc(p.pu) : '') + ' ' + (pp > ref ? 'แพงขึ้น' : 'ถูกลง') + ' จากเดิม ' + baht(ref) + ' (' + esc(who) + ') — ดูใบจริงว่าเขียนแก้ราคาไหม แก้ช่องราคาได้</div>';
+  }
+  // v1.57 กันรับซ้ำ (รับได้ทั้งใบ PR และใบ PO แต่ PO ไม่มีเลข PR อ้างอิง)
+  function prDupWarn(l, it){
+    if (!it || l.done) return '';
+    var q = Math.round((+l.recv || 0) * (+l.factor || 1) * 1000) / 1000, now = Date.now(), hit = null;
+    log.forEach(function(r){ if (r.dir === 'รับเข้า' && String(r.sku).toUpperCase() === String(it.sku).toUpperCase() && Math.abs((+r.qty || 0) - q) < 0.001 && now - Date.parse(r.ts) < 30 * 864e5 && (!hit || r.ts > hit.ts)) hit = r; });
+    if (!hit) return '';
+    var d = new Date(hit.ts);
+    return '<div class="outnote">⚠ เพิ่งรับ ' + esc(it.sku) + ' เข้า ' + fmt(hit.qty) + ' ' + esc(it.unit || '') + ' ไปแล้วเมื่อ ' + d.getDate() + '/' + (d.getMonth() + 1) + (hit.note ? ' (' + esc(String(hit.note).slice(0, 40)) + ')' : '') + ' — ถ้าเป็นของล็อตเดียวกัน เอาติ๊ก "รับ" ออก กันสต็อกบวกซ้ำ</div>';
+  }
   function shopFromOcr(s){
     var S = String(s || '').toUpperCase(); if (!S) return '';
     var known = topShops(30);
@@ -2878,7 +2970,7 @@
       })['catch'](function(e){ stt.textContent = '⚠ อ่านไม่สำเร็จ — ' + ((e && e.message) || 'เช็คเน็ต'); })
       .then(function(){ prBusy = false; el('pr_file').value = ''; el('pr_file_cam').value = ''; });
   }
-  var KIND_TH = {PR:'ใบ PR ', INV:'อินวอยซ์ ', DD:'ใบส่งของ '};
+  var KIND_TH = {PR:'ใบ PR ', PO:'ใบ PO ', INV:'อินวอยซ์ ', DD:'ใบส่งของ '};
   function prOpenList(){
     var g = {}, order = [];
     PRS.forEach(function(r){ if (!g[r.no]){ g[r.no] = {no:r.no, shop:r.shop, date:r.date, file:r.file, lines:[], open:0}; order.push(r.no); } g[r.no].lines.push(r); if (r.st === 'ค้างรับ') g[r.no].open++; });
@@ -2887,7 +2979,7 @@
   function prLoadStored(no){
     var rows = PRS.filter(function(r){ return r.no === no; }).sort(function(a, b){ return a.ln - b.ln; });
     if (!rows.length) return;
-    prStart({no:no, date:rows[0].date, shop:rows[0].shop, file:rows[0].file, sub:null, warn:[], stored:true, so:rows[0].ref || '', kind: /^INV-/.test(no) ? 'INV' : /^DD-/.test(no) ? 'DD' : 'PR',
+    prStart({no:no, date:rows[0].date, shop:rows[0].shop, file:rows[0].file, sub:null, warn:[], stored:true, so:rows[0].ref || '', kind: /^INV-/.test(no) ? 'INV' : /^DD-/.test(no) ? 'DD' : /^PO/.test(no) ? 'PO' : 'PR', inv: rows[0].inv || '',
       lines: rows.map(function(r){ return {ln:r.ln, code:r.code, desc:r.desc, qty:r.qty, unit:r.unit, price:r.price, total:r.price != null ? r.qty * r.price : null, flags:[], sku:r.sku, factor:r.factor}; })});
   }
   function renderPRCard(){
@@ -2919,7 +3011,10 @@
       h += '<div class="pricebox" style="margin-top:6px"><b>ของใหม่</b>'
         + '<input type="text" data-f="nname" value="' + esc(l.nname != null ? l.nname : l.desc) + '" style="margin-top:6px" placeholder="ชื่อรายการ">'
         + '<div class="row" style="gap:6px; margin-top:6px"><input type="text" data-f="nunit" list="units" value="' + esc(l.nunit != null ? l.nunit : normUnit(l.unit)) + '" placeholder="หน่วยนับ" style="flex:1">'
-        + '<button type="button" class="ghost" data-act="back" style="flex:1">ยกเลิกของใหม่</button></div></div>';
+        + '<button type="button" class="ghost" data-act="back" style="flex:1">ยกเลิกของใหม่</button></div>'
+        + (GROUPS.length ? '<label class="li-meta" style="display:block; margin-top:6px">กลุ่ม' + (l.ngrp == null && suggestGrp(l.nname != null ? l.nname : l.desc) ? ' (ระบบแนะนำ)' : '') + '</label><select data-f="ngrp">'
+          + grpOptions(l.ngrp != null ? l.ngrp : ((suggestGrp(l.nname != null ? l.nname : l.desc) || {}).g || '')).replace(/<option value="__new">[^<]*<\/option>/, '') + '</select>' : '')   // v1.57
+        + '</div>';
     } else if (l.sku === 'SKIP'){
       h += '<div class="row" style="gap:6px; margin-top:6px"><span class="chip na">ไม่เข้าสต็อก</span><button type="button" class="ghost" data-act="change">เปลี่ยน</button></div>';
     } else if (it && l.mode === 'ok'){
@@ -2940,7 +3035,10 @@
         + '<input type="number" inputmode="decimal" min="0" data-f="recv" value="' + (l.recv != null ? l.recv : '') + '" style="width:90px"><span class="li-meta">' + esc(l.unit) + ' (ตามใบ)</span></div>'
         + '<div class="row" style="gap:8px; margin-top:6px; align-items:center"><span class="li-meta' + (ask ? ' over' : '') + '" style="white-space:nowrap">1 ' + esc(l.unit) + ' =</span><input type="number" inputmode="decimal" min="0" data-f="factor" value="' + l.factor + '" style="width:90px' + (l.factorAsk ? '; border-color:var(--warn)' : '') + '"><span class="li-meta">' + esc(tUnit) + ' (หน่วยนับในคลัง)</span></div>'
         + (l.factorAsk ? '<div class="outnote soft">หน่วยในใบ (' + esc(l.unit) + ') ไม่เหมือนหน่วยนับในคลัง (' + esc(tUnit) + ') — ใส่ว่า 1 ' + esc(l.unit) + ' เท่ากับกี่ ' + esc(tUnit) + ' (ระบบจำไว้ครั้งหน้า)</div>' : '')
-        + (+l.recv < rem && l.on ? '<label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:4px"><input type="checkbox" data-f="close"' + (l.close ? ' checked' : '') + ' style="width:auto; min-height:0"> ปิดบรรทัดนี้ ไม่รอส่วนที่เหลือ</label>' : '');
+        + (+l.recv < rem && l.on ? '<label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:4px"><input type="checkbox" data-f="close"' + (l.close ? ' checked' : '') + ' style="width:auto; min-height:0"> ปิดบรรทัดนี้ ไม่รอส่วนที่เหลือ</label>' : '')
+        + '<div class="row" style="gap:8px; margin-top:6px; align-items:center"><span class="li-meta" style="white-space:nowrap">ราคา</span><input type="number" inputmode="decimal" min="0" step="0.01" data-f="price" value="' + (l.price != null ? l.price : '') + '" style="width:100px"><span class="li-meta">บาท/' + esc(l.unit || 'หน่วย') + ' ก่อน VAT (ในใบเขียนแก้ → แก้ตรงนี้)</span></div>'
+        + '<input type="text" data-f="hand" value="' + esc(l.hand || '') + '" placeholder="📝 ในใบเขียนแก้/เขียนเพิ่มว่า… (ถ้ามี)" autocomplete="off" style="margin-top:6px">'   // v1.57
+        + prPriceWarn(l, it, prDoc && prDoc.shop) + prDupWarn(l, it);
     }
     return h + '</div>';
   }
@@ -2956,6 +3054,7 @@
       +   '<div style="flex:1 1 140px"><label class="fld" for="pr_no">เลขเอกสาร</label><input type="text" id="pr_no" value="' + esc(d.no) + '" autocomplete="off"></div>'
       +   '<div style="flex:1 1 110px"><label class="fld" for="pr_date">วันที่ใบ</label><input type="text" id="pr_date" value="' + esc(d.date) + '" autocomplete="off"></div></div>'
       + '<div style="margin-top:6px"><label class="fld" for="pr_shop">ร้าน</label><input type="text" id="pr_shop" list="shopList" value="' + esc(d.shop) + '" autocomplete="off">' + shopChips('pr_shop') + '</div>'
+      + (d.kind === 'PO' ? '<div style="margin-top:6px"><label class="fld" for="pr_inv">เลขอินวอยซ์ของร้าน (ที่มากับของ)</label><input type="text" id="pr_inv" value="' + esc(d.inv || '') + '" placeholder="เช่น IV6910-0123" autocomplete="off"></div>' : '')   // v1.57
       + (d.so || d.note ? '<div class="li-meta" style="margin-top:6px">' + (d.so ? 'Sys. Order ' + esc(d.so) : '') + (d.ref ? ' · ใบส่งของ ' + esc(d.ref) : '') + (d.note ? ' · ' + esc(d.note) : '') + '</div>' : '')
       + (d.seen ? '<div class="note" style="margin:8px 0 0">ℹ ใบนี้เคยรับไปแล้วบางส่วน — ระบบนับต่อจากที่รับไปแล้ว ไม่รับซ้ำ</div>' : '')
       + (d.warn && d.warn.length ? '<div class="outnote" style="margin-top:8px">⚠ ' + d.warn.map(esc).join('<br>⚠ ') + '</div>' : '')
@@ -2966,7 +3065,7 @@
   }
   function bindPR(){
     var box = el('pr_review');
-    ['pr_no','pr_date','pr_shop'].forEach(function(id){ el(id).addEventListener('input', function(){ prDoc[id.slice(3)] = el(id).value.trim(); prSave(); }); });
+    ['pr_no','pr_date','pr_shop','pr_inv'].forEach(function(id){ if (el(id)) el(id).addEventListener('input', function(){ prDoc[id.slice(3)] = el(id).value.trim(); prSave(); }); });
     box.querySelectorAll('.prline').forEach(function(div){
       var l = prDoc.lines[+div.getAttribute('data-i')];
       div.querySelectorAll('[data-f]').forEach(function(inp){
@@ -2978,7 +3077,7 @@
             res.innerHTML = rows.map(function(it){ return '<button type="button" class="chip na tapchip" data-pick="' + esc(it.sku) + '" style="margin:6px 6px 0 0">' + esc(it.sku) + ' ' + esc(it.name.slice(0, 34)) + '</button>'; }).join('');
             res.querySelectorAll('[data-pick]').forEach(bindPick); return;
           }
-          if (inp.type === 'checkbox') l[f] = inp.checked; else l[f] = f === 'code' || f === 'nname' || f === 'nunit' ? inp.value : (inp.value === '' ? '' : +inp.value);
+          if (inp.type === 'checkbox') l[f] = inp.checked; else l[f] = f === 'code' || f === 'nname' || f === 'nunit' || f === 'hand' || f === 'ngrp' ? inp.value : (inp.value === '' ? '' : +inp.value);
           if (f === 'factor') l.factorAsk = false;
           if (f === 'code'){ l.flags = (l.flags || []).filter(function(x){ return !/บาร์โค้ด/.test(x); }); if (eanOk(l.code) === false) l.flags.push('รหัสบาร์โค้ดอาจอ่านผิด'); }
           prSave();
@@ -3018,10 +3117,12 @@
       var o = {ln:l.ln, code:String(l.code || '').trim(), desc:l.desc, qty:+l.qty || 0, unit:l.unit, price:l.price, factor:f,
                recv: on ? +l.recv : 0, close: !!(on && l.close), sku: l.mode === 'new' ? 'NEW' : (l.sku || ''), name: it ? it.name : l.desc,
                pf: itf, pprice: l.price != null ? Math.round(l.price / f * itf * 10000) / 10000 : null};
-      if (l.mode === 'new') o.item = {name: String(l.nname != null ? l.nname : l.desc).trim(), unit: String(l.nunit != null ? l.nunit : normUnit(l.unit)).trim(), maker: d.shop};
+      if (l.mode === 'new') o.item = {name: String(l.nname != null ? l.nname : l.desc).trim(), unit: String(l.nunit != null ? l.nunit : normUnit(l.unit)).trim(), maker: d.shop,
+        grp: String(l.ngrp != null ? l.ngrp : ((suggestGrp(l.nname != null ? l.nname : l.desc) || {}).g || '')).toUpperCase()};   // v1.57 + กลุ่ม
       if (l.mode === 'new' && !on){ o.sku = ''; delete o.item; }
       if (l.done) o.recv = 0;
       if (l.note) o.note = l.note;
+      if (l.hand && String(l.hand).trim()) o.note = (o.note ? o.note + ' · ' : '') + 'ในใบเขียน: ' + String(l.hand).trim();   // v1.57
       if (l.dup) o.dup = l.dup;
       o.rtn = l.rtnOn ? (+l.rtn || 0) : 0;
       return o;
@@ -3032,7 +3133,7 @@
       .map(function(l){ return {mat: l.code || l.desc, desc: l.desc, supp: l.recv, rtn: l.rtn}; });
     var btn = el('pr_go'); btn.disabled = true; btn.textContent = 'กำลังรับเข้า…';
     rememberShop(d.shop);
-    api({action:'prreceive', pr:{no:d.no, date:d.date, shop:d.shop, file:d.file || '', who:'PC', lines:lines, ref:d.so || '', cyl:cyl}}).then(function(j){
+    api({action:'prreceive', pr:{no:d.no, date:d.date, shop:d.shop, file:d.file || '', who:'PC', lines:lines, ref:d.so || '', cyl:cyl, inv:d.inv || ''}}).then(function(j){
       var n = (j.pr && j.pr.received) || 0;
       prDoc = null; prSave(); takeServer(j);
       var got = lines.filter(function(l){ return l.recv > 0 && l.sku && l.sku !== 'SKIP'; }).map(function(l){ return l.sku === 'NEW' ? (j.pr && j.pr.newSkus && j.pr.newSkus[l.ln]) : l.sku; }).filter(Boolean);
