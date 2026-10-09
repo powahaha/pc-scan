@@ -366,6 +366,9 @@
   .bcbtns input{width:110px; min-height:34px; padding:4px 8px;}
   .bcbtns button{width:auto; min-height:34px; padding:0 10px; font-size:13px;}
   .bcx{color:var(--warn);}
+  /* v1.52 ดาวน์โหลด Excel อยู่ในการ์ดบนสุดของแท็บใบเบิก (พับไว้) */
+  .xbox{margin-top:10px; border:1.5px solid var(--accent); border-radius:10px; padding:4px 12px 10px; background:var(--accent-soft);}
+  .xbox summary{cursor:pointer; font-weight:700; color:var(--accent); padding:8px 0 4px; font-size:15px;}
   .sku{font:600 12px var(--fm); color:var(--muted); letter-spacing:.04em;}
   dl.facts{display:grid; grid-template-columns:auto 1fr; gap:4px 12px; margin:12px 0 0;}
   dl.facts dt{font-size:12px; color:var(--muted);}
@@ -444,7 +447,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.51</span>
+      <span class="ver" id="appVer">v1.52</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -466,7 +469,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.51 · อัปเดต 09/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.52 · อัปเดต 09/10/2026</div>
     </div>
   </header>
 
@@ -653,10 +656,7 @@
         <h2>ใบขอเบิกรอจ่าย <span class="note" id="i_n" style="margin:0"></span></h2>
         <div class="note" style="margin:0">ของไม่พอ = ใส่เท่าที่มี ส่วนที่เหลือ<b>ค้างไว้รอของ</b>เอง (ใส่ 0 = ยังไม่จ่ายบรรทัดนั้น) · ติ๊ก "ปิด" = ไม่จ่ายส่วนที่เหลือ · กดจ่ายแล้วระบบตัดสต็อกให้เอง</div>
         <div class="note" style="margin:6px 0 0">ลิงก์ให้แผนก: <span class="code" id="i_link" style="user-select:all"></span></div>
-      </div>
-      <div id="i_list"></div>
-      <div class="card" id="x_card">
-        <h2>📊 ดาวน์โหลดข้อมูล (Excel)</h2>
+        <details class="xbox" id="x_card"><summary>📊 ดาวน์โหลดข้อมูลเป็น Excel (สรุป/ทำรายงาน)</summary>
         <div class="note" style="margin:0">เบิกออก / รับเข้า / ปรับยอด ทุกรายการ + ใบขอเบิก + สรุปแผนก×เดือน + สรุปรายของ (เฉลี่ยต่อเดือน) · มีมูลค่าเงิน · ต้องใส่ PIN</div>
         <div class="row" id="x_chips" style="gap:6px; margin-top:8px; flex-wrap:wrap"><button type="button" class="chip na tapchip" data-xr="this">เดือนนี้</button><button type="button" class="chip na tapchip" data-xr="last">เดือนก่อน</button><button type="button" class="chip na tapchip" data-xr="3m">3 เดือน</button><button type="button" class="chip na tapchip" data-xr="year">ปีนี้</button><button type="button" class="chip na tapchip" data-xr="all">ทั้งหมด</button></div>
         <div class="row" style="gap:6px; margin-top:8px">
@@ -665,7 +665,9 @@
         </div>
         <div style="margin-top:10px"><button class="primary" id="x_go">⬇ ดาวน์โหลด Excel</button></div>
         <div class="note" id="x_msg" style="margin:6px 0 0; color:var(--ok); font-weight:600"></div>
+              </details>
       </div>
+      <div id="i_list"></div>
       <div class="card">
         <h2>ใบเบิกย้อนหลัง <span class="note" id="h_n" style="margin:0"></span></h2>
         <div class="row" style="gap:6px; margin-top:6px">
