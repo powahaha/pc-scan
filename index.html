@@ -462,7 +462,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.57</span>
+      <span class="ver" id="appVer">v1.58</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -484,7 +484,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.57 · อัปเดต 09/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.58 · อัปเดต 09/10/2026</div>
     </div>
   </header>
 
@@ -2614,20 +2614,22 @@
     });
     // หาช่วงตาราง: หลังหัวคอลัมน์ "Total Amount" ตัวแรก จนถึง "Information"
     var s = -1, e = toks.length;
-    for (var i = 0; i < toks.length; i++){ if (s < 0 && /^Total Amount$/i.test(toks[i])) s = i + 1; else if (s >= 0 && /^Informat/i.test(toks[i])){ e = i; break; } }
+    for (var i = 0; i < toks.length; i++){ if (s < 0 && /^Total Amount$/i.test(toks[i])) s = i + 1; else if (s >= 0 && /^([Il1]nformat|Information|Supplier$|รวมเงิน|Sub\s*Total|Remark)/i.test(toks[i])){ e = i; break; } }   // v1.58 OCR มักอ่าน I เป็น l
     if (s < 0){ out.warn.push('หาตารางในใบไม่เจอ'); return out; }
     var cur = null, st = 'item', ln = 0;
     function push(){ if (cur){ cur.desc = cur.desc.join(' ').trim(); out.lines.push(cur); } cur = null; }
     for (var k = s; k < e; k++){
       var t = toks[k], n;
-      var im = t.match(/^(\d{1,2})\s+(\d{6,14})\b\s*(.*)$/);           // "12 8850304177906" อยู่บรรทัดเดียวกัน
+      var im = t.match(/^(\d{1,2})\s+(\d{6,14}|[0-9A-Z]{1,6}(?:-[0-9A-Z]{1,8}){1,4})\b\s*(.*)$/i);           // "12 8850304177906" / "1 12-ABSO-SOOA" อยู่บรรทัดเดียวกัน
+      if (im && ln > 0 && +im[1] !== ln + 1) im = null;   // v1.58 เลขบรรทัดต้องเรียงต่อกัน (กันเลข 1-2-3 ในตารางใบเสนอราคา)
       if ((st === 'item' || st === 'total') && im){ push(); ln = +im[1]; cur = {ln:+im[1], code:im[2], desc: im[3] ? [im[3]] : [], qty:null, unit:'', price:null, total:null}; st = 'desc'; continue; }
-      if (/^\d{1,2}$/.test(t) && (st === 'item' || (st === 'total' && +t === ln + 1))){   // เลขบรรทัดถัดไป
+      if (/^\d{1,2}$/.test(t) && (st === 'item' || st === 'total') && (+t === ln + 1 || ln === 0)){   // เลขบรรทัดถัดไป (v1.58 ต้องเรียง 1,2,3…)
         push(); cur = {ln:+t, code:'', desc:[], qty:null, unit:'', price:null, total:null}; st = 'code'; ln = +t; continue;
       }
       if (!cur){ continue; }
       if (st === 'code'){
         if (/^\d{6,14}$/.test(t)){ cur.code = t; st = 'desc'; continue; }
+        if (/^[0-9A-Z]{1,6}(?:-[0-9A-Z]{1,8}){1,4}$/i.test(t) && /[A-Z]/i.test(t) && /\d/.test(t)){ cur.code = t.toUpperCase(); st = 'desc'; continue; }   // v1.58 รหัสแบบ 12-ABSO-SOOA
         st = 'desc';
       }
       if (st === 'desc'){
@@ -2643,6 +2645,10 @@
       }
     }
     push();
+    out.lines = out.lines.filter(function(l){ return /[A-Za-z\u0E00-\u0E7F]/.test(l.desc + l.code); });   // v1.58 บรรทัดที่ไม่มีตัวหนังสือเลย = อ่านขยะ
+    out.lines.forEach(function(l){
+      if (!l.code){ var cm = String(l.desc).match(/^([0-9A-Z]{1,6}(?:-[0-9A-Z]{1,8}){1,4})\s+(.+)$/i); if (cm && /[A-Z]/i.test(cm[1]) && /\d/.test(cm[1])){ l.code = cm[1].toUpperCase(); l.desc = cm[2]; } }   // v1.58 รหัสติดมากับชื่อ
+    });
     out.lines.forEach(function(l){
       l.flags = [];
       if (l.code && eanOk(l.code) === false) l.flags.push('รหัสบาร์โค้ดอาจอ่านผิด');
@@ -3000,6 +3006,7 @@
     var rem = Math.max(0, (+l.qty || 0) - (l.prev || 0));
     var h = '<div class="prline' + (l.flags && l.flags.length ? ' bad' : '') + (l.done ? ' done' : '') + '" data-i="' + i + '">'
       + '<div class="row" style="justify-content:space-between; gap:6px"><div class="li-meta"><b>#' + l.ln + '</b> · <input class="prcode" data-f="code" value="' + esc(l.code || '') + '" placeholder="รหัสในใบ"></div>'
+      + '<button type="button" class="ghost" data-act="drop" title="ลบบรรทัดนี้ (อ่านผิด/ไม่ใช่ของ)" style="width:auto; min-height:30px; padding:0 10px">🗑 ลบ</button>'   // v1.58
       + (l.done ? '<span class="chip ok">รับแล้ว</span>' : '') + '</div>'
       + '<div class="li-name" style="font-weight:500">' + esc(l.desc || '—') + '</div>'
       + '<div class="li-meta">' + (prDoc && prDoc.kind === 'DD' ? 'ถังเต็มส่งมา' : prDoc && prDoc.kind === 'INV' ? 'ส่งมา' : 'ใบสั่ง') + ' <b>' + fmt(l.qty) + ' ' + esc(l.unit) + '</b>' + (l.price != null ? ' × ' + baht(l.price) : '') + (l.prev ? ' · รับไปแล้ว ' + fmt(l.prev) + ' · <b class="over">ค้าง ' + fmt(rem) + '</b>' : '') + '</div>'
@@ -3079,7 +3086,8 @@
           }
           if (inp.type === 'checkbox') l[f] = inp.checked; else l[f] = f === 'code' || f === 'nname' || f === 'nunit' || f === 'hand' || f === 'ngrp' ? inp.value : (inp.value === '' ? '' : +inp.value);
           if (f === 'factor') l.factorAsk = false;
-          if (f === 'code'){ l.flags = (l.flags || []).filter(function(x){ return !/บาร์โค้ด/.test(x); }); if (eanOk(l.code) === false) l.flags.push('รหัสบาร์โค้ดอาจอ่านผิด'); }
+          if (f === 'code'){ l.flags = (l.flags || []).filter(function(x){ return !/บาร์โค้ด/.test(x); }); if (eanOk(l.code) === false) l.flags.push('รหัสบาร์โค้ดอาจอ่านผิด');
+            if (l.mode === 'pick'){ var mm = prMapOf(l); if (mm && getSku(mm.sku)){ l.sku = mm.sku; l.factor = mm.factor || 1; l.mode = 'ok'; l.factorAsk = false; l.on = !l.done && +l.recv > 0; } } }   // v1.58 พิมพ์รหัสในใบ → ระบบจำได้ จับคู่ให้เลย
           prSave();
           if (f === 'on' || f === 'recv' || f === 'code' || f === 'rtnOn') { var y = window.scrollY; renderPR(); window.scrollTo(0, y); }
         });
@@ -3096,6 +3104,7 @@
         if (a === 'skip'){ l.sku = 'SKIP'; l.mode = 'ok'; l.on = false; }
         if (a === 'new'){ l.sku = 'NEW'; l.mode = 'new'; l.on = !l.done; l.factor = 1; l.factorAsk = false; }
         if (a === 'back'){ l.sku = ''; l.mode = 'pick'; l.on = false; }
+        if (a === 'drop'){ prDoc.lines.splice(+div.getAttribute('data-i'), 1); }   // v1.58 ลบบรรทัดที่อ่านผิด
         prSave(); var y = window.scrollY; renderPR(); window.scrollTo(0, y);
       }); });
     });
