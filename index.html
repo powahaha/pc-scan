@@ -444,7 +444,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.50</span>
+      <span class="ver" id="appVer">v1.51</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -466,7 +466,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.50 · อัปเดต 09/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.51 · อัปเดต 09/10/2026</div>
     </div>
   </header>
 
@@ -655,6 +655,17 @@
         <div class="note" style="margin:6px 0 0">ลิงก์ให้แผนก: <span class="code" id="i_link" style="user-select:all"></span></div>
       </div>
       <div id="i_list"></div>
+      <div class="card" id="x_card">
+        <h2>📊 ดาวน์โหลดข้อมูล (Excel)</h2>
+        <div class="note" style="margin:0">เบิกออก / รับเข้า / ปรับยอด ทุกรายการ + ใบขอเบิก + สรุปแผนก×เดือน + สรุปรายของ (เฉลี่ยต่อเดือน) · มีมูลค่าเงิน · ต้องใส่ PIN</div>
+        <div class="row" id="x_chips" style="gap:6px; margin-top:8px; flex-wrap:wrap"><button type="button" class="chip na tapchip" data-xr="this">เดือนนี้</button><button type="button" class="chip na tapchip" data-xr="last">เดือนก่อน</button><button type="button" class="chip na tapchip" data-xr="3m">3 เดือน</button><button type="button" class="chip na tapchip" data-xr="year">ปีนี้</button><button type="button" class="chip na tapchip" data-xr="all">ทั้งหมด</button></div>
+        <div class="row" style="gap:6px; margin-top:8px">
+          <div style="flex:1"><label class="fld" for="x_from">ตั้งแต่</label><input type="date" id="x_from"></div>
+          <div style="flex:1"><label class="fld" for="x_to">ถึง</label><input type="date" id="x_to"></div>
+        </div>
+        <div style="margin-top:10px"><button class="primary" id="x_go">⬇ ดาวน์โหลด Excel</button></div>
+        <div class="note" id="x_msg" style="margin:6px 0 0; color:var(--ok); font-weight:600"></div>
+      </div>
       <div class="card">
         <h2>ใบเบิกย้อนหลัง <span class="note" id="h_n" style="margin:0"></span></h2>
         <div class="row" style="gap:6px; margin-top:6px">
@@ -2111,6 +2122,116 @@
       toast('เพิ่มไม่สำเร็จ — ต้องมีเน็ตถึงจะออกรหัสใหม่ได้ (กันรหัสซ้ำ)', true);
     }).then(function(){ btn.disabled = false; btn.textContent = 'เพิ่มเข้าทะเบียน'; });
   });
+
+  /* ================= v1.51 ดาวน์โหลดข้อมูลเป็น Excel (PC · ต้อง PIN) ================= */
+  function ymd(d){ return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function xRange(k){
+    var n = new Date(), y = n.getFullYear(), m = n.getMonth();
+    if (k === 'this') return [ymd(new Date(y, m, 1)), ymd(n)];
+    if (k === 'last') return [ymd(new Date(y, m - 1, 1)), ymd(new Date(y, m, 0))];
+    if (k === '3m') return [ymd(new Date(y, m - 2, 1)), ymd(n)];
+    if (k === 'year') return [ymd(new Date(y, 0, 1)), ymd(n)];
+    return ['', ''];
+  }
+  function xSet(k){ var r = xRange(k); el('x_from').value = r[0]; el('x_to').value = r[1];
+    el('x_chips').querySelectorAll('[data-xr]').forEach(function(b){ b.className = 'chip tapchip ' + (b.getAttribute('data-xr') === k ? 'ok' : 'na'); }); }
+  function loadXlsx(){
+    if (window.XLSX) return Promise.resolve(window.XLSX);
+    var urls = ['https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'], i = 0;
+    return new Promise(function(res, rej){
+      (function next(){
+        if (i >= urls.length) return rej(new Error('โหลดตัวสร้าง Excel ไม่ได้ — เน็ตอาจบล็อก cdnjs/jsdelivr ลองเน็ตมือถือ'));
+        var s = document.createElement('script'); s.src = urls[i++];
+        s.onload = function(){ window.XLSX ? res(window.XLSX) : next(); }; s.onerror = next; document.head.appendChild(s);
+      })();
+    });
+  }
+  function xd(v){ return v instanceof Date ? (v.getTime() - v.getTimezoneOffset() * 60000) / 86400000 + 25569 : v; }   // วันที่ → เลขวันที่ Excel (เวลาเครื่อง) กันเวลาเพี้ยนวินาที
+  function monthKey(d){ return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }
+  function buildXlsx(X, exp, from, to){
+    var P = exp.prices || {};
+    function upx(sku){ var p = P[String(sku).toUpperCase()]; if (!p) return null;
+      var u = p.last != null ? p.last : [p.p1, p.p2, p.p3].filter(function(x){ return x != null && x > 0; })[0];
+      if (u == null) return null; var f = +p.pf > 0 ? +p.pf : 1; return Math.round(u / f * 10000) / 10000; }
+    function info(sku){ var it = getSku(sku) || {}, g = grpOf(it); return {it: it, g: g ? g.name : '', cat: g ? (g.cat || '') : ''}; }
+    var wb = X.utils.book_new(), months = {};
+    function sheetOf(head, rows, widths, dateCols){
+      var ws = X.utils.aoa_to_sheet([head].concat(rows.map(function(r){ return r.map(xd); })));
+      ws['!cols'] = widths.map(function(w){ return {wch: w}; });
+      ws['!autofilter'] = {ref: X.utils.encode_range({s: {r: 0, c: 0}, e: {r: rows.length, c: head.length - 1}})};
+      (dateCols || []).forEach(function(c){ for (var r = 1; r <= rows.length; r++){ var a = X.utils.encode_cell({r: r, c: c}); if (ws[a] && ws[a].t === 'n') ws[a].z = 'dd/mm/yyyy hh:mm'; } });
+      return ws;
+    }
+    // 1) เคลื่อนไหวสต็อก (Log ทั้งหมดในช่วง)
+    var LR = exp.log.slice().sort(function(a, b){ return a.ts < b.ts ? -1 : 1; }).map(function(r){
+      var d = new Date(r.ts), i = info(r.sku), up = upx(r.sku), q = +r.qty || 0;
+      var eff = r.dir === 'รับเข้า' ? q : (r.dir === 'ปรับยอด' ? q : -q);
+      months[monthKey(d)] = 1;
+      return [d, monthKey(d), r.sku, r.name || i.it.name || '', i.g, i.cat, r.dir, q, eff, i.it.unit || '', r.dept || '', r.round || '', r.who || '', r.note || '', up, up == null ? null : Math.round(q * up * 100) / 100];
+    });
+    // 2) ใบขอเบิก
+    var QR = exp.req.slice().sort(function(a, b){ return a.ts < b.ts ? -1 : (a.ts > b.ts ? 1 : (a.no < b.no ? -1 : 1)); }).map(function(r){
+      var d = new Date(r.ts), i = info(r.sku), up = upx(r.sku), paid = r.paid == null ? 0 : +r.paid;
+      var open = r.st === 'รอจ่าย' || r.st === 'ค้างจ่าย', left = open ? Math.max(0, (+r.qty || 0) - paid) : 0;
+      return [r.no, d, monthKey(d), r.dept || '', r.who || '', r.round || '', r.sku, r.name || i.it.name || '', i.g, r.unit || i.it.unit || '', +r.qty || 0, paid, left, r.st,
+        r.paidTs && r.paidTs !== 'undefined' && !isNaN(new Date(r.paidTs)) && r.paid != null ? new Date(r.paidTs) : null, r.paidBy || '', r.note || '', up == null ? null : Math.round(paid * up * 100) / 100];
+    });
+    // 3) สรุปแผนก × เดือน (มูลค่าเบิกออกจริง)
+    var mk = Object.keys(months).sort(), dm = {}, dc = {};
+    LR.forEach(function(r){ if (r[6] !== 'เบิกออก') return; var dp = r[10] || '(ไม่ระบุแผนก)';
+      dm[dp] = dm[dp] || {}; dm[dp][r[1]] = (dm[dp][r[1]] || 0) + (r[15] || 0); dc[dp] = (dc[dp] || 0) + 1; });
+    var DR = Object.keys(dm).sort().map(function(dp){ var row = [dp, dc[dp]], tot = 0;
+      mk.forEach(function(m){ var v = Math.round((dm[dp][m] || 0) * 100) / 100; row.push(v); tot += v; }); row.push(Math.round(tot * 100) / 100); return row; });
+    if (DR.length){ var tr = ['รวม', DR.reduce(function(s, r){ return s + r[1]; }, 0)];
+      for (var c = 2; c < DR[0].length; c++) tr.push(Math.round(DR.reduce(function(s, r){ return s + (r[c] || 0); }, 0) * 100) / 100); DR.push(tr); }
+    // 4) สรุปรายของ (อัตราใช้ต่อเดือน ไว้ตั้ง MIN/MAX/สั่งซื้อ)
+    var nM = Math.max(1, mk.length), agg = {};
+    LR.forEach(function(r){ var a = agg[r[2]] = agg[r[2]] || {out: 0, inn: 0, adj: 0, val: 0, n: 0};
+      if (r[6] === 'เบิกออก'){ a.out += r[7]; a.val += r[15] || 0; a.n++; } else if (r[6] === 'รับเข้า') a.inn += r[7]; else a.adj += r[7]; });
+    var IR = ITEMS.map(function(it){ var a = agg[it.sku] || {out: 0, inn: 0, adj: 0, val: 0, n: 0}, g = grpOf(it), up = upx(it.sku);
+      return [it.sku, it.name, g ? g.name : '', it.unit || '', a.n, a.out, Math.round(a.out / nM * 100) / 100, a.inn, a.adj, onHand(it),
+        it.mn == null || it.mn === '' ? null : +it.mn, it.mx == null || it.mx === '' ? null : +it.mx, up, Math.round(a.val * 100) / 100, it.desc || ''];
+    }).sort(function(a, b){ return (b[13] - a[13]) || (b[5] - a[5]) || (a[0] < b[0] ? -1 : 1); });
+    var info0 = [['ข้อมูลเบิก-รับ วัสดุสิ้นเปลือง โรงงาน 1'], ['ช่วงวันที่', (from || 'เริ่มต้น') + ' ถึง ' + (to || 'ล่าสุด')], ['ดึงข้อมูลเมื่อ', new Date()], [],
+      ['แท็บ', 'มีอะไร'], ['เคลื่อนไหวสต็อก', 'ทุกรายการ เบิกออก / รับเข้า / ปรับยอด (1 แถว = 1 ครั้ง) · ผลต่อสต็อก: เบิก = ติดลบ'], ['ใบขอเบิก', 'ทุกบรรทัดในใบขอเบิกจากแผนก · ขอ / จ่ายแล้ว / ค้าง / สถานะ'],
+      ['สรุปแผนก×เดือน', 'มูลค่าเบิกออกจริง แยกแผนก × เดือน (บาท)'], ['สรุปรายของ', 'เบิกรวม / เฉลี่ยต่อเดือน (' + nM + ' เดือน) / คงเหลือตอนนี้ / MIN-MAX → ใช้ตั้ง MIN/MAX และวางแผนสั่งซื้อ'], [],
+      ['หมายเหตุ', 'มูลค่า = จำนวน × ราคาล่าสุดต่อหน่วยนับ (ราคาปัจจุบัน ไม่ใช่ราคา ณ วันที่เบิก) · ของที่ยังไม่มีราคา มูลค่าว่าง'],
+      ['', 'ทุกแท็บกรองได้ (ปุ่มลูกศรที่หัวตาราง) · ทำ Pivot ต่อได้เลย']];
+    var w0 = X.utils.aoa_to_sheet(info0.map(function(r){ return r.map(xd); })); w0['!cols'] = [{wch: 18}, {wch: 90}]; if (w0.B3) w0.B3.z = 'dd/mm/yyyy hh:mm';
+    X.utils.book_append_sheet(wb, w0, 'อ่านก่อน');
+    X.utils.book_append_sheet(wb, sheetOf(['วันที่เวลา', 'เดือน', 'รหัส', 'ชื่อรายการ', 'กลุ่ม', 'หมวด', 'ประเภท', 'จำนวน', 'ผลต่อสต็อก', 'หน่วย', 'แผนก', 'รอบ', 'ผู้ทำรายการ', 'หมายเหตุ', 'ราคา/หน่วย', 'มูลค่า (บาท)'],
+      LR, [16, 8, 8, 40, 22, 8, 9, 8, 9, 7, 16, 11, 14, 30, 10, 11], [0]), 'เคลื่อนไหวสต็อก');
+    X.utils.book_append_sheet(wb, sheetOf(['เลขใบ', 'วันที่ขอ', 'เดือน', 'แผนก', 'ผู้ขอ', 'รอบ', 'รหัส', 'ชื่อรายการ', 'กลุ่ม', 'หน่วย', 'ขอ', 'จ่ายแล้ว', 'ค้างจ่าย', 'สถานะ', 'วันที่จ่าย', 'ผู้จ่าย', 'หมายเหตุ', 'มูลค่าที่จ่าย (บาท)'],
+      QR, [12, 16, 8, 16, 12, 11, 8, 40, 22, 7, 6, 8, 8, 11, 16, 12, 24, 12], [1, 14]), 'ใบขอเบิก');
+    X.utils.book_append_sheet(wb, sheetOf(['แผนก', 'จำนวนครั้งที่เบิก'].concat(mk).concat(['รวม (บาท)']), DR, [18, 10].concat(mk.map(function(){ return 11; })).concat([12])), 'สรุปแผนก×เดือน');
+    X.utils.book_append_sheet(wb, sheetOf(['รหัส', 'ชื่อรายการ', 'กลุ่ม', 'หน่วย', 'ครั้งที่เบิก', 'เบิกออกรวม', 'เฉลี่ย/เดือน', 'รับเข้ารวม', 'ปรับยอด', 'คงเหลือตอนนี้', 'MIN', 'MAX', 'ราคา/หน่วย', 'มูลค่าเบิก (บาท)', 'คำอธิบาย'],
+      IR, [8, 40, 22, 7, 8, 9, 9, 9, 8, 10, 6, 6, 10, 12, 40]), 'สรุปรายของ');
+    var fn = 'pc-scan_' + (from || 'all') + (to ? '_to_' + to : '') + '.xlsx';   // ชื่อไฟล์ภาษาอังกฤษ — บางเบราว์เซอร์ตัดชื่อไทยเหลือ "download"
+    var blob = new Blob([X.write(wb, {bookType: 'xlsx', type: 'array', compression: true})], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fn; document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+    return {log: LR.length, req: QR.length, file: fn};
+  }
+  function xGo(){
+    var btn = el('x_go'), from = el('x_from').value, to = el('x_to').value;
+    if (!pinOk){ toast('ดาวน์โหลดข้อมูลต้องใส่ PIN ของ PC ในปุ่มตั้งค่าก่อน', true); return; }
+    if (!API){ toast('ต้องต่อ Google Sheet ก่อน', true); return; }
+    if (from && to && from > to){ toast('วันที่เริ่มอยู่หลังวันที่สิ้นสุด — เช็คอีกที', true); return; }
+    btn.disabled = true; btn.textContent = 'กำลังดึงข้อมูล…'; el('x_msg').textContent = '';
+    Promise.all([api({action: 'export', from: from, to: to}), loadXlsx()]).then(function(r){
+      btn.textContent = 'กำลังสร้างไฟล์…';
+      var s = buildXlsx(r[1], r[0].exp, from, to);
+      el('x_msg').textContent = '✓ ดาวน์โหลดแล้ว — เคลื่อนไหวสต็อก ' + s.log + ' แถว · ใบขอเบิก ' + s.req + ' บรรทัด';
+      toast('ดาวน์โหลด ' + s.file + ' แล้ว');
+    })['catch'](function(e){ toast('ไม่สำเร็จ — ' + ((e && e.message) || 'เช็คเน็ต'), true); })
+      .then(function(){ btn.disabled = false; btn.textContent = '⬇ ดาวน์โหลด Excel'; });
+  }
+  if (el('x_go')){
+    el('x_go').addEventListener('click', xGo);
+    el('x_chips').querySelectorAll('[data-xr]').forEach(function(b){ b.addEventListener('click', function(){ xSet(b.getAttribute('data-xr')); }); });
+    ['x_from', 'x_to'].forEach(function(id){ el(id).addEventListener('change', function(){ el('x_chips').querySelectorAll('[data-xr]').forEach(function(b){ b.className = 'chip tapchip na'; }); }); });
+    xSet('this');
+  }
 
   /* ================= ตั้งค่า ================= */
   el('setBtn').addEventListener('click', function(){
