@@ -462,7 +462,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.55</span>
+      <span class="ver" id="appVer">v1.56</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -484,7 +484,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.55 · อัปเดต 09/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.56 · อัปเดต 09/10/2026</div>
     </div>
   </header>
 
@@ -571,11 +571,11 @@
     <section id="v-add" hidden>
       <div class="card" id="prCard">
         <h2>📄 รับของตามใบ PR / อินวอยซ์</h2>
-        <div class="note" style="margin:0">ถ่ายรูปใบ PR, อินวอยซ์ หรือใบส่งของ Linde (หรือเลือก PDF สแกน) → ระบบรู้เองว่าเป็นใบอะไร อ่านให้ → ตรวจทีละบรรทัด → กดรับเข้าทั้งใบ (ตัดสต็อก + ราคา + ร้าน + เลข PR ให้เอง)</div>
+        <div class="note" style="margin:0">ถ่ายรูปใบ PR, อินวอยซ์ หรือใบส่งของ Linde (หรือเลือก PDF สแกน / <b>ไฟล์ Excel ของใบ PR</b> ที่ export จากระบบ — อ่านแม่นสุด) → ระบบรู้เองว่าเป็นใบอะไร อ่านให้ → ตรวจทีละบรรทัด → กดรับเข้าทั้งใบ (ตัดสต็อก + ราคา + ร้าน + เลข PR ให้เอง)</div>
         <div class="note" id="pr_lock" style="margin:8px 0 0">🔒 ต้องใส่ PIN ของ PC ในปุ่มตั้งค่าก่อน (ในใบมีราคา)</div>
-        <div class="row" id="pr_btns" style="gap:8px; margin-top:10px"><button class="primary" id="pr_cam" style="flex:1">📷 ถ่ายรูปใบ</button><button class="ghost" id="pr_pick" style="flex:1">📎 เลือกไฟล์ / PDF</button></div>
+        <div class="row" id="pr_btns" style="gap:8px; margin-top:10px"><button class="primary" id="pr_cam" style="flex:1">📷 ถ่ายรูปใบ</button><button class="ghost" id="pr_pick" style="flex:1">📎 ไฟล์ / PDF / Excel</button></div>
         <input type="file" id="pr_file_cam" accept="image/*" capture="environment" hidden>
-        <input type="file" id="pr_file" accept="image/*,application/pdf" hidden>
+        <input type="file" id="pr_file" accept="image/*,application/pdf,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" hidden>
         <div class="note" id="pr_status" style="margin:8px 0 0"></div>
         <div id="pr_open"></div>
         <div id="pr_cyl"></div>
@@ -2725,6 +2725,61 @@
     if (!out.lines.length) out.warn.push('หาบรรทัดสินค้าไม่เจอ');
     return out;
   }
+  /* ---------- v1.56 ใบ PR แบบไฟล์ Excel (export จากระบบจัดซื้อ ฟอร์ม RFPU-GE-004) — อ่านตรงจากเซลล์ ไม่ต้อง OCR ---------- */
+  function isXlsFile(f){ return /\.xlsx?$/i.test(f.name || '') || /sheet|excel/i.test(f.type || ''); }
+  function xCell(v){
+    if (v instanceof Date) return ('0' + v.getDate()).slice(-2) + '/' + ('0' + (v.getMonth() + 1)).slice(-2) + '/' + v.getFullYear();
+    return v == null ? '' : String(v).trim();
+  }
+  function parsePRXlsx(X, wb){
+    var out = {kind:'PR', no:'', date:'', shop:'', lines:[], sub:null, warn:[], note:''};
+    var name = wb.SheetNames.filter(function(n){ var t = X.utils.sheet_to_csv(wb.Sheets[n]); return /PURCHASE\s*REQUISITION|RFPU-GE|P\/R\s*No/i.test(t) && !/&CELL\.|&DLIST\./.test(t); })[0];
+    if (!name){ out.warn.push('ไม่เจอหน้าใบ PR ในไฟล์ Excel'); return out; }
+    var rows = X.utils.sheet_to_json(wb.Sheets[name], {header:1, raw:true, defval:'', blankrows:true}).map(function(r){ return r.map(xCell); });
+    function after(re){
+      for (var r = 0; r < rows.length; r++) for (var c = 0; c < rows[r].length; c++) if (re.test(rows[r][c])){
+        for (var k = c + 1; k < rows[r].length; k++){ var v = rows[r][k]; if (v && v !== ':') return v; }
+      }
+      return '';
+    }
+    out.no = after(/P\/R\s*No/i).replace(/\s/g, '').toUpperCase();
+    out.date = after(/Issue\s*Date/i);
+    out.shop = after(/Supplier\s*Name/i);
+    var who = after(/Requestor/i), need = after(/Request\s*Date/i), remark = '';
+    var col = null, cur = null;
+    for (var r = 0; r < rows.length; r++){
+      var R = rows[r];
+      if (/^Remark/i.test(R[0]) && rows[r + 1]) remark = rows[r + 1][0] || '';
+      if (!col && R.indexOf('Item') >= 0 && R.some(function(x){ return /^Description$/i.test(x); })){   // หัวตาราง (ใบหลายหน้า = มีหลายหัว)
+        col = {item: R.indexOf('Item')};
+        R.forEach(function(x, i){ if (/^Quantity/i.test(x)) col.qty = i; else if (/^Unit\s*Price/i.test(x)) col.price = i; else if (/^Unit$/i.test(x)) col.unit = i; else if (/^Total\s*Amount/i.test(x)) col.total = i; });
+        if (col.qty == null){ col = null; }
+        cur = null; continue;
+      }
+      if (!col) continue;
+      if (/^Informat/i.test(R[col.item]) || /Sub\s*Total/i.test(R.join(' '))){ col = null; cur = null; continue; }
+      var mid = R.slice(col.item + 1, col.qty).filter(Boolean), n = R[col.item];
+      if (/^\d{1,3}$/.test(n) && (mid.length || R[col.qty] !== '')){
+        cur = {ln:+n, code: mid.length > 1 ? mid[0] : '', desc: mid.length > 1 ? mid.slice(1).join(' ') : (mid[0] || ''),
+               qty: prNum(R[col.qty]), unit: String(col.unit != null ? R[col.unit] : '').toUpperCase().replace(/\.$/, ''),
+               price: col.price != null ? prNum(R[col.price]) : null, total: col.total != null ? prNum(R[col.total]) : null, flags:[]};
+        out.lines.push(cur); continue;
+      }
+      if (cur && !n && mid.length && R[col.qty] === '') cur.desc += ' ' + mid.join(' ');   // คำอธิบายยาว ล้นไปแถวถัดไป
+    }
+    rows.forEach(function(R){ if (/Sub\s*Total/i.test(R.join(' '))){ for (var k = R.length - 1; k >= 0; k--){ var v = prNum(R[k]); if (v != null){ out.sub = v; break; } } } });
+    out.lines.forEach(function(l){
+      if (l.qty == null || !l.unit) l.flags.push('อ่านจำนวน/หน่วยไม่ครบ');
+      if (l.qty != null && l.price != null && l.total != null && Math.abs(l.qty * l.price - l.total) > 0.05) l.flags.push('จำนวน×ราคา ไม่เท่ายอด');
+      if (remark) l.hint = remark;   // ชื่อไทยในช่อง Remark ช่วยเดาว่าเป็นของตัวไหน
+    });
+    var sum = out.lines.reduce(function(a, l){ return a + (l.total || 0); }, 0);
+    if (out.sub != null && out.sub > 0 && Math.abs(out.sub - sum) > 0.05) out.warn.push('ยอดรวมทุกบรรทัด (' + sum.toFixed(2) + ') ไม่ตรงกับ Sub Total ในใบ (' + out.sub.toFixed(2) + ')');
+    out.note = [who ? 'ขอซื้อโดย ' + who : '', need ? 'ต้องการใช้ ' + need : '', remark ? 'หมายเหตุในใบ: ' + remark : ''].filter(Boolean).join(' · ');
+    if (!out.no) out.warn.push('อ่านเลข PR ไม่ได้ — พิมพ์เอง');
+    if (!out.lines.length) out.warn.push('หาบรรทัดสินค้าในไฟล์ไม่เจอ');
+    return out;
+  }
   function parseDoc(text){ var k = docKind(text); if (k === 'PR'){ var d = parsePR(text); d.kind = 'PR'; return d; } return parseLinde(text); }
 
   /* ================= v1.17 รับของตามใบ PR ================= */
@@ -2785,6 +2840,10 @@
   }
   function fileToData(f){
     return new Promise(function(res, rej){
+      if (isXlsFile(f)){   // v1.56
+        if (f.size > 8e6){ rej(new Error('ไฟล์ Excel ใหญ่เกิน 8MB')); return; }
+        var rx = new FileReader(); rx.onload = function(){ res({data:rx.result, mime: /\.xls$/i.test(f.name) ? 'application/vnd.ms-excel' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}); }; rx.onerror = rej; rx.readAsDataURL(f); return;
+      }
       if (/pdf/i.test(f.type) || /\.pdf$/i.test(f.name)){
         if (f.size > 8e6){ rej(new Error('PDF ใหญ่เกิน 8MB')); return; }
         var r = new FileReader(); r.onload = function(){ res({data:r.result, mime:'application/pdf'}); }; r.onerror = rej; r.readAsDataURL(f); return;
@@ -2804,13 +2863,16 @@
     if (!pinOk){ toast('ใส่ PIN ของ PC ในปุ่มตั้งค่าก่อน', true); return; }
     if (!API){ toast('ต้องต่อ Google Sheet ก่อน', true); return; }
     if (prBusy) return; prBusy = true;
-    var stt = el('pr_status'); stt.textContent = '⏳ กำลังอ่านใบ… (ประมาณ 10–30 วินาที อย่าเพิ่งปิดหน้า)';
+    var stt = el('pr_status'), xls = isXlsFile(f), wbP = null;
+    stt.textContent = xls ? '⏳ กำลังอ่านไฟล์ Excel…' : '⏳ กำลังอ่านใบ… (ประมาณ 10–30 วินาที อย่าเพิ่งปิดหน้า)';
+    if (xls) wbP = loadXlsx().then(function(X){ return f.arrayBuffer().then(function(b){ return {X:X, wb:X.read(b, {type:'array', cellDates:true})}; }); });   // v1.56
     fileToData(f).then(function(d){ return api({action:'prscan', name: f.name || 'PR.jpg', mime: d.mime, data: d.data}); })
+      .then(function(j){ return wbP ? wbP.then(function(x){ j.xdoc = parsePRXlsx(x.X, x.wb); return j; }) : j; })
       .then(function(j){
         PRS = j.prs || PRS; PRMAP = j.prmap || PRMAP;
-        var doc = parseDoc(j.text); doc.file = j.fileId || '';
+        var doc = j.xdoc || parseDoc(j.text); doc.file = j.fileId || '';
         if (j.cyl) CYL = j.cyl;
-        if (!doc.lines.length){ stt.innerHTML = '⚠ อ่านบรรทัดของไม่ได้ — ลองถ่ายใหม่ให้ตรง เต็มใบ ไม่มีเงา'; return; }
+        if (!doc.lines.length){ stt.innerHTML = xls ? '⚠ ' + esc(doc.warn.join(' · ') || 'อ่านไฟล์ไม่ได้') : '⚠ อ่านบรรทัดของไม่ได้ — ลองถ่ายใหม่ให้ตรง เต็มใบ ไม่มีเงา'; return; }
         stt.textContent = 'อ่าน' + KIND_TH[doc.kind || 'PR'] + 'ได้ ' + doc.lines.length + ' บรรทัด — ตรวจด้านล่างแล้วกดรับเข้า';
         prStart(doc);
       })['catch'](function(e){ stt.textContent = '⚠ อ่านไม่สำเร็จ — ' + ((e && e.message) || 'เช็คเน็ต'); })
@@ -2864,6 +2926,7 @@
       h += '<div class="prmatch"><span>→ <b>' + esc(it.sku) + '</b> ' + esc(it.name) + '</span><button type="button" class="ghost" data-act="change">เปลี่ยน</button></div>';
     } else {
       var sug = similar(l.desc, 3);
+      if (l.hint){ var hs = similar(l.hint + ' ' + l.desc, 3).concat(similar(l.hint, 3)), seen = {}; sug = hs.concat(sug).filter(function(s){ return seen[s.sku] ? false : (seen[s.sku] = 1); }).slice(0, 3); }   // v1.56 ใช้ชื่อไทยในช่อง Remark ช่วยเดา
       h += '<div class="prpick"><div class="li-meta" style="margin:6px 0 4px">ยังไม่รู้ว่าเป็นของตัวไหน — เลือก:</div>'
         + (sug.length ? sug.map(function(s){ return '<button type="button" class="chip na tapchip" data-pick="' + esc(s.sku) + '" style="margin:0 6px 6px 0">' + esc(s.sku) + ' ' + esc(s.name.slice(0, 34)) + '</button>'; }).join('') : '')
         + '<input type="text" data-f="q" placeholder="ค้นในทะเบียน เช่น ใบเจียร" autocomplete="off" style="margin-top:4px"><div class="prres"></div>'
