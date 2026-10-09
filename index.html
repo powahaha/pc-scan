@@ -462,7 +462,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.58</span>
+      <span class="ver" id="appVer">v1.59</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -484,7 +484,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.58 · อัปเดต 09/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.59 · อัปเดต 09/10/2026</div>
     </div>
   </header>
 
@@ -2608,13 +2608,14 @@
     var out = {no:'', date:'', shop:'', lines:[], sub:null, warn:[]};
     var m = raw.match(/PR[DO]?\s*0*\d{5,}/i) || raw.match(/[A-Z]{2,4}\d{6,}/);
     if (m) out.no = m[0].replace(/\s/g, '').toUpperCase();
-    var dm = raw.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/); if (dm) out.date = dm[0];
+    var dl = (raw.match(/\b\d{1,2}\/\d{1,2}\/\d{4}\b/g) || []).map(function(d){ var p = d.split('/'); return {d:d, k:+p[2] * 10000 + +p[1] * 100 + +p[0]}; }).sort(function(a, b){ return a.k - b.k; });
+    if (dl.length) out.date = dl[0].d;   // v1.59 วันที่ออกใบ = วันที่น้อยสุด (วันที่ต้องการใช้มาทีหลัง)
     toks.forEach(function(t){
       if (!out.shop && /(CO\.|CORPORATION|LTD|LIMITED|บจก|ห้างหุ้นส่วน|หจก)/i.test(t) && !/delica|เดลิก้า/i.test(t)) out.shop = t.replace(/^[:\s]+/, '');
     });
     // หาช่วงตาราง: หลังหัวคอลัมน์ "Total Amount" ตัวแรก จนถึง "Information"
     var s = -1, e = toks.length;
-    for (var i = 0; i < toks.length; i++){ if (s < 0 && /^Total Amount$/i.test(toks[i])) s = i + 1; else if (s >= 0 && /^([Il1]nformat|Information|Supplier$|รวมเงิน|Sub\s*Total|Remark)/i.test(toks[i])){ e = i; break; } }   // v1.58 OCR มักอ่าน I เป็น l
+    for (var i = 0; i < toks.length; i++){ if (s < 0 && /^Total Amount$/i.test(toks[i])) s = i + 1; else if (s >= 0 && /^([Il1]nformat|Information|\w{0,3}ormation|Quatation|Quotation|Supplier$|รวมเงิน|Sub\s*Total|Remark)/i.test(toks[i])){ e = i; break; } }   // v1.58 OCR มักอ่าน I เป็น l
     if (s < 0){ out.warn.push('หาตารางในใบไม่เจอ'); return out; }
     var cur = null, st = 'item', ln = 0;
     function push(){ if (cur){ cur.desc = cur.desc.join(' ').trim(); out.lines.push(cur); } cur = null; }
@@ -2809,6 +2810,9 @@
     if (s < 0){ out.warn.push('หาตารางในใบ PO ไม่เจอ'); return out; }
     var NUM = /^[\d,]+\.\d{2}$/, toks = [];
     toks0.slice(s, e).forEach(function(t){
+      t = t.replace(/(^|\s)[$S§'`.,·•:;]+\s*(?=\d[\d,]*\.\d{2}\b)/g, '$1');   // v1.59 OCR อ่านจุด/คราบหน้าตัวเลขเป็น $ . ' เช่น "$5.00 PCS" → "5.00 PCS"
+      var tm = t.match(/^(.*?\D)\s+([\d,]+\.\d{2}(?:\s+[A-Za-z.]{1,8})?(?:\s+[\d,]+\.\d{2})*)$/);   // ชื่อ + ตัวเลขติดกันในบรรทัดเดียว
+      if (tm && !/^\d{1,2}$/.test(tm[1].trim()) && tm[2].split(/\s+/).every(function(p){ return NUM.test(p) || UNIT_RE.test(p); })){ toks.push(tm[1].trim()); tm[2].split(/\s+/).forEach(function(p){ toks.push(p); }); return; }
       if (/already\s*rec|received\s*po|^delivery|^sign\b|^date\b|^\d{1,2}\s*[A-Z]{3}\s*\d{4}$|^(No\.?|Quantity|Unit\s*Price|Item\s*\/?\s*Description)$/i.test(t)) return;   // ตรายาง/หัวตาราง
       var parts = t.split(/\s+/);
       if (parts.length > 1 && parts.every(function(p){ return NUM.test(p) || UNIT_RE.test(p); }) && parts.some(function(p){ return NUM.test(p); })){ parts.forEach(function(p){ toks.push(p); }); return; }
