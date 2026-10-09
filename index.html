@@ -447,7 +447,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.52</span>
+      <span class="ver" id="appVer">v1.53</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -469,7 +469,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.52 · อัปเดต 09/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.53 · อัปเดต 09/10/2026</div>
     </div>
   </header>
 
@@ -2208,7 +2208,8 @@
     X.utils.book_append_sheet(wb, sheetOf(['แผนก', 'จำนวนครั้งที่เบิก'].concat(mk).concat(['รวม (บาท)']), DR, [18, 10].concat(mk.map(function(){ return 11; })).concat([12])), 'สรุปแผนก×เดือน');
     X.utils.book_append_sheet(wb, sheetOf(['รหัส', 'ชื่อรายการ', 'กลุ่ม', 'หน่วย', 'ครั้งที่เบิก', 'เบิกออกรวม', 'เฉลี่ย/เดือน', 'รับเข้ารวม', 'ปรับยอด', 'คงเหลือตอนนี้', 'MIN', 'MAX', 'ราคา/หน่วย', 'มูลค่าเบิก (บาท)', 'คำอธิบาย'],
       IR, [8, 40, 22, 7, 8, 9, 9, 9, 8, 10, 6, 6, 10, 12, 40]), 'สรุปรายของ');
-    var fn = 'pc-scan_' + (from || 'all') + (to ? '_to_' + to : '') + '.xlsx';   // ชื่อไฟล์ภาษาอังกฤษ — บางเบราว์เซอร์ตัดชื่อไทยเหลือ "download"
+    var nw = new Date(), hm = ('0' + nw.getHours()).slice(-2) + ('0' + nw.getMinutes()).slice(-2);   // v1.53 + วันเวลาที่โหลด แยกไฟล์ง่าย
+    var fn = 'pc-scan_' + (from || 'all') + (to ? '_to_' + to : '') + '_dl' + ymd(nw).slice(5).replace('-', '') + '-' + hm + '.xlsx';   // ชื่อไฟล์ภาษาอังกฤษ — บางเบราว์เซอร์ตัดชื่อไทยเหลือ "download"
     var blob = new Blob([X.write(wb, {bookType: 'xlsx', type: 'array', compression: true})], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
     var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fn; document.body.appendChild(a); a.click();
     setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 4000);
