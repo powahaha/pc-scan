@@ -78,9 +78,35 @@
   .grow{flex:1; min-width:0;}
   a.sheetbtn{display:block; text-align:center; text-decoration:none; padding:10px; border-radius:10px; border:1px solid var(--line); color:var(--accent); font-weight:600;}
   .misswrap{margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;}
-  .prline{border-top:1px solid var(--line); padding:10px 0; margin-top:6px;}
-  .prline.bad{box-shadow:inset 3px 0 0 #e53935; padding-left:8px;}
+  /* v1.68 บรรทัดในใบ = การ์ดแยกชัด · แถบสีซ้ายบอกสถานะ · ช่องที่ต้องแก้เด่น */
+  .prline{border:1px solid var(--line); border-left:7px solid var(--line); border-radius:12px; padding:0 12px 12px; margin-top:16px; background:var(--surface); box-shadow:var(--shadow);}
+  .prline.st-ready{border-left-color:var(--ok);}
+  .prline.st-check{border-left-color:var(--accent);}
+  .prline.st-todo{border-left-color:#d4a106;}
+  .prline.st-need{border-color:#d92d20; border-left-color:#d92d20;}
+  .prline.st-skip{border-left-color:var(--muted); opacity:.75;}
   .prline.done{opacity:.6;}
+  .prhead{display:flex; justify-content:space-between; align-items:center; gap:8px; margin:0 -12px 8px; padding:8px 12px; background:var(--surface-2); border-radius:0 11px 0 0;}
+  .prno{font:700 17px var(--fm); background:var(--ink); color:var(--surface); border-radius:7px; padding:1px 9px;}
+  .prst{font:700 12px var(--fs); padding:3px 9px; border-radius:999px; white-space:nowrap;}
+  .prst.s-ready{background:var(--ok-soft); color:var(--ok);}
+  .prst.s-check{background:var(--accent-soft); color:var(--accent);}
+  .prst.s-todo{background:rgba(212,161,6,.18); color:#8a6500;}
+  .prst.s-need{background:#d92d20; color:#fff;}
+  .prst.s-skip, .prst.s-done{background:var(--surface); color:var(--muted); border:1px solid var(--line);}
+  .prneed{margin:8px 0; padding:9px 11px; border-radius:9px; background:rgba(217,45,32,.10); border:1px solid rgba(217,45,32,.45); color:var(--ink); font:600 14px var(--fs);}
+  .prneed ol{margin:4px 0 0; padding-left:20px;} .prneed li{margin:3px 0;}
+  .prneed .soft{font-weight:400; color:var(--muted);}
+  .prneed.check{background:rgba(212,161,6,.12); border-color:rgba(212,161,6,.55);} .prneed.check .soft{color:var(--ink);}
+  .needbox{margin-top:8px; padding:8px 10px; border:2px dashed #d92d20; border-radius:10px; background:rgba(217,45,32,.06);}
+  .needbox .tag{display:inline-block; font:700 12px var(--fs); color:#fff; background:#d92d20; border-radius:6px; padding:1px 7px; margin-bottom:6px;}
+  .prline .needf{border:2px solid #d92d20 !important; background:rgba(217,45,32,.08) !important;}
+  .prjump{display:inline-block; margin:4px 6px 0 0; padding:3px 10px; border-radius:999px; border:1px solid #d92d20; background:transparent; color:#d92d20; font:700 13px var(--fm); min-height:0; width:auto;}
+  .prjump.todo{border-color:#d4a106; color:#8a6500;}
+  @keyframes prflash{0%,100%{box-shadow:var(--shadow);} 50%{box-shadow:0 0 0 5px rgba(217,45,32,.45);}}
+  .prline.flash{animation:prflash .7s 3;}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .prst.s-todo{color:#f0c040;} :root:not([data-theme="light"]) .prjump.todo{color:#f0c040;} }
+  :root[data-theme="dark"] .prst.s-todo, :root[data-theme="dark"] .prjump.todo{color:#f0c040;}
   .prline input.prcode{display:inline-block; width:150px; min-height:0; padding:2px 6px; font:500 12px var(--fm);}
   .prmatch{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:6px; padding:6px 8px; border-radius:8px; background:var(--ok-soft);}
   .prmatch button{min-height:30px; padding:2px 10px;}
@@ -467,7 +493,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.67</span>
+      <span class="ver" id="appVer">v1.68</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -489,7 +515,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.67 · อัปเดต 14/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.68 · อัปเดต 14/10/2026</div>
     </div>
   </header>
 
@@ -3194,16 +3220,41 @@
     renderCyl();
     renderPR();
   }
+  // v1.68 สิ่งที่ต้องทำในบรรทัดนี้ก่อนกดบันทึก (ใช้ทั้งการ์ด, สรุปใบ, และตอนกดรับเข้า) · soft = แค่ให้เทียบใบ ไม่บล็อก
+  function prTUnit(l, it){ return it ? (it.unit || 'หน่วยนับ') : (l.mode === 'new' ? (l.nunit != null ? l.nunit : normUnit(l.unit)) || 'หน่วยนับ' : 'หน่วยนับ'); }
+  function prNeeds(l){
+    var n = []; if (l.done || l.sku === 'SKIP') return n;
+    var it = l.sku && l.sku !== 'NEW' && l.sku !== 'DIRECT' ? getSku(l.sku) : null, on = l.on && +l.recv > 0;
+    if (!l.sku && l.mode === 'pick'){ n.push({f:'q', todo:true, t:'บอกระบบว่าเป็นของตัวไหน — แตะตัวที่ใช่ / + เพิ่มเป็นของใหม่ / ไม่เข้าสต็อก / 📤 จ่ายตรง (ถ้าไม่เลือก บรรทัดนี้จะไม่ถูกบันทึก)'}); return n; }
+    if (on && (l.flags || []).some(function(x){ return /บาร์โค้ด/.test(x); })) n.push({f:'code', t:'รหัสบาร์โค้ดอาจอ่านผิด → แก้ช่อง "รหัสในใบ" ให้ตรงใบจริง'});
+    if (on && l.mode !== 'direct' && (l.factorAsk || !(+l.factor > 0))) n.push({f:'factor', t:'ยืนยันตัวคูณ: 1 ' + l.unit + ' = กี่ ' + prTUnit(l, it) + ' → ช่องกรอบแดงด้านล่าง'});
+    if (on && l.mode === 'new' && !String(l.nname != null ? l.nname : l.desc).trim()) n.push({f:'nname', t:'ใส่ชื่อของใหม่'});
+    if (on && l.mode === 'direct' && !l.ddept) n.push({f:'ddept', t:'เลือกแผนกที่จ่ายให้'});
+    (l.flags || []).forEach(function(x){ if (!/บาร์โค้ด/.test(x)) n.push({f:'', soft:true, t:x + ' — เทียบกับใบจริง แก้จำนวน/ราคาได้ถ้าอ่านผิด'}); });
+    return n;
+  }
+  function prState(l){
+    if (l.done) return {k:'done', t:'รับแล้ว'};
+    if (l.sku === 'SKIP') return {k:'skip', t:'ไม่เข้าสต็อก'};
+    var n = prNeeds(l), hard = n.filter(function(x){ return !x.soft && !x.todo; }).length;
+    if (hard) return {k:'need', t:'⚠ ต้องแก้ ' + hard};
+    if (n.some(function(x){ return x.todo; })) return {k:'todo', t:'❓ ยังไม่ได้เลือก'};
+    if (n.length) return {k:'check', t:'👀 เทียบใบ'};
+    if (l.guess) return {k:'check', t:'🤖 ระบบเดา — ตรวจ'};
+    if (!(l.on && +l.recv > 0)) return {k:'skip', t:'ไม่รับรอบนี้'};
+    return {k:'ready', t: l.mode === 'direct' ? '📤 พร้อมจ่าย' : l.mode === 'new' ? '➕ พร้อมเพิ่ม' : '✅ พร้อม'};
+  }
   function prLineHtml(l, i){
     var it = l.sku && l.sku !== 'SKIP' && l.sku !== 'NEW' ? getSku(l.sku) : null;
     var rem = Math.max(0, (+l.qty || 0) - (l.prev || 0));
-    var h = '<div class="prline' + (l.flags && l.flags.length ? ' bad' : '') + (l.done ? ' done' : '') + '" data-i="' + i + '">'
-      + '<div class="row" style="justify-content:space-between; gap:6px"><div class="li-meta"><b>#' + l.ln + '</b> · <input class="prcode" data-f="code" value="' + esc(l.code || '') + '" placeholder="รหัสในใบ"></div>'
-      + '<button type="button" class="ghost" data-act="drop" title="ลบบรรทัดนี้ (อ่านผิด/ไม่ใช่ของ)" style="width:auto; min-height:30px; padding:0 10px">🗑 ลบ</button>'   // v1.58
-      + (l.done ? '<span class="chip ok">รับแล้ว</span>' : '') + '</div>'
-      + '<div class="li-name" style="font-weight:500">' + esc(l.desc || '—') + '</div>'
+    var needs = prNeeds(l), st = prState(l), nf = {}; needs.forEach(function(x){ if (x.f && !x.soft) nf[x.f] = 1; });
+    var h = '<div class="prline st-' + st.k + (l.done ? ' done' : '') + '" data-i="' + i + '">'
+      + '<div class="prhead"><div class="row" style="gap:8px; align-items:center"><span class="prno">#' + l.ln + '</span><span class="prst s-' + st.k + '">' + esc(st.t) + '</span></div>'
+      + '<button type="button" class="ghost" data-act="drop" title="ลบบรรทัดนี้ (อ่านผิด/ไม่ใช่ของ)" style="width:auto; min-height:30px; padding:0 10px">🗑 ลบ</button></div>'   // v1.58
+      + '<div class="li-name" style="font-weight:600; font-size:16px">' + esc(l.desc || '—') + '</div>'
+      + '<div class="li-meta" style="margin-top:2px">รหัสในใบ <input class="prcode' + (nf.code ? ' needf' : '') + '" data-f="code" value="' + esc(l.code || '') + '" placeholder="รหัสในใบ"></div>'
       + '<div class="li-meta">' + (prDoc && prDoc.kind === 'DD' ? 'ถังเต็มส่งมา' : prDoc && (prDoc.kind === 'INV' || prDoc.kind === 'TAX') ? 'ส่งมา' : 'ใบสั่ง') + ' <b>' + fmt(l.qty) + ' ' + esc(l.unit) + '</b>' + (l.price != null ? ' × ' + baht(l.price) : '') + (l.prev ? ' · รับไปแล้ว ' + fmt(l.prev) + ' · <b class="over">ค้าง ' + fmt(rem) + '</b>' : '') + '</div>'
-      + (l.flags && l.flags.length ? '<div class="outnote">⚠ ' + l.flags.map(esc).join(' · ') + ' — เทียบกับใบจริง</div>' : '')
+      + (needs.length && !(needs.length === 1 && needs[0].todo) ? (st.k === 'need' ? '<div class="prneed">👉 บรรทัด #' + l.ln + ' ต้องทำก่อนบันทึก<ol>' : '<div class="prneed check">👀 บรรทัด #' + l.ln + ' ควรเทียบกับใบจริง (ไม่บังคับ)<ol>') + needs.map(function(x){ return '<li' + (x.soft ? ' class="soft"' : '') + '>' + esc(x.t) + '</li>'; }).join('') + '</ol></div>' : '')
       + (l.note ? '<div class="li-meta">หมายเหตุ: ' + esc(l.note) + '</div>' : '')
       + (l.dup ? '<div class="note" style="margin:4px 0 0">ℹ ถังเต็มล็อตนี้รับเข้าไปแล้วตาม ' + esc(l.dup) + ' — ไม่รับซ้ำ (บันทึกราคาได้)</div>' : '')
       + ((+l.rtn || 0) > 0 ? '<label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:4px"><input type="checkbox" data-f="rtnOn"' + (l.rtnOn ? ' checked' : '') + ' style="width:auto; min-height:0"> 🛢 บันทึก<b>คืนถังเปล่า ' + fmt(l.rtn) + ' ' + esc(l.unit) + '</b> ให้ร้าน</label>' : '');
@@ -3225,7 +3276,7 @@
       h += '<div class="pricebox" style="margin-top:6px"><b>📤 จ่ายตรงให้แผนก</b> <span class="li-meta">ไม่เข้าสต็อก · เก็บประวัติ + มูลค่าต่อแผนก</span>'
         + '<label class="li-meta" style="display:block; margin-top:6px">ของที่แผนกขอไว้ (ใบขอเบิก — ของนอกระบบ)</label><select data-f="dreq"><option value="">— ไม่ได้มาจากใบขอเบิก —</option>'
         + ox.map(function(x){ var k = x.no + '|' + x.name; return '<option value="' + esc(k) + '"' + (l.dreq === k ? ' selected' : '') + '>' + esc(x.no + ' · ' + x.dept + ' · ' + x.name + ' ×' + fmt(x.qty) + (x.unit ? ' ' + x.unit : '')) + '</option>'; }).join('') + '</select>'
-        + '<div class="row" style="gap:6px; margin-top:6px"><select data-f="ddept" style="flex:1"><option value="">— แผนก * —</option>' + DEPTS.map(function(d){ return '<option' + (l.ddept === d ? ' selected' : '') + '>' + esc(d) + '</option>'; }).join('') + '</select>'
+        + '<div class="row" style="gap:6px; margin-top:6px"><select data-f="ddept"' + (nf.ddept ? ' class="needf"' : '') + ' style="flex:1"><option value="">— แผนก * —</option>' + DEPTS.map(function(d){ return '<option' + (l.ddept === d ? ' selected' : '') + '>' + esc(d) + '</option>'; }).join('') + '</select>'
         + '<input type="text" data-f="dwho" value="' + esc(l.dwho || '') + '" placeholder="ผู้รับ" autocomplete="off" style="flex:1"></div>'
         + '<button type="button" class="ghost" data-act="back" style="width:100%; margin-top:6px">ยกเลิกจ่ายตรง</button></div>';
     } else {
@@ -3239,7 +3290,7 @@
         + '<button type="button" class="ghost" data-act="direct" style="width:100%; margin-top:6px">📤 จ่ายตรงให้แผนก (ซื้อมาแล้วจ่ายเลย ไม่เข้าสต็อก)</button>'
         + (prOpenExtra().length ? '<div class="li-meta" style="margin-top:4px">มีของนอกระบบที่แผนกขอค้างอยู่ ' + prOpenExtra().length + ' รายการ — ถ้าบรรทัดนี้คือของที่แผนกขอ กด 📤 แล้วเลือกใบได้</div>' : '') + '</div>';
     }
-    var tUnit = it ? (it.unit || 'หน่วยนับ') : (l.mode === 'new' ? (l.nunit != null ? l.nunit : normUnit(l.unit)) || 'หน่วยนับ' : 'หน่วยนับ');
+    var tUnit = prTUnit(l, it);
     if (l.mode === 'direct' && !l.done && (+l.qty || 0) > 0){   // v1.63
       h += '<div class="row prrecv" style="gap:8px; margin-top:8px; align-items:center; flex-wrap:wrap">'
         + '<label class="li-meta" style="display:flex; gap:6px; align-items:center"><input type="checkbox" data-f="on"' + (l.on ? ' checked' : '') + ' style="width:auto; min-height:0"> จ่าย</label>'
@@ -3252,8 +3303,10 @@
       h += '<div class="row prrecv" style="gap:8px; margin-top:8px; align-items:center; flex-wrap:wrap">'
         + '<label class="li-meta" style="display:flex; gap:6px; align-items:center"><input type="checkbox" data-f="on"' + (l.on ? ' checked' : '') + ' style="width:auto; min-height:0"> รับ</label>'
         + '<input type="number" inputmode="decimal" min="0" data-f="recv" value="' + (l.recv != null ? l.recv : '') + '" style="width:90px"><span class="li-meta">' + esc(l.unit) + ' (ตามใบ)</span></div>'
-        + '<div class="row" style="gap:8px; margin-top:6px; align-items:center"><span class="li-meta' + (ask ? ' over' : '') + '" style="white-space:nowrap">1 ' + esc(l.unit) + ' =</span><input type="number" inputmode="decimal" min="0" data-f="factor" value="' + l.factor + '" style="width:90px' + (l.factorAsk ? '; border-color:var(--warn)' : '') + '"><span class="li-meta">' + esc(tUnit) + ' (หน่วยนับในคลัง)</span></div>'
-        + (l.factorAsk ? '<div class="outnote soft">หน่วยในใบ (' + esc(l.unit) + ') ไม่เหมือนหน่วยนับในคลัง (' + esc(tUnit) + ') — ใส่ว่า 1 ' + esc(l.unit) + ' เท่ากับกี่ ' + esc(tUnit) + ' (ระบบจำไว้ครั้งหน้า)</div>' : '')
+        + (nf.factor ? '<div class="needbox"><span class="tag">👉 ใส่ตรงนี้</span>' : '')
+        + '<div class="row" style="gap:8px; margin-top:6px; align-items:center; flex-wrap:wrap"><span class="li-meta' + (ask ? ' over' : '') + '" style="white-space:nowrap">1 ' + esc(l.unit) + ' =</span><input type="number" inputmode="decimal" min="0" data-f="factor" value="' + l.factor + '" class="' + (nf.factor ? 'needf' : '') + '" style="width:90px"><span class="li-meta">' + esc(tUnit) + ' (หน่วยนับในคลัง)</span>'
+        + (nf.factor && +l.factor > 0 ? '<button type="button" class="primary" data-act="fok" style="width:auto; min-height:34px; padding:0 12px">✔ ใช่ ' + fmt(l.factor) + '</button>' : '') + '</div>'
+        + (nf.factor ? '<div class="li-meta" style="margin-top:6px">ในใบเขียน ' + esc(l.unit) + ' แต่ในคลังนับเป็น ' + esc(tUnit) + ' — 1 ' + esc(l.unit) + ' มีกี่ ' + esc(tUnit) + '? พิมพ์ตัวเลข หรือกด ✔ ถ้าถูกแล้ว (ระบบจำไว้ครั้งหน้า) · ถ้ามีคำเตือนราคาแพงผิดปกติ ส่วนมากหายเมื่อใส่ตัวคูณถูก</div></div>' : '')
         + (+l.recv < rem && l.on ? '<label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:4px"><input type="checkbox" data-f="close"' + (l.close ? ' checked' : '') + ' style="width:auto; min-height:0"> ปิดบรรทัดนี้ ไม่รอส่วนที่เหลือ</label>' : '')
         + '<div class="row" style="gap:8px; margin-top:6px; align-items:center"><span class="li-meta" style="white-space:nowrap">ราคา</span><input type="number" inputmode="decimal" min="0" step="0.01" data-f="price" value="' + (l.price != null ? l.price : '') + '" style="width:100px"><span class="li-meta">บาท/' + esc(l.unit || 'หน่วย') + ' ก่อน VAT (ในใบเขียนแก้ → แก้ตรงนี้)</span></div>'
         + '<input type="text" data-f="hand" value="' + esc(l.hand || '') + '" placeholder="📝 ในใบเขียนแก้/เขียนเพิ่มว่า… (ถ้ามี)" autocomplete="off" style="margin-top:6px">'   // v1.57
@@ -3283,7 +3336,13 @@
     if (c.price) p.push('<b style="color:#b54708">⚠ ราคาเปลี่ยน ' + c.price + '</b>');
     if (c.dup) p.push('<b style="color:#d92d20">⚠ อาจรับซ้ำ ' + c.dup + '</b>');
     if (c.flag) p.push('<b style="color:#d92d20">⚠ อ่านไม่ครบ ' + c.flag + '</b>');
-    return p.length ? '<div class="pricebox" style="margin-top:10px; line-height:1.7"><b>สรุปใบนี้:</b> ' + p.join(' · ') + '</div>' : '';
+    var J = [], T = [], K = [];   // v1.68 ปุ่มกระโดดไปบรรทัดที่ต้องแก้
+    d.lines.forEach(function(l, i){ var s = prState(l).k; if (s === 'need') J.push(i); else if (s === 'todo') T.push(i); else if (s === 'check' && prNeeds(l).length) K.push(i); });
+    var jump = (J.length ? '<div style="margin-top:6px"><b style="color:#d92d20">👉 ต้องแก้ก่อนบันทึก:</b> ' + J.map(function(i){ return '<button type="button" class="prjump" data-jump="' + i + '">#' + d.lines[i].ln + '</button>'; }).join('') + '</div>' : '')
+      + (T.length ? '<div style="margin-top:4px"><b>❓ ยังไม่ได้เลือกว่าเป็นของอะไร:</b> ' + T.map(function(i){ return '<button type="button" class="prjump todo" data-jump="' + i + '">#' + d.lines[i].ln + '</button>'; }).join('') + '</div>' : '')
+      + (K.length ? '<div style="margin-top:4px"><b>👀 ควรเทียบกับใบจริง:</b> ' + K.map(function(i){ return '<button type="button" class="prjump todo" data-jump="' + i + '">#' + d.lines[i].ln + '</button>'; }).join('') + '</div>' : '')
+      + (!J.length && !T.length && d.lines.length ? '<div style="margin-top:6px; color:var(--ok)"><b>✅ ไม่มีจุดที่ต้องแก้ — กดรับเข้าได้</b></div>' : '');
+    return p.length || jump ? '<div class="pricebox" style="margin-top:10px; line-height:1.7"><b>สรุปใบนี้:</b> ' + p.join(' · ') + jump + '</div>' : '';
   }
   function renderPR(){
     var box = el('pr_review'); if (!box) return;
@@ -3327,8 +3386,9 @@
           if (f === 'code'){ l.flags = (l.flags || []).filter(function(x){ return !/บาร์โค้ด/.test(x); }); if (eanOk(l.code) === false) l.flags.push('รหัสบาร์โค้ดอาจอ่านผิด');
             if (l.mode === 'pick'){ var mm = prMapOf(l); if (mm && getSku(mm.sku)){ l.sku = mm.sku; l.factor = mm.factor || 1; l.mode = 'ok'; l.factorAsk = false; l.on = !l.done && +l.recv > 0; } } }   // v1.58 พิมพ์รหัสในใบ → ระบบจำได้ จับคู่ให้เลย
           prSave();
-          if (f === 'on' || f === 'recv' || f === 'code' || f === 'rtnOn' || f === 'dreq') { var y = window.scrollY; renderPR(); window.scrollTo(0, y); }
+          if (f === 'on' || f === 'recv' || f === 'code' || f === 'rtnOn' || f === 'dreq' || f === 'ddept') { var y = window.scrollY; renderPR(); window.scrollTo(0, y); }
         });
+        if (f === 'factor' || f === 'nname' || f === 'price') inp.addEventListener('change', function(){ var y = window.scrollY; renderPR(); window.scrollTo(0, y); });   // v1.68 พิมพ์เสร็จ → อัปเดตสถานะการ์ด
       });
       function bindPick(b){ b.addEventListener('click', function(){
         var it = getSku(b.getAttribute('data-pick')); if (!it) return;
@@ -3349,12 +3409,22 @@
             ka2.forEach(function(k){ if (b2[k]) c2++; }); var sc2 = ka2.length + kb2.length ? 2 * c2 / (ka2.length + kb2.length) : 0; if (sc2 >= 0.3 && (!bx || sc2 > bx.sc)) bx = {x:x, sc:sc2}; });
           if (bx && !l.dreq){ l.dreq = bx.x.no + '|' + bx.x.name; l.ddept = bx.x.dept; l.dwho = l.dwho || bx.x.who; }
         }
+        if (a === 'fok'){ l.factorAsk = false; }   // v1.68 ยืนยันตัวคูณที่ระบบเสนอ
         if (a === 'drop'){ prDoc.lines.splice(+div.getAttribute('data-i'), 1); }   // v1.58 ลบบรรทัดที่อ่านผิด
         prSave(); var y = window.scrollY; renderPR(); window.scrollTo(0, y);
       }); });
     });
+    box.querySelectorAll('[data-jump]').forEach(function(b){ b.addEventListener('click', function(){ prJump(+b.getAttribute('data-jump')); }); });   // v1.68
     el('pr_cancel').addEventListener('click', function(){ prDoc = null; prSave(); el('pr_status').textContent = ''; renderPR(); });
     el('pr_go').addEventListener('click', prReceiveGo);
+  }
+  // v1.68 เลื่อนไปการ์ดที่ต้องแก้ + กระพริบ + โฟกัสช่อง
+  function prJump(i){
+    var box = el('pr_review'), card = box && box.querySelector('.prline[data-i="' + i + '"]'); if (!card) return;
+    card.scrollIntoView({block:'center', behavior:'smooth'});
+    card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+    var n = prNeeds(prDoc.lines[i]).filter(function(x){ return x.f && !x.soft; })[0], inp = n && card.querySelector('[data-f="' + n.f + '"]');
+    if (inp) setTimeout(function(){ try { inp.focus({preventScroll:true}); } catch(e){ inp.focus(); } }, 450);
   }
   function prReceiveGo(){
     var d = prDoc, bad = [];
@@ -3383,7 +3453,12 @@
       o.rtn = l.rtnOn ? (+l.rtn || 0) : 0;
       return o;
     });
-    if (bad.length){ toast(bad[0], true); return; }
+    if (bad.length){
+      toast(bad[0] + (bad.length > 1 ? ' (และอีก ' + (bad.length - 1) + ' จุด)' : ''), true);
+      var bi = d.lines.findIndex(function(l){ return prNeeds(l).some(function(x){ return !x.soft && !x.todo; }); });
+      if (bi >= 0) prJump(bi);
+      return;
+    }
     if (!lines.some(function(l){ return l.recv > 0 || l.sku === 'SKIP' || l.rtn > 0; })){ toast('ยังไม่ได้ติ๊กรับบรรทัดไหน', true); return; }
     var cyl = lines.filter(function(l){ return normUnit(l.unit) === 'ถัง' && (l.recv > 0 || l.rtn > 0); })
       .map(function(l){ return {mat: l.code || l.desc, desc: l.desc, supp: l.recv, rtn: l.rtn}; });
