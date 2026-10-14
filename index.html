@@ -61,6 +61,13 @@
   .plant{font:600 11px/1.2 var(--fm); letter-spacing:.08em; text-transform:uppercase;
     color:var(--accent); background:var(--accent-soft); padding:3px 7px; border-radius:5px;}
   .proto{margin-top:6px; font-size:12px; color:var(--muted);}
+  /* v1.69 เวลาที่ข้อมูลเปลี่ยน */
+  .timeline{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;}
+  .tchip{font:600 12px var(--fs); padding:3px 10px; border-radius:999px; background:var(--ok-soft); color:var(--ok); border:1px solid transparent; line-height:1.5;}
+  .tchip.soft{background:var(--surface-2); color:var(--ink); font-weight:500;}
+  .tchip.fresh{border-color:var(--ok); animation:tflash .8s 3;}
+  .tchip .ago{font-weight:400; color:var(--muted);}
+  @keyframes tflash{50%{box-shadow:0 0 0 4px rgba(22,107,72,.35);}}
 
   main{flex:1 1 auto; overflow-y:auto; padding:14px 16px 20px;}
 
@@ -493,10 +500,11 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.68</span>
+      <span class="ver" id="appVer">v1.69</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
+    <div class="timeline" id="timeline" hidden></div>
     <div class="setpanel" id="setPanel" hidden>
       <label class="fld" for="apiUrl">ลิงก์ Apps Script ของ Google Sheet</label>
       <input type="text" id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
@@ -515,7 +523,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.68 · อัปเดต 14/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.69 · อัปเดต 14/10/2026</div>
     </div>
   </header>
 
@@ -988,11 +996,38 @@
       .then(function(r){ return r.json(); })
       .then(function(j){
         if (!j || !j.ok) throw new Error((j && j.error) || 'server');
+        markSave(payload);   // v1.69
         return j;
       });
   }
+  /* ---------- v1.69 เวลาที่ข้อมูลเปลี่ยน: บันทึกล่าสุดของเครื่องนี้ + ข้อมูลโหลดล่าสุด + เบิก/รับล่าสุดในระบบ ---------- */
+  var K_LASTSAVE = 'pcscan_lastsave', lastSave = null, lastPull = 0;
+  try { lastSave = JSON.parse(localStorage.getItem(K_LASTSAVE) || 'null'); } catch(e){}
+  var ACT_TH = {append:'บันทึกเบิก/รับ', adjust:'ปรับยอด', additem:'เพิ่มของใหม่', edititem:'แก้ทะเบียน', bind:'ผูกบาร์โค้ด', unbind:'ยกเลิกบาร์โค้ด', movebind:'ย้ายบาร์โค้ด',
+    price:'บันทึกราคา', setprice:'บันทึกราคา', prreceive:'รับเข้าตามใบ', request:'ส่งใบขอเบิก', fulfill:'จ่ายตามใบขอเบิก', cancelreq:'ยกเลิกใบขอเบิก', setimg:'บันทึกรูป',
+    setstatus:'เปลี่ยนสถานะของ', setgroup:'ตั้งกลุ่ม', cylset:'บันทึกถังแก๊ส', countround:'นับสต็อก', remove:'ลบรายการ', seed:'ตั้งทะเบียน'};
+  function hmT(t){ var d = new Date(t); return isNaN(d) ? '' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ' น.'; }
+  function agoT(t){ var s = Math.round((Date.now() - new Date(t)) / 1000); if (isNaN(s)) return ''; if (s < 60) return 'เมื่อกี้'; if (s < 3600) return Math.floor(s / 60) + ' นาทีที่แล้ว';
+    if (s < 86400 && new Date(t).getDate() === new Date().getDate()) return Math.floor(s / 3600) + ' ชม.ที่แล้ว'; return when(t); }
+  function markSave(p){
+    var a = p && p.action; if (!ACT_TH[a]) return;
+    var what = ACT_TH[a] + (a === 'prreceive' && p.pr && p.pr.no ? ' ' + p.pr.no : a === 'request' && p.req && p.req.no ? ' ' + p.req.no : '');
+    lastSave = {t: Date.now(), what: what}; try { localStorage.setItem(K_LASTSAVE, JSON.stringify(lastSave)); } catch(e){}
+    renderTimeline();
+  }
+  function renderTimeline(){
+    var box = el('timeline'); if (!box) return;
+    var h = '';
+    if (lastSave && lastSave.t) h += '<span class="tchip' + (Date.now() - lastSave.t < 8000 ? ' fresh' : '') + '">' + (Date.now() - lastSave.t < 8000 ? '✅ บันทึกแล้ว ' : '💾 บันทึกล่าสุด ') + '<b>' + hmT(lastSave.t) + '</b> · ' + esc(lastSave.what) + ' <span class="ago">(' + agoT(lastSave.t) + ')</span></span>';
+    if (API && lastPull){
+      var nw = log && log[0];
+      h += '<span class="tchip soft">🔄 ข้อมูล ณ <b>' + hmT(lastPull) + '</b>' + (nw && nw.ts ? ' · เบิก/รับล่าสุดในระบบ <b>' + hmT(nw.ts) + '</b> ' + esc((nw.dir || '') + ' ' + String(nw.name || nw.sku || '').slice(0, 26)) + ' <span class="ago">(' + agoT(nw.ts) + ')</span>' : '') + '</span>';
+    }
+    box.innerHTML = h; box.hidden = !h;
+  }
+  setInterval(renderTimeline, 30000);
   function takeServer(j){
-    online = true;
+    online = true; lastPull = Date.now();   // v1.69
     log = (j.log || []).slice().sort(function(a,b){ return a.ts < b.ts ? 1 : -1; });
     bcMap = {};
     (j.barcode || []).forEach(function(b){ if (nz(b.barcode)) bcMap[nz(b.barcode)] = b.sku; });
@@ -1232,6 +1267,7 @@
     else t = 'ต่อ Sheet ไม่ได้ตอนนี้ · เก็บไว้ในเครื่องก่อน ' + (pending.length ? 'รอส่ง ' + pending.length : '');
     el('protoline').textContent = ITEMS.length + ' รายการ · ' + t;
     el('protoline').className = 'proto' + (API && !online ? ' warnline' : '');
+    renderTimeline();   // v1.69
   }
 
   function renderHit(){
@@ -2836,7 +2872,7 @@
   }
   /* ---------- v1.64 ใบกำกับภาษี/ใบส่งของร้านค้าปลีก (Hardwarehouse ฯลฯ) — บรรทัดมีบาร์โค้ด 12–13 หลัก ----------
      OCR อาจเรียงทีละแถว (ชื่อ, จำนวน, ราคา, ยอด) หรือแยกชื่อทั้งหมดก่อนแล้วตามด้วยตัวเลข → จับคู่ตามลำดับ */
-  var TH_MON = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  var TH_MONF = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
   function isTaxDoc(t){
     var bc = (String(t).match(/(?:^|\s)\d{12,13}\s+\S/gm) || []).length;
     return bc >= 1 && /ใบก[ำํ]?า?กับภาษี|TAX\s*INVOICE|Invoice\s*No|HARDWAREHOUSE|ฮาร์ดแวร์เฮาส์/i.test(t);
@@ -2856,12 +2892,12 @@
     var no = afterLabel(toks, /Invoice\s*No|เลขที่ใบก[ำ]กับ/i, function(t){ var x = t.match(/^[A-Z]{0,4}\d{7,12}$/i); return x && x[0]; }, 8);
     if (!no) toks.some(function(t){ if (/^\d{10}$/.test(t)){ no = t; return true; } });
     if (no){ out.inv = no.toUpperCase(); out.no = 'TI-' + out.inv; }
-    var dm = raw.match(new RegExp('(\\d{1,2})\\s*(' + TH_MON.join('|') + ')\\s*(\\d{4})'));
+    var dm = raw.match(new RegExp('(\\d{1,2})\\s*(' + TH_MONF.join('|') + ')\\s*(\\d{4})'));
     if (dm){
       var y = +dm[3]; if (y > 2400) y -= 543;
       var now = new Date().getFullYear();
       if (Math.abs(y - now) > 1){ out.warn.push('ปีในใบอ่านได้ ' + dm[3] + ' (ดูแปลก) — ใช้ปีนี้แทน เช็ควันที่อีกที'); y = now; }
-      out.date = ('0' + dm[1]).slice(-2) + '/' + ('0' + (TH_MON.indexOf(dm[2]) + 1)).slice(-2) + '/' + y;
+      out.date = ('0' + dm[1]).slice(-2) + '/' + ('0' + (TH_MONF.indexOf(dm[2]) + 1)).slice(-2) + '/' + y;
     } else { var d2 = raw.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/); if (d2){ var yy = +d2[3]; if (yy > 2400) yy -= 543; out.date = ('0' + d2[1]).slice(-2) + '/' + ('0' + d2[2]).slice(-2) + '/' + yy; } }
     var BC = /(?:^|\s)(?:\d{1,2}\s+)?(\d{12,13})\s+/g, NUM = /^[\d,]+\.\d{2}$/, STOP = /^(汉|HARDWAREHOUSE|HARDWARE\s*&|CL\s*:|DA\s*:|รวมเงิน|Total\s*Amount|มูลค่า|ไม่มี\s*PO|Ship|ip-to|หมายเหตุ|Remark)/i;
     var items = [], ev = [], started = false;
