@@ -467,7 +467,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.65</span>
+      <span class="ver" id="appVer">v1.66</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -489,7 +489,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.65 · อัปเดต 14/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.66 · อัปเดต 14/10/2026</div>
     </div>
   </header>
 
@@ -579,7 +579,7 @@
         <div class="note" style="margin:0">ถ่ายรูป<b>สำเนาใบ PO</b>, ใบ PR, <b>ใบกำกับภาษีร้าน</b> (เช่น Hardwarehouse), อินวอยซ์ หรือใบส่งของ Linde (หรือเลือก PDF สแกน / <b>ไฟล์ Excel ของใบ PR</b> ที่ export จากระบบ — อ่านแม่นสุด) → ระบบรู้เองว่าเป็นใบอะไร อ่านให้ → ตรวจทีละบรรทัด → กดรับเข้าทั้งใบ (ตัดสต็อก + ราคา + ร้าน + เลข PR ให้เอง)</div>
         <div class="note" id="pr_lock" style="margin:8px 0 0">🔒 ต้องใส่ PIN ของ PC ในปุ่มตั้งค่าก่อน (ในใบมีราคา)</div>
         <div class="row" id="pr_btns" style="gap:8px; margin-top:10px; flex-wrap:wrap"><button class="primary" id="pr_cam" style="flex:1 1 100%">📷 ถ่ายรูปใบ</button><button class="ghost" id="pr_gal" style="flex:1">🖼 รูปในเครื่อง</button><button class="ghost" id="pr_pick" style="flex:1">📎 PDF / Excel</button></div>
-        <input type="file" id="pr_file_gal" accept="image/*" hidden>
+        <input type="file" id="pr_file_gal" accept="image/jpeg,image/png,image/webp,image/*" hidden>
         <input type="file" id="pr_file_cam" accept="image/*" capture="environment" hidden>
         <input type="file" id="pr_file" accept="image/*,application/pdf,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" hidden>
         <div class="note" id="pr_status" style="margin:8px 0 0"></div>
@@ -3132,7 +3132,21 @@
         c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
         res({data:c.toDataURL('image/jpeg', 0.88), mime:'image/jpeg'});
       };
-      img.onerror = function(){ rej(new Error('เปิดรูปไม่ได้')); }; img.src = url;
+      img.onerror = function(){   // v1.66 รูปจากแกลเลอรีบางแบบ (HEIC / รูปใหญ่มาก) เบราว์เซอร์มือถือเปิดไม่ได้ → ลองวิธีอื่นก่อน
+        URL.revokeObjectURL(url);
+        var info = (f.type || (String(f.name || '').split('.').pop() || '?')) + ' ' + (f.size / 1048576).toFixed(1) + 'MB';
+        var heic = /hei[cf]/i.test(f.type || '') || /\.hei[cf]$/i.test(f.name || '');
+        var bmp = window.createImageBitmap ? createImageBitmap(f) : Promise.reject();
+        bmp.then(function(b){
+          var mx = 2200, k = Math.min(1, mx / Math.max(b.width, b.height)), c = document.createElement('canvas');
+          c.width = Math.round(b.width * k); c.height = Math.round(b.height * k); c.getContext('2d').drawImage(b, 0, 0, c.width, c.height);
+          res({data:c.toDataURL('image/jpeg', 0.88), mime:'image/jpeg'});
+        })['catch'](function(){
+          if (!heic && /jpe?g|png/i.test(f.type || '') && f.size <= 8e6){ var r2 = new FileReader(); r2.onload = function(){ res({data:r2.result, mime:f.type}); }; r2.onerror = function(){ rej(new Error('เปิดรูปไม่ได้ (' + info + ')')); }; r2.readAsDataURL(f); return; }
+          rej(new Error(heic ? 'รูปเป็นไฟล์ HEIC (' + info + ') มือถือเปิดในเว็บไม่ได้ — ใช้ปุ่ม 📷 ถ่ายรูปใบ แทน หรือแคปหน้าจอรูปนั้นแล้วเลือกรูปแคป' : 'เปิดรูปไม่ได้ (' + info + ') — ลองแคปหน้าจอรูปนั้นแล้วเลือกรูปแคป หรือใช้ปุ่ม 📷 ถ่ายรูปใบ'));
+        });
+      };
+      img.src = url;
     });
   }
   function prScanFile(f){
