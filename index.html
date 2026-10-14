@@ -467,7 +467,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.63</span>
+      <span class="ver" id="appVer">v1.64</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -489,7 +489,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.63 · อัปเดต 09/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.64 · อัปเดต 14/10/2026</div>
     </div>
   </header>
 
@@ -576,7 +576,7 @@
     <section id="v-add" hidden>
       <div class="card" id="prCard">
         <h2>📄 รับของตามใบ PR / อินวอยซ์</h2>
-        <div class="note" style="margin:0">ถ่ายรูป<b>สำเนาใบ PO</b>, ใบ PR, อินวอยซ์ หรือใบส่งของ Linde (หรือเลือก PDF สแกน / <b>ไฟล์ Excel ของใบ PR</b> ที่ export จากระบบ — อ่านแม่นสุด) → ระบบรู้เองว่าเป็นใบอะไร อ่านให้ → ตรวจทีละบรรทัด → กดรับเข้าทั้งใบ (ตัดสต็อก + ราคา + ร้าน + เลข PR ให้เอง)</div>
+        <div class="note" style="margin:0">ถ่ายรูป<b>สำเนาใบ PO</b>, ใบ PR, <b>ใบกำกับภาษีร้าน</b> (เช่น Hardwarehouse), อินวอยซ์ หรือใบส่งของ Linde (หรือเลือก PDF สแกน / <b>ไฟล์ Excel ของใบ PR</b> ที่ export จากระบบ — อ่านแม่นสุด) → ระบบรู้เองว่าเป็นใบอะไร อ่านให้ → ตรวจทีละบรรทัด → กดรับเข้าทั้งใบ (ตัดสต็อก + ราคา + ร้าน + เลข PR ให้เอง)</div>
         <div class="note" id="pr_lock" style="margin:8px 0 0">🔒 ต้องใส่ PIN ของ PC ในปุ่มตั้งค่าก่อน (ในใบมีราคา)</div>
         <div class="row" id="pr_btns" style="gap:8px; margin-top:10px"><button class="primary" id="pr_cam" style="flex:1">📷 ถ่ายรูปใบ</button><button class="ghost" id="pr_pick" style="flex:1">📎 ไฟล์ / PDF / Excel</button></div>
         <input type="file" id="pr_file_cam" accept="image/*" capture="environment" hidden>
@@ -2744,6 +2744,7 @@
     if ((/RFPU-GE-006|Purchase\s*Order/i.test(t)) && !/REQUISITION/i.test(t)) return 'PO';   // v1.57 สำเนาใบ PO ของเรา
     if (/PURCHASE\s*REQUISITION|RFPU-GE/i.test(t)) return 'PR';
     if (/DELIVERY\s*DOCKET/i.test(t)) return 'DD';
+    if (isTaxDoc(t)) return 'TAX';   // v1.64 ใบกำกับภาษีร้าน (มีบาร์โค้ด)
     if (/INVOICE/i.test(t) && /Linde|ลินเด้/i.test(t)) return 'INV';
     return 'PR';
   }
@@ -2804,6 +2805,81 @@
     });
     if (!out.no) out.warn.push('อ่านเลขเอกสารไม่ได้ — พิมพ์เอง');
     if (!out.lines.length) out.warn.push('หาบรรทัดสินค้าไม่เจอ');
+    return out;
+  }
+  /* ---------- v1.64 ใบกำกับภาษี/ใบส่งของร้านค้าปลีก (Hardwarehouse ฯลฯ) — บรรทัดมีบาร์โค้ด 12–13 หลัก ----------
+     OCR อาจเรียงทีละแถว (ชื่อ, จำนวน, ราคา, ยอด) หรือแยกชื่อทั้งหมดก่อนแล้วตามด้วยตัวเลข → จับคู่ตามลำดับ */
+  var TH_MON = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  function isTaxDoc(t){
+    var bc = (String(t).match(/(?:^|\s)\d{12,13}\s+\S/gm) || []).length;
+    return bc >= 1 && /ใบก[ำํ]?า?กับภาษี|TAX\s*INVOICE|Invoice\s*No|HARDWAREHOUSE|ฮาร์ดแวร์เฮาส์/i.test(t);
+  }
+  function taxUnit(u){
+    u = String(u || '').trim();
+    if (/^(ขึ้น|ชื้น|ชิน|ชิ่น|ชั้น)$/.test(u)) return 'ชิ้น';
+    var pk = u.match(/^PK(\d+)$/i); if (pk) return 'PK (' + pk[1] + ')';   // PK50 = แพ็ค 50 ชิ้น (เขียนแบบเดียวกับทะเบียน)
+    return u.toUpperCase() === u.toLowerCase() ? u : u.toUpperCase();
+  }
+  function parseTax(text){
+    var raw = String(text || '').replace(/\r/g, '').replace(/ํา/g, 'ำ');   // ํา → ำ
+    var toks = raw.split('\n').map(function(x){ return x.replace(/^\*\*|\*\*$/g, '').trim(); }).filter(Boolean);
+    var out = {kind:'TAX', no:'', inv:'', date:'', shop:'', lines:[], sub:null, warn:[], note:''};
+    if (/HARDWAREHOUSE|ฮาร์ดแวร์เฮาส์/i.test(raw)) out.shop = 'Hardwarehouse';
+    else toks.some(function(t){ if (/(บริษัท|หจก|ห้างหุ้นส่วน|CO\.|LTD|LIMITED)/i.test(t) && !/delica|เดลิก้า/i.test(t)){ out.shop = t.replace(/\s*\(.*$/, '').replace(/^บริษัท\s*/, '').replace(/\s*จ[ำ]กัด.*$/, '').trim(); return true; } });
+    var no = afterLabel(toks, /Invoice\s*No|เลขที่ใบก[ำ]กับ/i, function(t){ var x = t.match(/^[A-Z]{0,4}\d{7,12}$/i); return x && x[0]; }, 8);
+    if (!no) toks.some(function(t){ if (/^\d{10}$/.test(t)){ no = t; return true; } });
+    if (no){ out.inv = no.toUpperCase(); out.no = 'TI-' + out.inv; }
+    var dm = raw.match(new RegExp('(\\d{1,2})\\s*(' + TH_MON.join('|') + ')\\s*(\\d{4})'));
+    if (dm){
+      var y = +dm[3]; if (y > 2400) y -= 543;
+      var now = new Date().getFullYear();
+      if (Math.abs(y - now) > 1){ out.warn.push('ปีในใบอ่านได้ ' + dm[3] + ' (ดูแปลก) — ใช้ปีนี้แทน เช็ควันที่อีกที'); y = now; }
+      out.date = ('0' + dm[1]).slice(-2) + '/' + ('0' + (TH_MON.indexOf(dm[2]) + 1)).slice(-2) + '/' + y;
+    } else { var d2 = raw.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/); if (d2){ var yy = +d2[3]; if (yy > 2400) yy -= 543; out.date = ('0' + d2[1]).slice(-2) + '/' + ('0' + d2[2]).slice(-2) + '/' + yy; } }
+    var BC = /(?:^|\s)(?:\d{1,2}\s+)?(\d{12,13})\s+/g, NUM = /^[\d,]+\.\d{2}$/, STOP = /^(汉|HARDWAREHOUSE|HARDWARE\s*&|CL\s*:|DA\s*:|รวมเงิน|Total\s*Amount|มูลค่า|ไม่มี\s*PO|Ship|ip-to|หมายเหตุ|Remark)/i;
+    var items = [], ev = [], started = false;
+    for (var i = 0; i < toks.length; i++){
+      var t = toks[i];
+      BC.lastIndex = 0;
+      var hits = [], m;
+      while ((m = BC.exec(t))) hits.push({bc:m[1], at:m.index, end:BC.lastIndex});
+      if (hits.length){
+        started = true;
+        hits.forEach(function(h, k){
+          var d = t.slice(h.end, k + 1 < hits.length ? hits[k + 1].at : t.length).trim();
+          items.push({code:h.bc, desc:d});
+        });
+        continue;
+      }
+      if (!started) continue;
+      if (STOP.test(t)) break;
+      if (/^\d{1,2}$/.test(t)) continue;                                  // เลขบรรทัดแยกบรรทัด
+      t = t.replace(/(^|\s)[$S§'`.,·•:;]+\s*(?=\d[\d,]*\.\d{2}\b)/g, '$1');
+      var qm = t.match(/^([\d,]+\.\d{2})\s+([^\d\s][^\s]*)$/);
+      if (qm){ ev.push({q:prNum(qm[1]), u:taxUnit(qm[2]), n:[]}); continue; }
+      var parts = t.split(/\s+/);
+      if (parts.every(function(p){ return NUM.test(p); })){ if (ev.length) parts.forEach(function(p){ ev[ev.length - 1].n.push(prNum(p)); }); continue; }
+      if (items.length && !ev.length) items[items.length - 1].desc += ' ' + t;   // ชื่อยาวล้นบรรทัด
+    }
+    if (!items.length){ out.warn.push('หาบรรทัดสินค้าไม่เจอ'); return out; }
+    if (ev.length !== items.length) out.warn.push('อ่านชื่อได้ ' + items.length + ' บรรทัด แต่จำนวน/ราคา ' + ev.length + ' ชุด — เทียบกับใบจริงทีละบรรทัด');
+    items.forEach(function(it, j){
+      var e = ev[j] || {n:[]}, l = {ln:j + 1, code:it.code, desc:it.desc.replace(/^[=\-–:.\s]+|[=\s]+$/g, '').replace(/\s{2,}/g, ' '),
+        qty: e.q != null ? e.q : null, unit: e.u || '', price: e.n[0] != null ? e.n[0] : null, total: e.n[1] != null ? e.n[1] : null, flags:[]};
+      if (l.total == null && l.qty != null && l.price != null) l.total = Math.round(l.qty * l.price * 100) / 100;
+      var pk = String(l.unit).match(/^PK\s*\((\d+)\)$/i) || String(l.desc).match(/\((\d+)(?:\.0+)?\s*(?:ชิ้น|ใบ|แผ่น|PCS)\)/i);
+      if (pk && +pk[1] > 1) l.pkn = +pk[1];                               // 1 แพ็ค/กล่อง = กี่ชิ้น (ไว้เสนอตัวคูณ)
+      if (eanOk(l.code) === false) l.flags.push('รหัสบาร์โค้ดอาจอ่านผิด');
+      if (l.qty == null || !l.unit) l.flags.push('อ่านจำนวน/หน่วยไม่ครบ');
+      if (l.qty != null && l.price != null && l.total != null && Math.abs(l.qty * l.price - l.total) > 0.05) l.flags.push('จำนวน×ราคา ไม่เท่ายอด');
+      out.lines.push(l);
+    });
+    var ti = toks.findIndex(function(t){ return /Total\s*Amount|^รวมเงิน/i.test(t); });
+    if (ti >= 0) for (var q = ti; q < Math.min(toks.length, ti + 5); q++){ var v = prNum(toks[q].replace(/^.*?:\s*/, '')); if (v != null && v > 0){ out.sub = v; break; } }
+    var sum = out.lines.reduce(function(a, l){ return a + (l.total || 0); }, 0);
+    if (out.sub != null && Math.abs(out.sub - sum) > 0.05) out.warn.push('ยอดรวมทุกบรรทัด (' + sum.toFixed(2) + ') ไม่ตรงกับรวมเงินในใบ (' + out.sub.toFixed(2) + ') — อาจอ่านตกหล่น');
+    if (!out.no) out.warn.push('อ่านเลขใบกำกับไม่ได้ — พิมพ์เอง (ขึ้นต้น TI-)');
+    out.note = 'ใบกำกับภาษี' + (out.inv ? ' ' + out.inv : '') + (/ไม่มี\s*PO/.test(raw) ? ' · ไม่มี PO (ซื้อหน้าร้าน) → เปิด PR ใน SimLex ตามใบนี้' : '');
     return out;
   }
   /* ---------- v1.56 ใบ PR แบบไฟล์ Excel (export จากระบบจัดซื้อ ฟอร์ม RFPU-GE-004) — อ่านตรงจากเซลล์ ไม่ต้อง OCR ---------- */
@@ -2929,7 +3005,7 @@
     if (!out.no) out.warn.push('อ่านเลข PO ไม่ได้ — พิมพ์เอง');
     return out;
   }
-  function parseDoc(text){ var k = docKind(text); if (k === 'PO') return parsePO(text); if (k === 'PR'){ var d = parsePR(text); d.kind = 'PR'; return d; } return parseLinde(text); }
+  function parseDoc(text){ var k = docKind(text); if (k === 'PO') return parsePO(text); if (k === 'TAX') return parseTax(text); if (k === 'PR'){ var d = parsePR(text); d.kind = 'PR'; return d; } return parseLinde(text); }
 
   /* ================= v1.17 รับของตามใบ PR ================= */
   var K_PRDRAFT = 'pcscan_prdraft';
@@ -3016,6 +3092,7 @@
     if (!l.sku && !(prev && /รับครบ|ปิด|ไม่เข้าสต็อก/.test(prev.st))){ var vd = prVerdict(l); if (vd.k === 'sure'){ l.sku = vd.s[0].it.sku; l.guess = true; } }   // v1.60 มั่นใจ → เลือกให้ (ติดป้าย)
     l.factor = l.factor || (prev && prev.factor) || (m && m.factor) || 1;
     if (!m && !prev && l.sku && l.sku !== 'SKIP'){ var it = getSku(l.sku); if (it && normUnit(it.unit) !== normUnit(l.unit)) l.factorAsk = true; }
+    if (l.factorAsk && l.pkn && +l.factor === 1){ var iu = getSku(l.sku); if (iu && !/แพ็ค|กล่อง|pack|box|pk/i.test(iu.unit)) l.factor = l.pkn; }   // v1.64 PK50 / (50 ชิ้น) → เสนอตัวคูณ 50 ให้ (ยังต้องกดยืนยัน)
     l.prev = prev ? prev.recv : 0;
     l.done = !!(prev && (/รับครบ|ปิด|ไม่เข้าสต็อก/.test(prev.st) || (/^จ่ายตรง/.test(prev.st) && !/ค้างรับ/.test(prev.st))));
     var rem = Math.max(0, (+l.qty || 0) - l.prev);
@@ -3077,7 +3154,7 @@
       })['catch'](function(e){ stt.textContent = '⚠ อ่านไม่สำเร็จ — ' + ((e && e.message) || 'เช็คเน็ต'); })
       .then(function(){ prBusy = false; el('pr_file').value = ''; el('pr_file_cam').value = ''; });
   }
-  var KIND_TH = {PR:'ใบ PR ', PO:'ใบ PO ', INV:'อินวอยซ์ ', DD:'ใบส่งของ '};
+  var KIND_TH = {PR:'ใบ PR ', PO:'ใบ PO ', INV:'อินวอยซ์ ', DD:'ใบส่งของ ', TAX:'ใบกำกับภาษี '};
   function prOpenList(){
     var g = {}, order = [];
     PRS.forEach(function(r){ if (!g[r.no]){ g[r.no] = {no:r.no, shop:r.shop, date:r.date, file:r.file, lines:[], open:0}; order.push(r.no); } g[r.no].lines.push(r); if (r.st === 'ค้างรับ') g[r.no].open++; });
@@ -3086,7 +3163,7 @@
   function prLoadStored(no){
     var rows = PRS.filter(function(r){ return r.no === no; }).sort(function(a, b){ return a.ln - b.ln; });
     if (!rows.length) return;
-    prStart({no:no, date:rows[0].date, shop:rows[0].shop, file:rows[0].file, sub:null, warn:[], stored:true, so:rows[0].ref || '', kind: /^INV-/.test(no) ? 'INV' : /^DD-/.test(no) ? 'DD' : /^PO/.test(no) ? 'PO' : 'PR', inv: rows[0].inv || '',
+    prStart({no:no, date:rows[0].date, shop:rows[0].shop, file:rows[0].file, sub:null, warn:[], stored:true, so:rows[0].ref || '', kind: /^INV-/.test(no) ? 'INV' : /^TI-/.test(no) ? 'TAX' : /^DD-/.test(no) ? 'DD' : /^PO/.test(no) ? 'PO' : 'PR', inv: rows[0].inv || '',
       lines: rows.map(function(r){ return {ln:r.ln, code:r.code, desc:r.desc, qty:r.qty, unit:r.unit, price:r.price, total:r.price != null ? r.qty * r.price : null, flags:[], sku:r.sku, factor:r.factor}; })});
   }
   function renderPRCard(){
@@ -3110,7 +3187,7 @@
       + '<button type="button" class="ghost" data-act="drop" title="ลบบรรทัดนี้ (อ่านผิด/ไม่ใช่ของ)" style="width:auto; min-height:30px; padding:0 10px">🗑 ลบ</button>'   // v1.58
       + (l.done ? '<span class="chip ok">รับแล้ว</span>' : '') + '</div>'
       + '<div class="li-name" style="font-weight:500">' + esc(l.desc || '—') + '</div>'
-      + '<div class="li-meta">' + (prDoc && prDoc.kind === 'DD' ? 'ถังเต็มส่งมา' : prDoc && prDoc.kind === 'INV' ? 'ส่งมา' : 'ใบสั่ง') + ' <b>' + fmt(l.qty) + ' ' + esc(l.unit) + '</b>' + (l.price != null ? ' × ' + baht(l.price) : '') + (l.prev ? ' · รับไปแล้ว ' + fmt(l.prev) + ' · <b class="over">ค้าง ' + fmt(rem) + '</b>' : '') + '</div>'
+      + '<div class="li-meta">' + (prDoc && prDoc.kind === 'DD' ? 'ถังเต็มส่งมา' : prDoc && (prDoc.kind === 'INV' || prDoc.kind === 'TAX') ? 'ส่งมา' : 'ใบสั่ง') + ' <b>' + fmt(l.qty) + ' ' + esc(l.unit) + '</b>' + (l.price != null ? ' × ' + baht(l.price) : '') + (l.prev ? ' · รับไปแล้ว ' + fmt(l.prev) + ' · <b class="over">ค้าง ' + fmt(rem) + '</b>' : '') + '</div>'
       + (l.flags && l.flags.length ? '<div class="outnote">⚠ ' + l.flags.map(esc).join(' · ') + ' — เทียบกับใบจริง</div>' : '')
       + (l.note ? '<div class="li-meta">หมายเหตุ: ' + esc(l.note) + '</div>' : '')
       + (l.dup ? '<div class="note" style="margin:4px 0 0">ℹ ถังเต็มล็อตนี้รับเข้าไปแล้วตาม ' + esc(l.dup) + ' — ไม่รับซ้ำ (บันทึกราคาได้)</div>' : '')
@@ -3205,7 +3282,7 @@
       +   '<div style="flex:1 1 140px"><label class="fld" for="pr_no">เลขเอกสาร</label><input type="text" id="pr_no" value="' + esc(d.no) + '" autocomplete="off"></div>'
       +   '<div style="flex:1 1 110px"><label class="fld" for="pr_date">วันที่ใบ</label><input type="text" id="pr_date" value="' + esc(d.date) + '" autocomplete="off"></div></div>'
       + '<div style="margin-top:6px"><label class="fld" for="pr_shop">ร้าน</label><input type="text" id="pr_shop" list="shopList" value="' + esc(d.shop) + '" autocomplete="off">' + shopChips('pr_shop') + '</div>'
-      + (d.kind === 'PO' ? '<div style="margin-top:6px"><label class="fld" for="pr_inv">เลขอินวอยซ์ของร้าน (ที่มากับของ)</label><input type="text" id="pr_inv" value="' + esc(d.inv || '') + '" placeholder="เช่น IV6910-0123" autocomplete="off"></div>' : '')   // v1.57
+      + (d.kind === 'PO' || d.kind === 'TAX' ? '<div style="margin-top:6px"><label class="fld" for="pr_inv">เลขอินวอยซ์ของร้าน (ที่มากับของ)</label><input type="text" id="pr_inv" value="' + esc(d.inv || '') + '" placeholder="เช่น IV6910-0123" autocomplete="off"></div>' : '')   // v1.57
       + (d.so || d.note ? '<div class="li-meta" style="margin-top:6px">' + (d.so ? 'Sys. Order ' + esc(d.so) : '') + (d.ref ? ' · ใบส่งของ ' + esc(d.ref) : '') + (d.note ? ' · ' + esc(d.note) : '') + '</div>' : '')
       + (d.seen ? '<div class="note" style="margin:8px 0 0">ℹ ใบนี้เคยรับไปแล้วบางส่วน — ระบบนับต่อจากที่รับไปแล้ว ไม่รับซ้ำ</div>' : '')
       + (d.warn && d.warn.length ? '<div class="outnote" style="margin-top:8px">⚠ ' + d.warn.map(esc).join('<br>⚠ ') + '</div>' : '')
