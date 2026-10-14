@@ -467,7 +467,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.64</span>
+      <span class="ver" id="appVer">v1.65</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -489,7 +489,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.64 · อัปเดต 14/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.65 · อัปเดต 14/10/2026</div>
     </div>
   </header>
 
@@ -578,7 +578,8 @@
         <h2>📄 รับของตามใบ PR / อินวอยซ์</h2>
         <div class="note" style="margin:0">ถ่ายรูป<b>สำเนาใบ PO</b>, ใบ PR, <b>ใบกำกับภาษีร้าน</b> (เช่น Hardwarehouse), อินวอยซ์ หรือใบส่งของ Linde (หรือเลือก PDF สแกน / <b>ไฟล์ Excel ของใบ PR</b> ที่ export จากระบบ — อ่านแม่นสุด) → ระบบรู้เองว่าเป็นใบอะไร อ่านให้ → ตรวจทีละบรรทัด → กดรับเข้าทั้งใบ (ตัดสต็อก + ราคา + ร้าน + เลข PR ให้เอง)</div>
         <div class="note" id="pr_lock" style="margin:8px 0 0">🔒 ต้องใส่ PIN ของ PC ในปุ่มตั้งค่าก่อน (ในใบมีราคา)</div>
-        <div class="row" id="pr_btns" style="gap:8px; margin-top:10px"><button class="primary" id="pr_cam" style="flex:1">📷 ถ่ายรูปใบ</button><button class="ghost" id="pr_pick" style="flex:1">📎 ไฟล์ / PDF / Excel</button></div>
+        <div class="row" id="pr_btns" style="gap:8px; margin-top:10px; flex-wrap:wrap"><button class="primary" id="pr_cam" style="flex:1 1 100%">📷 ถ่ายรูปใบ</button><button class="ghost" id="pr_gal" style="flex:1">🖼 รูปในเครื่อง</button><button class="ghost" id="pr_pick" style="flex:1">📎 PDF / Excel</button></div>
+        <input type="file" id="pr_file_gal" accept="image/*" hidden>
         <input type="file" id="pr_file_cam" accept="image/*" capture="environment" hidden>
         <input type="file" id="pr_file" accept="image/*,application/pdf,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" hidden>
         <div class="note" id="pr_status" style="margin:8px 0 0"></div>
@@ -3064,11 +3065,11 @@
   /* v1.60 เดาของจากชื่อในใบ: ชื่อคล้าย (triGram) + ตัวเลขขนาดตรง (15x125, 8x3/4, A36, No.60) + ยี่ห้อตรง
      → ✅ มั่นใจ = เลือกให้เลย (ติดป้าย "ระบบเดา") · 🆕 ยี่ห้อ/ขนาดไม่ตรงกับตัวใกล้สุด = น่าจะเป็นของใหม่ · ❓ ไม่แน่ใจ = ให้คนเลือก */
   var PR_STOP = {mm:1, cm:1, size:1, pcs:1, kgs:1, set:1, box:1, ltd:1, for:1, and:1, the:1, with:1, type:1, new:1, spool:1, roll:1, inch:1, sheet:1, pack:1};
-  function prNums(t){ return (String(t || '').toLowerCase().replace(/\*/g, 'x').replace(/["”″]/g, ' ').match(/\d+(?:\.\d+)?(?:\/\d+)?/g) || []).map(function(n){ return n.replace(/\.$/, '').replace(/\./g, ''); }); }   // เทียบแบบไม่สนจุด: 12.mm ในใบ = 1.2 mm
+  function prNums(t){ return (String(t || '').toLowerCase().replace(/\*/g, 'x').replace(/["”″]/g, ' ').match(/\d+(?:\.\d+)?(?:\/\d+)?/g) || []).map(function(n){ return n.replace(/\.0+$/, '').replace(/\.$/, '').replace(/\./g, ''); }); }   // เทียบแบบไม่สนจุด: 12.mm ในใบ = 1.2 mm
   function prBrands(t){ return (String(t || '').toLowerCase().match(/[a-z]{3,}/g) || []).filter(function(w){ return !PR_STOP[w]; }); }
   function prSuggest(desc, hint, n){
     var text = (hint ? hint + ' ' : '') + String(desc || ''), a = triG(text), ka = Object.keys(a); if (ka.length < 3) return [];
-    var D = prNums(desc), B = prBrands(desc);
+    var D = prNums(String(desc || '').replace(/\(\s*[\d.,]+\s*(ชิ้น|ใบ|แผ่น|pcs?|ea)\s*\)/ig, ' ')), B = prBrands(desc);   // v1.65 ไม่นับขนาดแพ็คในวงเล็บ เช่น (50.00 ชิ้น)
     return ITEMS.filter(function(it){ return !it.off; }).map(function(it){
       var b = triG(it.name), kb = Object.keys(b), c = 0; ka.forEach(function(x){ if (b[x]) c++; });
       var base = kb.length ? 2 * c / (ka.length + kb.length) : 0, I = prNums(it.name), IB = prBrands(it.name);
@@ -3152,7 +3153,7 @@
         stt.textContent = 'อ่าน' + KIND_TH[doc.kind || 'PR'] + 'ได้ ' + doc.lines.length + ' บรรทัด — ตรวจด้านล่างแล้วกดรับเข้า';
         prStart(doc);
       })['catch'](function(e){ stt.textContent = '⚠ อ่านไม่สำเร็จ — ' + ((e && e.message) || 'เช็คเน็ต'); })
-      .then(function(){ prBusy = false; el('pr_file').value = ''; el('pr_file_cam').value = ''; });
+      .then(function(){ prBusy = false; el('pr_file').value = ''; el('pr_file_cam').value = ''; if (el('pr_file_gal')) el('pr_file_gal').value = ''; });
   }
   var KIND_TH = {PR:'ใบ PR ', PO:'ใบ PO ', INV:'อินวอยซ์ ', DD:'ใบส่งของ ', TAX:'ใบกำกับภาษี '};
   function prOpenList(){
@@ -3318,6 +3319,7 @@
       function bindPick(b){ b.addEventListener('click', function(){
         var it = getSku(b.getAttribute('data-pick')); if (!it) return;
         l.sku = it.sku; l.mode = 'ok'; l.guess = false; l.factorAsk = normUnit(it.unit) !== normUnit(l.unit); if (!l.factorAsk) l.factor = 1;
+        if (l.factorAsk && l.pkn && !/แพ็ค|กล่อง|pack|box|pk/i.test(it.unit)) l.factor = l.pkn;   // v1.65 PK (50) → เสนอ 50 ชิ้นให้ (ยังต้องยืนยัน)
         l.on = !l.done && (+l.recv > 0); prSave(); var y = window.scrollY; renderPR(); window.scrollTo(0, y);
       }); }
       div.querySelectorAll('[data-pick]').forEach(bindPick);
@@ -3385,6 +3387,7 @@
   }
   el('pr_cam').addEventListener('click', function(){ el('pr_file_cam').click(); });
   el('pr_pick').addEventListener('click', function(){ el('pr_file').click(); });
+  if (el('pr_gal')){ el('pr_gal').addEventListener('click', function(){ el('pr_file_gal').click(); }); el('pr_file_gal').addEventListener('change', function(){ prScanFile(this.files && this.files[0]); }); }   // v1.65 เลือกรูปจากแกลเลอรี (มือถือ)
   el('pr_file_cam').addEventListener('change', function(){ prScanFile(this.files && this.files[0]); });
   el('pr_file').addEventListener('change', function(){ prScanFile(this.files && this.files[0]); });
 
