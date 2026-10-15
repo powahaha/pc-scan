@@ -63,6 +63,15 @@
   .proto{margin-top:6px; font-size:12px; color:var(--muted);}
   /* v1.69 เวลาที่ข้อมูลเปลี่ยน */
   .timeline{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;}
+  /* v1.81 กำลังทำงาน */
+  .busypill{position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:400; display:flex; align-items:center; gap:8px; max-width:92vw; padding:8px 16px; border-radius:18px; line-height:1.4; background:var(--accent); color:var(--accent-ink); font:600 14px var(--fs); box-shadow:var(--shadow);}
+  .busypill[hidden]{display:none;} .busypill.done{background:var(--ok); color:#fff;} .busypill.fail{background:#d92d20; color:#fff;}
+  .busypill .slow{font-weight:400; font-size:12px; opacity:.9;}
+  .spin{width:14px; height:14px; border-radius:50%; border:2px solid currentColor; border-right-color:transparent; animation:spin .8s linear infinite; flex:none;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  button.isbusy{position:relative; opacity:.75; cursor:progress;}
+  button.isbusy::after{content:''; display:inline-block; width:12px; height:12px; margin-left:8px; vertical-align:-2px; border-radius:50%; border:2px solid currentColor; border-right-color:transparent; animation:spin .8s linear infinite;}
+  .qbar{height:8px; border-radius:99px; background:var(--surface-2); overflow:hidden; margin:2px 0 4px;} .qfill{height:100%; background:var(--ok);} .qfill.warn{background:#e8a20c;} .qfill.bad{background:#d92d20;}
   .tchip{font:600 12px var(--fs); padding:3px 10px; border-radius:999px; background:var(--ok-soft); color:var(--ok); border:1px solid transparent; line-height:1.5;}
   .tchip.soft{background:var(--surface-2); color:var(--ink); font-weight:500;}
   .tchip.fresh{border-color:var(--ok); animation:tflash .8s 3;}
@@ -567,7 +576,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.80</span>
+      <span class="ver" id="appVer">v1.81</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -587,6 +596,7 @@
       <div id="lineWrap" style="margin-top:14px; padding-top:12px; border-top:1px solid var(--line)" hidden>
         <div class="fld">🔔 แจ้งเตือน LINE ถึง PC (ทุกใบขอเบิกใหม่)</div>
         <div class="note" id="lineState" style="margin:4px 0 0"></div>
+        <div id="lineQuota" style="margin-top:6px"></div>
         <label class="fld" for="lineUsers" style="margin-top:8px">User ID ผู้รับ (ขึ้นต้นด้วย U · หลายคนคั่นด้วย , )</label>
         <div class="row" style="gap:6px"><input type="text" id="lineUsers" placeholder="U1234…, U5678…" autocomplete="off" style="flex:1; min-width:0"><button type="button" class="ghost" id="lineUsersSave" style="width:auto">บันทึก</button></div>
         <div class="note" style="margin:4px 0 0">พิมพ์ <b>ALL</b> = ส่งถึงทุกคนที่แอดบอท @972fruaq เป็นเพื่อน (ไม่ต้องหา User ID) · หรือใส่ User ID (LINE Developers → Basic settings → Your user ID) · 1 ใบ = กินโควตาเท่าจำนวนคน</div>
@@ -598,7 +608,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.80 · อัปเดต 15/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.81 · อัปเดต 15/10/2026</div>
     </div>
   </header>
 
@@ -1097,8 +1107,43 @@
   var NEED_HOST = '';
 
   /* ================= ที่เก็บข้อมูล ================= */
+  /* v1.81 กำลังทำงาน… : ปุ่มที่เพิ่งกดขึ้นหมุน + ป้ายลอยบอกว่ากำลังทำอะไร นับวินาที (โชว์เมื่อเกิน 0.4 วิ) */
+  var busyBtn = null, busyAt = 0, busyN = 0, busyT0 = 0, busyTimer = null, busyWhat = '';
+  document.addEventListener('click', function(e){ var b = e.target && e.target.closest && e.target.closest('button, .tapchip, [role=button]'); if (b){ busyBtn = b; busyAt = Date.now(); } }, true);
+  var BUSY_TH = {sync:'โหลดข้อมูลล่าสุด', prscan:'อ่านใบ PR / ใบกำกับ (อาจนาน 10–30 วิ)', export:'เตรียมไฟล์ Excel', linetest:'ส่งข้อความทดสอบ LINE', lineusers:'บันทึกผู้รับ LINE'};
+  function busyStart(p){
+    var a = p && p.action || 'sync', mine = busyBtn && Date.now() - busyAt < 400 ? busyBtn : null; busyBtn = null;
+    if (a === 'sync' && !mine && busyN === 0) return {silent: true};   // โหลดเบื้องหลังเงียบๆ
+    busyN++; busyWhat = BUSY_TH[a] || ACT_TH[a] || 'ทำงาน';
+    if (busyN === 1){ busyT0 = Date.now(); clearInterval(busyTimer); busyTimer = setInterval(busyTick, 500); }
+    var tok = {btn: null};
+    if (mine && !mine.disabled && document.body.contains(mine)){ mine.classList.add('isbusy'); mine.setAttribute('aria-busy', 'true'); mine.disabled = true; tok.btn = mine; }
+    return tok;
+  }
+  function busyBox(){ var b = el('busyPill'); if (!b){ b = document.createElement('div'); b.id = 'busyPill'; b.className = 'busypill'; b.hidden = true; b.setAttribute('aria-live', 'polite'); document.body.appendChild(b); } return b; }
+  function busyTick(){
+    var s = (Date.now() - busyT0) / 1000, box = busyBox();
+    if (s < 0.4) return;
+    box.hidden = false; box.className = 'busypill';
+    box.innerHTML = '<span class="spin"></span><span>กำลัง' + esc(busyWhat) + '… <b>' + Math.floor(s) + ' วิ</b>' + (s > 15 ? '<br><span class="slow">เน็ตช้า รออีกนิด อย่าเพิ่งกดซ้ำ</span>' : '') + '</span>';
+  }
+  function busyEnd(tok, ok){
+    if (!tok || tok.silent) return;
+    if (tok.btn){ tok.btn.classList.remove('isbusy'); tok.btn.removeAttribute('aria-busy'); tok.btn.disabled = false; }
+    busyN = Math.max(0, busyN - 1); if (busyN) return;
+    clearInterval(busyTimer); busyTimer = null;
+    var box = busyBox();
+    var shown = Date.now() - busyT0 >= 400;
+    if (!shown){ box.hidden = true; return; }
+    box.className = 'busypill ' + (ok ? 'done' : 'fail'); box.innerHTML = ok ? '✅ เสร็จแล้ว' : '⚠️ ไม่สำเร็จ — ดูข้อความแจ้งด้านล่าง';
+    setTimeout(function(){ if (!busyN) box.hidden = true; }, ok ? 1200 : 3000);
+  }
   function api(payload){
     if (!API) return Promise.reject(new Error('no-api'));
+    var btok = busyStart(payload);   // v1.81
+    return api0(payload).then(function(j){ busyEnd(btok, true); return j; }, function(e){ busyEnd(btok, false); throw e; });
+  }
+  function api0(payload){
     // ไม่ตั้ง header เอง เพื่อให้เป็น simple request เบราว์เซอร์จะได้ไม่ถาม preflight
     if (PIN && !DEPT_MODE) payload = Object.assign({}, payload, {pin: PIN});
     return fetch(API, { method:'POST', body: JSON.stringify(payload) })
@@ -2541,6 +2586,13 @@
       : !s.group ? '🟡 ใส่ token แล้ว — ใส่ User ID ผู้รับด้านล่าง แล้วกดบันทึก'
       : '🟢 พร้อม — ใบขอเบิกใหม่จะเด้ง' + (s.all ? 'ถึงเพื่อนทุกคนของบอท' + (s.friends ? ' (' + s.friends + ' คน)' : '') + (s.friends > 2 ? ' · <b class="over">เพื่อนเกิน 2 คน เช็คใน LINE OA Manager</b>' : '') : s.users ? 'ถึง ' + s.users + ' คน (ส่งตรง)' : 'เข้ากลุ่ม') + (s.skip ? ' · <b class="over">เดือนนี้ข้ามไป ' + s.skip + ' ใบ เพราะโควตาใกล้เต็ม</b>' : '');
     el('lineTest').hidden = !(s.token && s.group);
+    var q = s.quota, qh = '';   // v1.81 โควตาเดือนนี้ โชว์ค้างบนการ์ด
+    if (q && q.limit){ var pc = Math.round(q.used / q.limit * 100);
+      qh = '<div class="qbar"><div class="qfill' + (pc >= 90 ? ' bad' : pc >= 70 ? ' warn' : '') + '" style="width:' + Math.min(100, pc) + '%"></div></div>'
+        + '<div class="li-meta">📊 โควตาเดือนนี้ใช้ <b>' + fmt(q.used) + ' / ' + fmt(q.limit) + '</b> ข้อความ (' + pc + '%) · เหลือส่งได้ราว <b>' + fmt(Math.max(0, Math.floor((q.limit - q.used) / 2))) + ' ใบ</b> · LINE อัปเดตตัวเลขทุกเช้า · แพ็กเกจฟรี ส่งเกินไม่ได้ ไม่เสียเงิน</div>'; }
+    else if (q && q.type === 'none') qh = '<div class="li-meta">📊 โควตา: ไม่จำกัด</div>';
+    else if (s.token) qh = '<div class="li-meta">📊 โควตา: ยังอ่านไม่ได้ (ลองกดส่งทดสอบ)</div>';
+    var qb = el('lineQuota'); if (qb) qb.innerHTML = qh;
   }
   if (el('lineUsersSave')) el('lineUsersSave').addEventListener('click', function(){   // v1.79
     var b = this, v = (el('lineUsers').value || '').trim(); if (!v){ toast('ใส่ User ID ก่อน', true); return; }
