@@ -424,8 +424,34 @@
   .eqnoimg{padding:28px 0; font-size:40px;}
   .eqfacts{display:grid; grid-template-columns:auto 1fr; gap:6px 12px; margin:10px 0 0;} .eqfacts dt{color:var(--muted); font-size:13px;} .eqfacts dd{margin:0; font-weight:500;}
   .eqtitle{font:700 17px var(--fs); line-height:1.4;}
+  /* v1.76 หน้าขอเบิก: หัวใบย่อ · ปุ่มแลกของเก่า · ช่องค้นหาเด่น · ป๊อปอัป */
+  .wholine{width:100%; display:flex; align-items:center; gap:8px; flex-wrap:wrap; text-align:left; background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:8px 12px; min-height:46px; color:var(--ink); font:500 15px var(--fs);}
+  .wholine.need{border:2px solid #d92d20; background:rgba(217,45,32,.08); font-weight:700;}
+  .wholine .ed{margin-left:auto; color:var(--accent); font-size:13px;}
+  .urgchk{display:inline-flex; gap:6px; align-items:center; padding:5px 12px; border:1px solid var(--line); border-radius:999px; font-size:13px; cursor:pointer;}
+  .urgchk input{width:auto; min-height:0; margin:0;}
+  .urgchk:has(input:checked){background:var(--warn); border-color:var(--warn); color:#fff; font-weight:700;}
+  .replbig{display:block; width:100%; margin:12px 0; padding:14px 16px; border:0; border-radius:12px; background:#e8590c; color:#fff; font:700 18px var(--fs); text-align:left; box-shadow:var(--shadow); cursor:pointer;}
+  .replbig small{display:block; font:400 13px var(--fs); opacity:.95; margin-top:3px; line-height:1.45;}
+  .replbig + .card{margin-top:0;}
+  .searchcard{border:2px solid var(--accent); box-shadow:0 0 0 4px var(--accent-soft);}
+  .searchlbl{font-size:16px !important; font-weight:700; color:var(--accent);}
+  .searchcard #d_q{border:2px solid var(--accent); font-size:17px; min-height:48px;}
+  .minibtn{flex:1 1 150px; width:auto; min-height:42px;}
+  .minibtn.needf{border:2px solid #d92d20; color:#d92d20; font-weight:700;}
+  .pop{position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.45); display:flex; align-items:flex-end; justify-content:center;}
+  .pop[hidden]{display:none;}
+  .popcard{background:var(--surface); width:100%; max-width:560px; max-height:90vh; overflow:auto; border-radius:16px 16px 0 0; padding:14px 16px 22px; box-sizing:border-box;}
+  .pophead{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; font-size:17px;}
+  .popx{width:auto !important; min-height:36px; padding:0 12px;}
+  .rpstep{margin-top:14px; font-weight:700;} .rpstep .need{color:#d92d20;}
+  .rpgrid{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; margin-top:6px;}
+  .rpcard{display:flex; gap:8px; align-items:center; width:100%; padding:8px; border:1.5px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); text-align:left; font:500 13px var(--fs); min-height:58px; cursor:pointer;}
+  .rpcard.on{border-color:#e8590c; background:rgba(232,89,12,.1); box-shadow:inset 0 0 0 2px #e8590c;}
+  .rpcard img, .rpcard .ph{width:44px; height:44px; flex:none; border-radius:8px; object-fit:cover; display:grid; place-items:center; background:var(--surface-2);}
+  .rpcard .li-meta{font-size:12px;}
   .replbox{margin-top:6px;} .replbox.on{padding:8px; border:1.5px dashed var(--warn); border-radius:10px; background:color-mix(in srgb, var(--warn) 8%, transparent);}
-  .replbox select{margin-top:6px;} .replchk{display:flex; gap:6px; align-items:center; font-size:13px;} .replchk input{width:auto; min-height:0;}
+  .replbox select{margin-top:6px;} .replchk{display:inline-flex; gap:6px; align-items:center; font-size:13px; font-weight:700; color:#e8590c; border:1.5px solid #e8590c; border-radius:999px; padding:5px 12px; cursor:pointer;} .replchk input{width:auto; min-height:0; margin:0;} .replbox.on .replchk{background:#e8590c; color:#fff;}
   .replpay{margin-top:6px; padding:8px 10px; border-left:4px solid var(--warn); border-radius:8px; background:color-mix(in srgb, var(--warn) 10%, transparent);}
   .replflag{margin-top:6px; padding:6px 10px; border-radius:8px; background:var(--warn); color:#fff; font-size:13px;}
   .eqbackbar{position:sticky; top:-14px; z-index:6; display:flex; align-items:center; justify-content:space-between; gap:8px; margin:-14px -16px 10px; padding:10px 16px; background:var(--ground); border-bottom:1px solid var(--line);}
@@ -536,7 +562,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.75</span>
+      <span class="ver" id="appVer">v1.76</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -559,7 +585,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.75 · อัปเดต 15/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.76 · อัปเดต 15/10/2026</div>
     </div>
   </header>
 
@@ -696,43 +722,68 @@
     </section>
     <!-- ── v1.6 มุมมองแผนก: ขอเบิก ── -->
     <section id="v-req" hidden>
-      <div class="card">
-        <h2>ขอเบิกวัสดุสิ้นเปลือง</h2>
-        <div class="note" id="d_cut" style="margin:0 0 10px"></div>
-        <div class="row" style="gap:8px; flex-wrap:wrap">
-          <div style="flex:1 1 140px"><label class="fld" for="d_dept">แผนก *</label><select id="d_dept"></select></div>
-          <div style="flex:1 1 140px"><label class="fld" for="d_who">ชื่อผู้ขอ *</label>
-            <input type="text" id="d_who" placeholder="ชื่อเล่นก็ได้" autocomplete="off"></div>
+      <!-- v1.76 หัวใบแบบย่อ: แตะเพื่อแก้แผนก/ชื่อ · ด่วนเป็นติ๊ก -->
+      <div class="card whocard">
+        <button type="button" class="wholine" id="d_whoLine"></button>
+        <div class="row" style="gap:8px; margin-top:8px; align-items:center; flex-wrap:wrap">
+          <label class="urgchk"><input type="checkbox" id="d_urgent"> ⚡ ด่วนนอกรอบ</label>
+          <span class="note" id="d_cut" style="margin:0; flex:1 1 200px"></span>
         </div>
-        <div style="margin-top:10px"><label class="fld" for="d_round">รอบ</label>
-          <select id="d_round"><option>ในรอบศุกร์</option><option>ด่วนนอกรอบ</option></select></div>
+        <select id="d_round" hidden><option>ในรอบศุกร์</option><option>ด่วนนอกรอบ</option></select>
       </div>
+      <button type="button" class="replbig" id="d_replBig">🔁 แลกของเก่าที่ชำรุด<small>เอาตัวเก่า (ซาก) มาคืน PC แล้วรับตัวใหม่ — เลือกตัวเก่า · ถ่ายรูปซาก · เลือกตัวใหม่ จบในหน้าเดียว</small></button>
       <div class="card" id="d_quickCard">
         <div id="d_quick"></div>
       </div>
-      <div class="card">
-        <label class="fld" for="d_q">ค้นหาของที่จะขอ</label>
-        <div class="searchrow"><input type="text" id="d_q" placeholder="เช่น ถุงมือ, ใบเจียร" autocomplete="off"><button type="button" class="ghost" id="d_scan">📷 สแกน</button></div>
+      <div class="card searchcard">
+        <label class="fld searchlbl" for="d_q">🔍 ค้นหาของที่จะขอ</label>
+        <div class="searchrow"><input type="text" id="d_q" placeholder="พิมพ์ชื่อ เช่น ถุงมือ, ใบเจียร" autocomplete="off"><button type="button" class="ghost" id="d_scan">📷 สแกน</button></div>
         <div class="note" id="d_qhint" style="margin:6px 0 0">พิมพ์ชื่อหรือรหัส เช่น ถุงมือ, cs071 · อยากเลื่อนดูทั้งหมด แตะแท็บ <b>รายการ</b> ข้างล่าง</div>
         <ul class="list" id="d_list" style="margin-top:6px"></ul>
       </div>
       <div class="card">
         <h2>ใบขอเบิก <span id="d_n" class="note" style="margin:0"></span></h2>
         <div id="d_cart"></div>
-        <div class="xbox2" style="margin-top:12px"><b>🆕 ของที่ไม่มีในระบบ</b> <span class="note" style="margin:0">ค้นไม่เจอ — บอกลักษณะกับใช้ทำอะไร ให้ PC ตัดสินใจ</span>
-          <div id="d_extra"></div>
-          <input type="text" id="d_xname" placeholder="ชื่อของ เช่น ประแจแหวน" autocomplete="off" style="margin-top:6px">
-          <textarea id="d_xspec" rows="2" placeholder="ลักษณะ: ยี่ห้อ / ขนาด / รุ่น / สี / วัสดุ (ถ้ารู้) เช่น เบอร์ 17 มม. ด้ามยาว" style="margin-top:6px; width:100%; box-sizing:border-box"></textarea>
-          <textarea id="d_xuse" rows="2" placeholder="ใช้ทำอะไร * เช่น ขันน็อตเครื่อง CNC ไลน์ 2 · ใช้แทนของเดิมที่หัก · ใช้บ่อยแค่ไหน" style="margin-top:6px; width:100%; box-sizing:border-box"></textarea>
-          <div class="row" style="gap:6px; margin-top:6px"><input type="number" id="d_xqty" inputmode="decimal" min="0" placeholder="จำนวน *" style="flex:1; min-width:0"><input type="text" id="d_xunit" list="units" placeholder="หน่วย" autocomplete="off" style="flex:1; min-width:0"></div>
-          <button type="button" class="ghost" id="d_xadd" style="margin-top:6px; width:100%">+ เพิ่มของนอกระบบเข้าใบ</button></div>
-        <div style="margin-top:10px"><label class="fld" for="d_note">หมายเหตุ (ถ้ามี)</label>
-          <input type="text" id="d_note" placeholder="เช่น ใช้กับงานซ่อมไลน์ 2" autocomplete="off">
-          <div class="row" style="gap:8px; margin-top:6px; align-items:center"><button type="button" class="ghost" id="d_photoBtn" style="width:auto; padding:0 14px; white-space:nowrap; flex:none">📷 แนบรูป</button><span class="note" style="margin:0">ใบละไม่เกิน 3 รูป เช่น ของเก่าที่พัง / จุดที่จะใช้</span></div>
-          <input type="file" id="d_photo" accept="image/*" multiple hidden>
-          <div id="d_photos" class="row" style="gap:6px; margin-top:6px; flex-wrap:wrap"></div></div>
+        <div id="d_extra" style="margin-top:6px"></div>
+        <div class="row" style="gap:8px; margin-top:10px; flex-wrap:wrap">
+          <button type="button" class="ghost minibtn" id="d_xOpen">🆕 ขอของที่ไม่มีในระบบ</button>
+          <button type="button" class="ghost minibtn" id="d_noteOpen">📝 หมายเหตุ / รูปแนบ</button>
+        </div>
+        <div class="note" id="d_noteSum" style="margin:6px 0 0" hidden></div>
         <div style="margin-top:14px"><button class="primary" id="d_send">ส่งใบขอเบิกให้ PC</button></div>
       </div>
+
+      <!-- v1.76 ป๊อปอัป -->
+      <div class="pop" id="pop_who" hidden><div class="popcard">
+        <div class="pophead"><b>แผนก / ผู้ขอ</b><button type="button" class="ghost popx" data-popclose aria-label="ปิด">✕</button></div>
+        <label class="fld" for="d_dept">แผนก *</label><select id="d_dept"></select>
+        <label class="fld" for="d_who" style="margin-top:10px">ชื่อผู้ขอ *</label><input type="text" id="d_who" placeholder="ชื่อเล่นก็ได้" autocomplete="off">
+        <button type="button" class="primary" data-popclose style="margin-top:14px">ตกลง</button>
+      </div></div>
+      <div class="pop" id="pop_x" hidden><div class="popcard">
+        <div class="pophead"><b>🆕 ขอของที่ไม่มีในระบบ</b><button type="button" class="ghost popx" data-popclose aria-label="ปิด">✕</button></div>
+        <div class="note" style="margin:0">ค้นไม่เจอ — บอกลักษณะกับใช้ทำอะไร ให้ PC ตัดสินใจ</div>
+        <input type="text" id="d_xname" placeholder="ชื่อของ * เช่น ประแจแหวน" autocomplete="off" style="margin-top:8px">
+        <textarea id="d_xspec" rows="2" placeholder="ลักษณะ: ยี่ห้อ / ขนาด / รุ่น / สี / วัสดุ (ถ้ารู้) เช่น เบอร์ 17 มม. ด้ามยาว" style="margin-top:6px; width:100%; box-sizing:border-box"></textarea>
+        <textarea id="d_xuse" rows="2" placeholder="ใช้ทำอะไร * เช่น ขันน็อตเครื่อง CNC ไลน์ 2 · ใช้บ่อยแค่ไหน" style="margin-top:6px; width:100%; box-sizing:border-box"></textarea>
+        <div class="row" style="gap:6px; margin-top:6px"><input type="number" id="d_xqty" inputmode="decimal" min="0" placeholder="จำนวน *" style="flex:1; min-width:0"><input type="text" id="d_xunit" list="units" placeholder="หน่วย" autocomplete="off" style="flex:1; min-width:0"></div>
+        <button type="button" class="primary" id="d_xadd" style="margin-top:10px; width:100%">+ เพิ่มเข้าใบ</button>
+      </div></div>
+      <div class="pop" id="pop_note" hidden><div class="popcard">
+        <div class="pophead"><b>📝 หมายเหตุ / รูปแนบ</b><button type="button" class="ghost popx" data-popclose aria-label="ปิด">✕</button></div>
+        <label class="fld" for="d_note">หมายเหตุ (ถ้ามี)</label>
+        <input type="text" id="d_note" placeholder="เช่น ใช้กับงานซ่อมไลน์ 2" autocomplete="off">
+        <div class="fld" style="margin-top:10px">รูปแนบ <span class="note" style="margin:0">ใบละไม่เกิน 3 รูป เช่น ของเก่าที่พัง / จุดที่จะใช้</span></div>
+        <div class="row" style="gap:8px; margin-top:4px"><button type="button" class="ghost" id="d_camBtn" style="flex:1">📷 ถ่ายรูป</button><button type="button" class="ghost" id="d_photoBtn" style="flex:1">🖼️ เลือกรูปในเครื่อง</button></div>
+        <input type="file" id="d_photo" accept="image/*" multiple hidden>
+        <input type="file" id="d_photoCam" accept="image/*" capture="environment" hidden>
+        <div id="d_photos" class="row" style="gap:6px; margin-top:8px; flex-wrap:wrap"></div>
+        <button type="button" class="primary" data-popclose style="margin-top:14px">ตกลง</button>
+      </div></div>
+      <div class="pop" id="pop_repl" hidden><div class="popcard">
+        <div class="pophead"><b>🔁 แลกของเก่าที่ชำรุด</b><button type="button" class="ghost popx" data-popclose aria-label="ปิด">✕</button></div>
+        <div id="rp_body"></div>
+      </div></div>
     </section>
 
     <!-- ── v1.33 มุมมองแผนก: รายการทั้งหมดที่ขอได้ (เหมือนทะเบียน แต่กดเพิ่มเข้าใบได้) ── -->
@@ -2514,7 +2565,7 @@
       h += '<select data-rpsel="' + kind + i + '"' + (val === '' ? ' class="needf"' : '') + '><option value="">— เลือกตัวเก่าที่จะเอามาคืน * —</option>'
         + opts.map(function(e){ return '<option value="' + esc(e.code) + '"' + (val === e.code ? ' selected' : '') + '>' + esc(e.code + ' · ' + e.name + (e.holder ? ' · ' + e.holder : '') + (e.st !== 'ใช้งาน' ? ' (' + e.st + ')' : '')) + '</option>'; }).join('')
         + '<option value="NOREG:"' + (/^NOREG:/.test(val) ? ' selected' : '') + '>ไม่อยู่ในทะเบียน / หาในรายการไม่เจอ</option></select>'
-        + '<div class="li-meta">ต้องเอาตัวเก่ามาคืน PC ตอนรับของ · <b>แนบรูปตัวเก่า</b>ที่ช่องรูปแนบใบด้านล่าง</div>';
+        + '<div class="li-meta">ต้องเอาตัวเก่ามาคืน PC ตอนรับของ · <b>ถ่ายรูปซาก</b>ที่ปุ่ม 📝 หมายเหตุ / รูปแนบ</div>';
     }
     return '<div class="replbox' + (on ? ' on' : '') + '">' + h + '</div>';
   }
@@ -2719,6 +2770,7 @@
     if (!el('v-list').hidden) renderList();
     if (el('v-req').hidden) return;
     el('d_cut').innerHTML = cutText();
+    renderWho();   // v1.76
     var sel_ = el('d_dept');
     if (!sel_.options.length){
       sel_.innerHTML = '<option value="">— เลือกแผนก —</option>' + DEPTS.map(function(d){ return '<option>' + esc(d) + '</option>'; }).join('');
@@ -2742,7 +2794,7 @@
         + '</div><span class="addbtn' + (inCart ? ' in' : '') + '" aria-label="' + (inCart ? 'อยู่ในใบแล้ว' : 'เพิ่ม') + '">' + (inCart ? '✓' : '+') + '</span></div></li>';
     }).join('') || '<li class="empty">ไม่พบ "' + esc(q) + '" — ลองคำอื่น หรือ <button type="button" class="ghost" data-xfill style="width:auto; min-height:32px; padding:0 10px">🆕 ขอเป็นของนอกระบบ</button></li>';   // v1.61
     var xf = el('d_list').querySelector('[data-xfill]');
-    if (xf) xf.addEventListener('click', function(){ el('d_xname').value = el('d_q').value.trim(); el('d_xspec').focus(); el('d_xname').scrollIntoView({block:'center', behavior:'smooth'}); });
+    if (xf) xf.addEventListener('click', function(){ el('d_xname').value = el('d_q').value.trim(); openPop('pop_x'); el('d_xspec').focus(); });   // v1.76 ป๊อปอัป
     el('d_list').querySelectorAll('[data-add]').forEach(function(li){
       li.addEventListener('click', function(){
         var it = getSku(li.getAttribute('data-add')); if (!it) return;
@@ -2784,20 +2836,20 @@
     el('d_send').addEventListener('click', function(){
       var dept = el('d_dept').value, rw = (el('d_who').value || '').trim();
       var lines = cart.filter(function(c){ return c.qty > 0; }).map(function(c){ var it = getSku(c.sku); return {sku: c.sku, name: it ? it.name : c.name, unit: it ? (it.unit || '') : c.unit, qty: c.qty, repl: replOut(c)}; });
-      if (!dept){ toast('เลือกแผนกก่อน', true); el('d_dept').focus(); return; }
-      if (!rw){ toast('ใส่ชื่อผู้ขอก่อน', true); el('d_who').focus(); return; }
-      if ((el('d_xname').value || '').trim() && !dxAdd()) return;   // พิมพ์ของนอกระบบไว้แต่ลืมกดเพิ่ม → ใส่ให้ (ถ้ายังไม่ครบ บอกให้กรอก)
+      if (!dept){ toast('เลือกแผนกก่อน', true); openPop('pop_who'); el('d_dept').focus(); return; }
+      if (!rw){ toast('ใส่ชื่อผู้ขอก่อน', true); openPop('pop_who'); el('d_who').focus(); return; }
+      if ((el('d_xname').value || '').trim() && !dxAdd()){ openPop('pop_x'); return; }   // พิมพ์ของนอกระบบไว้แต่ลืมกดเพิ่ม → ใส่ให้ (ถ้ายังไม่ครบ บอกให้กรอก)
       if (!lines.length && !dExtra.length){ toast('ยังไม่มีของในใบ', true); el('d_q').focus(); return; }
       var rpAll = cart.filter(function(c){ return c.qty > 0; }).concat(dExtra).filter(function(o){ return o.repl != null; });   // v1.75 แลกของเก่า
       if (rpAll.some(function(o){ return o.repl === ''; })){ toast('เลือกตัวเก่าที่จะเอามาแลกก่อน (หาไม่เจอ เลือก "ไม่อยู่ในทะเบียน")', true); var ns = document.querySelector('[data-rpsel].needf'); if (ns){ ns.scrollIntoView({block:'center', behavior:'smooth'}); ns.focus(); } return; }
-      if (rpAll.length && !dPhotos.length){ toast('แลกของเก่า — แนบรูปตัวเก่าที่ชำรุดก่อน อย่างน้อย 1 รูป', true); el('d_photoBtn').scrollIntoView({block:'center', behavior:'smooth'}); return; }
+      if (rpAll.length && !dPhotos.length){ toast('แลกของเก่า — ถ่ายรูปตัวเก่าที่ชำรุดก่อน อย่างน้อย 1 รูป', true); openPop('pop_note'); return; }
       lsSetRaw(K_DEPT, dept); lsSetRaw(K_RWHO, rw);
       reqAction({action:'request', req:{dept:dept, who:rw, round:el('d_round').value, note:(el('d_note').value || '').trim(), lines:lines, extra:dExtra.map(function(x){ return Object.assign({}, x, {repl: replOut(x)}); }), photos:dPhotos}},
                 '', el('d_send')).then(function(j){
         if (!j) return;
         if (!j.reqNo){ toast('ส่งไม่สำเร็จ — ระบบฝั่ง Sheet ยังไม่อัปเดต แจ้ง PC', true); return; }
         toast('ส่งใบ ' + j.reqNo + ' ให้ PC แล้ว');
-        cart = []; saveCart(); el('d_note').value = ''; el('d_q').value = ''; el('d_round').value = 'ในรอบศุกร์';
+        cart = []; saveCart(); el('d_note').value = ''; el('d_q').value = ''; el('d_round').value = 'ในรอบศุกร์'; el('d_urgent').checked = false; renderNoteSum();
         dExtra = []; lsSet('pcscan_dextra', dExtra); dPhotos = []; renderDExtra(); renderDPhotos();   // v1.61
         show('t-mine');
       });
@@ -2827,19 +2879,119 @@
     var box = el('d_photos'); if (!box) return;
     box.innerHTML = dPhotos.map(function(d, i){ return '<div class="dphoto"><img src="' + d + '" alt="รูปแนบ ' + (i + 1) + '"><button type="button" class="ghost" data-pdel="' + i + '" aria-label="ลบรูป">×</button></div>'; }).join('');
     box.querySelectorAll('[data-pdel]').forEach(function(b){ b.addEventListener('click', function(){ dPhotos.splice(+b.getAttribute('data-pdel'), 1); renderDPhotos(); }); });
-    if (el('d_photoBtn')) el('d_photoBtn').textContent = '📷 แนบรูป' + (dPhotos.length ? ' (' + dPhotos.length + '/3)' : '');
+    renderNoteSum(); if (el('pop_repl') && !el('pop_repl').hidden) renderReplPop();   // v1.76
     var needP = !dPhotos.length && cart.concat(dExtra).some(function(o){ return o.repl != null; });   // v1.75
-    if (el('d_photoBtn')) el('d_photoBtn').classList.toggle('needf', needP);
+    if (el('d_noteOpen')) el('d_noteOpen').classList.toggle('needf', needP);
   }
   if (DEPT_MODE && el('d_xadd')){
-    el('d_xadd').addEventListener('click', function(){ if (dxAdd()) toast('เพิ่มของนอกระบบเข้าใบแล้ว'); });
+    el('d_xadd').addEventListener('click', function(){ if (dxAdd()){ toast('เพิ่มของนอกระบบเข้าใบแล้ว'); closePop('pop_x'); } });
     el('d_photoBtn').addEventListener('click', function(){ if (dPhotos.length >= 3){ toast('แนบได้ใบละ 3 รูป — ลบรูปเดิมก่อน', true); return; } el('d_photo').click(); });
-    el('d_photo').addEventListener('change', function(){
-      var fs = [].slice.call(this.files || [], 0, 3 - dPhotos.length), inp = this;
-      Promise.all(fs.map(shrink)).then(function(ds){ dPhotos = dPhotos.concat(ds).slice(0, 3); renderDPhotos(); })['catch'](function(e){ toast((e && e.message) || 'อ่านรูปไม่ได้', true); })
-        .then(function(){ inp.value = ''; });
-    });
+    el('d_camBtn').addEventListener('click', function(){ if (dPhotos.length >= 3){ toast('แนบได้ใบละ 3 รูป — ลบรูปเดิมก่อน', true); return; } el('d_photoCam').click(); });   // v1.76 ถ่ายรูปตรงๆ
+    el('d_photo').addEventListener('change', function(){ addPhotoFiles(this); });
+    el('d_photoCam').addEventListener('change', function(){ addPhotoFiles(this); });
     renderDExtra(); renderDPhotos();
+  }
+
+  /* ---------- v1.76 หน้าขอเบิกแบบโล่ง: ป๊อปอัป แผนก/ชื่อ · ของนอกระบบ · หมายเหตุ/รูป · แลกของเก่า (ขั้นตอนเดียว) ---------- */
+  function openPop(id){ var p = el(id); if (!p) return; p.hidden = false; if (id === 'pop_repl') renderReplPop(); }
+  function closePop(id){ var p = el(id); if (!p || p.hidden) return; p.hidden = true; if (id === 'pop_who'){ renderReq(); } }
+  function renderWho(){
+    var b = el('d_whoLine'); if (!b) return;
+    var d = el('d_dept').value, w = (el('d_who').value || '').trim(), urg = el('d_round').value === 'ด่วนนอกรอบ';
+    if (el('d_urgent')) el('d_urgent').checked = urg;
+    b.classList.toggle('need', !d || !w);
+    b.innerHTML = (!d || !w) ? '👉 แตะเพื่อเลือก<b>แผนก</b> + ใส่<b>ชื่อผู้ขอ</b>' + (d ? ' · ' + deptChip(d) : '') + (w ? ' · ' + esc(w) : '')
+      : deptChip(d) + '<span>' + esc(w) + '</span><span class="ed">✏️ เปลี่ยน</span>';
+  }
+  function renderNoteSum(){
+    var s = el('d_noteSum'); if (!s) return;
+    var n = (el('d_note').value || '').trim(), k = dPhotos.length;
+    s.hidden = !n && !k;
+    s.innerHTML = (n ? 'หมายเหตุ: ' + esc(n) : '') + (n && k ? ' · ' : '') + (k ? '📷 รูปแนบ ' + k + ' รูป' : '');
+    if (el('d_noteOpen')) el('d_noteOpen').textContent = '📝 หมายเหตุ / รูปแนบ' + (k ? ' (' + k + ')' : '');
+  }
+  function addPhotoFiles(inp){
+    var fs = [].slice.call(inp.files || [], 0, 3 - dPhotos.length);
+    Promise.all(fs.map(shrink)).then(function(ds){ dPhotos = dPhotos.concat(ds).slice(0, 3); renderDPhotos(); })['catch'](function(e){ toast((e && e.message) || 'อ่านรูปไม่ได้', true); })
+      .then(function(){ inp.value = ''; });
+  }
+  var RP = {old: '', noreg: false, oldName: '', sku: '', xnew: false, xname: '', xuse: '', q: ''};
+  function rpReset(){ RP = {old: '', noreg: false, oldName: '', sku: '', xnew: false, xname: '', xuse: '', q: ''}; }
+  function rpResults(){
+    var q = (RP.q || '').trim().toLowerCase(); if (!q) return '<div class="li-meta" style="margin-top:4px">พิมพ์ชื่อตัวใหม่ เช่น ไฟฉาย</div>';
+    var rows = exactFirst(ITEMS.filter(function(it){ return !isHidden(it) && !it.off && itemMatch(it, q); }), q).slice(0, 6);
+    return '<div class="rpgrid">' + rows.map(function(it){
+      return '<button type="button" class="rpcard' + (RP.sku === it.sku ? ' on' : '') + '" data-rpsku="' + esc(it.sku) + '">' + thumb(it) + '<span><b>' + esc(it.name) + '</b><div class="li-meta">' + esc(it.sku) + ' · มี ' + fmt(Math.max(0, onHand(it))) + ' ' + esc(it.unit || '') + '</div></span></button>';
+    }).join('') + '<button type="button" class="rpcard' + (RP.xnew ? ' on' : '') + '" data-rpxnew><span class="ph">🆕</span><span><b>ไม่มีในระบบ</b><div class="li-meta">พิมพ์ชื่อเอง ให้ PC จัดหา</div></span></button></div>';
+  }
+  function renderReplPop(){
+    var b = el('rp_body'); if (!b) return;
+    var dept = el('d_dept').value, mine = EQPUB.filter(function(e){ return e.dept === dept; }), it = RP.sku ? getSku(RP.sku) : null;
+    var h = '<div class="note" style="margin:0">ของใช้ของ <b>' + esc(dept) + '</b> · ต้องเอาตัวเก่า (ซาก) มาคืน PC ตอนรับของ</div>'
+      + '<div class="rpstep">① ตัวเก่าตัวไหน' + (RP.old || RP.noreg ? ' ✅' : ' <span class="need">*</span>') + '</div>'
+      + '<div class="rpgrid">' + mine.map(function(e){
+          return '<button type="button" class="rpcard' + (RP.old === e.code ? ' on' : '') + '" data-rpold="' + esc(e.code) + '">' + (e.photo ? '<img alt="" loading="lazy" src="' + imgUrl(e.photo, 120) + '">' : '<span class="ph">🧰</span>')
+            + '<span><b>' + esc(e.name) + '</b><div class="li-meta">' + esc(e.code + (e.holder ? ' · ' + e.holder : '') + (e.st !== 'ใช้งาน' ? ' · ' + e.st : '')) + '</div></span></button>';
+        }).join('')
+      + '<button type="button" class="rpcard' + (RP.noreg ? ' on' : '') + '" data-rpnoreg><span class="ph">❓</span><span><b>ไม่อยู่ในรายการ</b><div class="li-meta">ยังไม่ขึ้นทะเบียน / หาไม่เจอ</div></span></button></div>'
+      + (RP.noreg ? '<input type="text" id="rp_oldName" value="' + esc(RP.oldName) + '" placeholder="ตัวเก่าคืออะไร เช่น ไฟฉายคาดหัว (ถ้ารู้)" autocomplete="off" style="margin-top:6px">' : '')
+      + '<div class="rpstep">② ถ่ายรูปซาก' + (dPhotos.length ? ' ✅' : ' <span class="need">*</span>') + '</div>'
+      + '<div class="row" style="gap:8px; margin-top:6px"><button type="button" class="ghost" data-rpcam style="flex:1">📷 ถ่ายรูป</button><button type="button" class="ghost" data-rpgal style="flex:1">🖼️ เลือกรูปในเครื่อง</button></div>'
+      + (dPhotos.length ? '<div class="row" style="gap:6px; margin-top:6px; flex-wrap:wrap">' + dPhotos.map(function(d){ return '<img src="' + d + '" alt="รูปซาก" style="width:64px; height:64px; object-fit:cover; border-radius:8px">'; }).join('') + '</div>' : '')
+      + '<div class="rpstep">③ ตัวใหม่ที่จะขอ' + (it || (RP.xnew && RP.xname) ? ' ✅' : ' <span class="need">*</span>') + '</div>'
+      + (it ? '<div class="li-meta" style="margin-top:4px">เลือกแล้ว: <b>' + esc(it.name) + '</b> (' + esc(it.sku) + ') × 1</div>' : '')
+      + '<input type="text" id="rp_q" value="' + esc(RP.q) + '" placeholder="🔍 ค้นหาตัวใหม่" autocomplete="off" style="margin-top:6px"><div id="rp_res">' + rpResults() + '</div>'
+      + (RP.xnew ? '<input type="text" id="rp_xname" value="' + esc(RP.xname) + '" placeholder="ชื่อตัวใหม่ *" autocomplete="off" style="margin-top:6px"><input type="text" id="rp_xuse" value="' + esc(RP.xuse) + '" placeholder="ใช้ทำอะไร (ถ้าเหมือนเดิมเว้นได้)" autocomplete="off" style="margin-top:6px">' : '')
+      + '<button type="button" class="primary" id="rp_ok" style="margin-top:16px">✅ ใส่ลงใบขอเบิก</button>';
+    b.innerHTML = h;
+    b.querySelectorAll('[data-rpold]').forEach(function(x){ x.addEventListener('click', function(){
+      RP.old = x.getAttribute('data-rpold'); RP.noreg = false;
+      var e = EQPUB.filter(function(z){ return z.code === RP.old; })[0];
+      if (e && !RP.q && !RP.sku){ RP.q = e.name.split(/\s+/)[0]; }
+      renderReplPop(); }); });
+    var nr = b.querySelector('[data-rpnoreg]'); if (nr) nr.addEventListener('click', function(){ RP.noreg = true; RP.old = ''; renderReplPop(); var t = el('rp_oldName'); if (t) t.focus(); });
+    var on = el('rp_oldName'); if (on) on.addEventListener('input', function(){ RP.oldName = on.value; });
+    b.querySelector('[data-rpcam]').addEventListener('click', function(){ if (dPhotos.length >= 3){ toast('รูปครบ 3 รูปแล้ว', true); return; } el('d_photoCam').click(); });
+    b.querySelector('[data-rpgal]').addEventListener('click', function(){ if (dPhotos.length >= 3){ toast('รูปครบ 3 รูปแล้ว', true); return; } el('d_photo').click(); });
+    function bindRes(){
+      el('rp_res').querySelectorAll('[data-rpsku]').forEach(function(x){ x.addEventListener('click', function(){ RP.sku = x.getAttribute('data-rpsku'); RP.xnew = false; renderReplPop(); }); });
+      var xn = el('rp_res').querySelector('[data-rpxnew]'); if (xn) xn.addEventListener('click', function(){ RP.xnew = true; RP.sku = ''; if (!RP.xname) RP.xname = RP.q; renderReplPop(); var t = el('rp_xname'); if (t) t.focus(); });
+    }
+    bindRes();
+    el('rp_q').addEventListener('input', function(){ RP.q = this.value; el('rp_res').innerHTML = rpResults(); bindRes(); });
+    ['rp_xname', 'rp_xuse'].forEach(function(id){ var t = el(id); if (t) t.addEventListener('input', function(){ RP[id === 'rp_xname' ? 'xname' : 'xuse'] = t.value; }); });
+    el('rp_ok').addEventListener('click', rpCommit);
+  }
+  function rpCommit(){
+    if (!RP.old && !RP.noreg){ toast('① เลือกตัวเก่าก่อน (ไม่เจอ เลือก "ไม่อยู่ในรายการ")', true); return; }
+    if (!dPhotos.length){ toast('② ถ่ายรูปซากตัวเก่าก่อน อย่างน้อย 1 รูป', true); return; }
+    var it = RP.sku ? getSku(RP.sku) : null, xn = (RP.xname || '').trim();
+    if (!it && !(RP.xnew && xn)){ toast('③ เลือกตัวใหม่ที่จะขอก่อน', true); return; }
+    var newName = it ? it.name : xn;
+    var ref = RP.old || ('NOREG:' + ((RP.oldName || '').trim() || newName + ' (ตัวเก่า)'));
+    if (it){
+      var c = cart.filter(function(x){ return x.sku === it.sku; })[0];
+      if (c) c.repl = ref; else cart.push({sku: it.sku, name: it.name, unit: it.unit || '', qty: 1, repl: ref});
+      saveCart();
+    } else {
+      dExtra.push({name: xn, qty: 1, unit: '', spec: 'แลกของเก่าที่ชำรุด', use: (RP.xuse || '').trim() || 'ใช้แทนตัวเก่าที่ชำรุด', repl: ref}); lsSet('pcscan_dextra', dExtra);
+    }
+    rpReset(); closePop('pop_repl'); renderReq(); renderDExtra();
+    toast('🔁 ใส่ลงใบแล้ว — ' + newName.slice(0, 30) + ' (แลกของเก่า) · กดส่งใบได้เลย');
+    var cc = el('d_cart'); if (cc) cc.scrollIntoView({block: 'center', behavior: 'smooth'});
+  }
+  if (DEPT_MODE && el('d_whoLine')){
+    document.querySelectorAll('.pop').forEach(function(p){
+      p.addEventListener('click', function(e){ if (e.target === p) closePop(p.id); });
+      p.querySelectorAll('[data-popclose]').forEach(function(x){ x.addEventListener('click', function(){ closePop(p.id); }); });
+    });
+    el('d_whoLine').addEventListener('click', function(){ openPop('pop_who'); });
+    el('d_urgent').addEventListener('change', function(){ el('d_round').value = this.checked ? 'ด่วนนอกรอบ' : 'ในรอบศุกร์'; renderWho(); });
+    el('d_xOpen').addEventListener('click', function(){ if (needDept()) return; openPop('pop_x'); setTimeout(function(){ el('d_xname').focus(); }, 50); });
+    el('d_noteOpen').addEventListener('click', function(){ openPop('pop_note'); });
+    el('d_note').addEventListener('input', renderNoteSum);
+    el('d_replBig').addEventListener('click', function(){ if (needDept()) return; openPop('pop_repl'); });
+    renderNoteSum();
   }
 
   /* ---------- มุมมองแผนก: ใบของแผนก ---------- */
@@ -4441,11 +4593,11 @@
 
   /* ================= v1.25 ฝั่งแผนก: ขอแบบใบเก่า · ของที่ขอบ่อย · สแกนเพิ่มของ ================= */
   function deptNow(){ return (el('d_dept') && el('d_dept').value) || lsGetRaw(K_DEPT) || ''; }
-  function needDept(){             // v1.33 ยังไม่เลือกไลน์ = พาไปเลือกก่อน
+  function needDept(){             // v1.33 ยังไม่เลือกไลน์ = พาไปเลือกก่อน · v1.76 เปิดป๊อปอัปแผนก
     var s = el('d_dept'); if (s && s.value) return false;
     toast('เลือกไลน์ (แผนก) ก่อน แล้วค่อยเพิ่มของ', true);
     if (curTab !== 't-req') show('t-req');
-    if (s){ s.classList.add('needdept'); s.scrollIntoView({block: 'center', behavior: 'smooth'}); setTimeout(function(){ try { s.focus(); } catch(e){} }, 350); }
+    if (s){ s.classList.add('needdept'); openPop('pop_who'); setTimeout(function(){ try { s.focus(); } catch(e){} }, 350); }
     try { if (navigator.vibrate) navigator.vibrate([40, 60, 40]); } catch(e){}
     return true;
   }
