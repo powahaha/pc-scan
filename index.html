@@ -424,6 +424,8 @@
   .eqnoimg{padding:28px 0; font-size:40px;}
   .eqfacts{display:grid; grid-template-columns:auto 1fr; gap:6px 12px; margin:10px 0 0;} .eqfacts dt{color:var(--muted); font-size:13px;} .eqfacts dd{margin:0; font-weight:500;}
   .eqtitle{font:700 17px var(--fs); line-height:1.4;}
+  .eqbackbar{position:sticky; top:-14px; z-index:6; display:flex; align-items:center; justify-content:space-between; gap:8px; margin:-14px -16px 10px; padding:10px 16px; background:var(--ground); border-bottom:1px solid var(--line);}
+  .eqbackbar button{width:auto; min-height:38px; padding:0 14px;}
   .eqrepl{margin-top:12px; display:grid; gap:8px;}
   .eqlink{display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px dashed var(--accent); border-radius:10px; cursor:pointer;}
   .eqform{margin-top:10px;} .eqprev{max-width:100%; max-height:160px; margin-top:6px; border-radius:8px;}
@@ -530,7 +532,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.73</span>
+      <span class="ver" id="appVer">v1.74</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -553,7 +555,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.73 · อัปเดต 15/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.74 · อัปเดต 15/10/2026</div>
     </div>
   </header>
 
@@ -1271,6 +1273,7 @@
   })();
   var curTab = '', listScroll = 0;
   function show(which){
+    if (which === 't-eq' && curTab === 't-eq' && eqView){ eqCloseDetail(); return; }   // v1.74 แตะแท็บของใช้ซ้ำ = กลับรายการ
     var mainEl = document.querySelector('main');           // v1.33 แท็บรายการจำตำแหน่งเลื่อนไว้ กลับมาเจอที่เดิม
     if (mainEl && curTab !== which){ if (curTab === 't-list') listScroll = mainEl.scrollTop; }
     var changed = curTab !== which; curTab = which;
@@ -3258,14 +3261,35 @@
       });
     });
     b.querySelectorAll('[data-ltap]').forEach(function(h){ h.addEventListener('click', function(){ var k = h.parentNode.getAttribute('data-line'); eqLines[k] = !eqLines[k]; lsSet('pcscan_eqlines', eqLines); renderEq(); }); });
-    b.querySelectorAll('.eqitem').forEach(function(r){ r.addEventListener('click', function(){ eqView = r.getAttribute('data-code'); eqForm = null; eqTmp = {}; renderEq(); window.scrollTo(0, 0); }); });
+    b.querySelectorAll('.eqitem').forEach(function(r){ r.addEventListener('click', function(){ eqOpenDetail(r.getAttribute('data-code'), true); }); });
   }
+  // v1.74 เข้า/ออกหน้ารายละเอียด: จำตำแหน่งเลื่อนของรายการ · ปุ่มย้อนกลับของมือถือ = กลับรายการ · เลื่อนขึ้นบนสุดของ main (ตัวที่เลื่อนจริง)
+  var eqListScroll = 0, eqDepth = 0;
+  function eqMain(){ return document.querySelector('main'); }
+  function eqOpenDetail(code, fromList){
+    var m = eqMain(); if (fromList && m) eqListScroll = m.scrollTop;
+    eqView = code; eqForm = null; eqTmp = {};
+    try { eqDepth++; history.pushState({eq: code, d: eqDepth}, ''); } catch(e){}
+    renderEq(); if (m) m.scrollTop = 0; window.scrollTo(0, 0);
+  }
+  function eqShowList(){ eqView = null; eqForm = null; eqTmp = {}; renderEq(); var m = eqMain(); if (m) m.scrollTop = eqListScroll; }
+  function eqCloseDetail(){
+    if (!eqView) return;
+    var n = eqDepth; eqDepth = 0;
+    try { if (n > 0 && history.state && history.state.eq){ history.go(-n); return; } } catch(e){}
+    eqShowList();
+  }
+  window.addEventListener('popstate', function(){
+    var st = history.state;
+    if (st && st.eq){ eqDepth = st.d || 1; eqView = st.eq; eqForm = null; eqTmp = {}; renderEq(); var m = eqMain(); if (m) m.scrollTop = 0; }
+    else { eqDepth = 0; if (eqView) eqShowList(); }
+  });
   function renderEqDetail(b, it){
     var reps = eqRepsOf(it.code), rc = eqRepCost(it.code), end = eqEnd(it), old = it.replOf ? eqGet(it.replOf) : null, nw = it.replBy ? eqGet(it.replBy) : null;
     var oldLog = old ? (EQ.log || []).filter(function(l){ return l.code === old.code && l.what === 'เปลี่ยนตัวใหม่แทน'; }).pop() : null;
     var myLog = (EQ.log || []).filter(function(l){ return l.code === it.code; }).slice().reverse();
     function rowI(k, v){ return v ? '<dt>' + k + '</dt><dd>' + v + '</dd>' : ''; }
-    var h = '<div class="card"><button type="button" class="ghost" id="eqBack" style="width:auto; min-height:34px; padding:0 12px">◀ กลับรายการ</button>'
+    var h = '<div class="eqbackbar"><button type="button" class="primary" id="eqBack">◀ กลับรายการของใช้</button><span class="li-meta">' + esc(it.code) + '</span></div><div class="card">'
       + '<div class="eqhero">' + (it.photo ? '<img id="eqHeroImg" alt="" src="' + imgUrl(it.photo, 700) + '">' : '<div class="eqnoimg">🧰<div class="note" style="margin:4px 0 0">ยังไม่มีรูป</div></div>') + '</div>'
       + '<div class="row" style="gap:8px"><button type="button" class="ghost" id="eqPhCam" style="flex:1">📷 ' + (it.photo ? 'ถ่ายใหม่' : 'ถ่ายรูป') + '</button><button type="button" class="ghost" id="eqPhGal" style="flex:1">🖼 รูปในเครื่อง</button></div>'
       + '<div class="row" style="justify-content:space-between; align-items:flex-start; gap:8px; margin-top:10px"><div class="eqtitle">' + esc(it.code) + ' · ' + esc(it.name) + '</div><span class="eqst ' + (EQ_STC[it.st] || 'na') + '">' + esc(it.st) + '</span></div>'
@@ -3334,15 +3358,17 @@
           + (l.photo ? ' <img class="eqmini" alt="" src="' + imgUrl(l.photo, 80) + '" data-big="' + esc(l.photo) + '">' : '') + '</div>';
       }).join('') + '</div></div>';
     }
+    h += '<button type="button" class="ghost" id="eqBack3" style="width:100%; margin-top:14px">◀ กลับรายการของใช้</button>';
     b.innerHTML = h + '</div>'; bindEqDetail(b, it);
   }
   function bindEqDetail(b, it){
-    el('eqBack').addEventListener('click', function(){ eqView = null; eqForm = null; eqTmp = {}; renderEq(); });
+    el('eqBack').addEventListener('click', function(){ eqCloseDetail(); });
+    el('eqBack3').addEventListener('click', function(){ eqCloseDetail(); });
     var hi = el('eqHeroImg'); if (hi) hi.addEventListener('click', function(){ openLightbox(imgUrl(it.photo, 1600), it.code + ' · ' + it.name); });
     b.querySelectorAll('img[data-big]').forEach(function(im){ im.addEventListener('click', function(e){ e.stopPropagation(); openLightbox(imgUrl(im.getAttribute('data-big'), 1600), it.code); }); });
     el('eqPhCam').addEventListener('click', function(){ eqPick('photo', true); });
     el('eqPhGal').addEventListener('click', function(){ eqPick('photo', false); });
-    b.querySelectorAll('[data-go]').forEach(function(x){ x.addEventListener('click', function(){ eqView = x.getAttribute('data-go'); eqForm = null; eqTmp = {}; renderEq(); window.scrollTo(0, 0); }); });
+    b.querySelectorAll('[data-go]').forEach(function(x){ x.addEventListener('click', function(){ eqOpenDetail(x.getAttribute('data-go'), false); }); });
     b.querySelectorAll('[data-form]').forEach(function(x){ x.addEventListener('click', function(){ var f = x.getAttribute('data-form'); eqForm = eqForm === f ? null : f; eqTmp = {}; renderEq(); }); });
     if (el('eqEditSave')) el('eqEditSave').addEventListener('click', function(){
       var u = {code: it.code}; b.querySelectorAll('[data-e]').forEach(function(x){ u[x.getAttribute('data-e')] = x.value.trim(); });
@@ -3362,7 +3388,7 @@
       if (!pick && !name){ toast('ใส่ชื่อตัวใหม่ หรือเลือกตัวที่อยู่ในทะเบียน', true); return; }
       eqSave('eqreplace', {rpl:{old: it.code, oldSt: el('eqOSt').value, why: el('eqOWhy').value.trim(), oldPhoto: eqTmp.old || '', newCode: pick,
         newItem: pick ? null : {name: name, model: el('eqNewModel').value.trim(), price: +el('eqNewPrice').value || '', sn: el('eqNewSn').value.trim(), type: it.type}}}, 'เปลี่ยนตัวใหม่แทน ' + it.code + ' แล้ว', this)
-        .then(function(j){ if (j && j.eqRepl){ eqForm = null; eqTmp = {}; eqView = j.eqRepl.code; renderEq(); window.scrollTo(0, 0); } });
+        .then(function(j){ if (j && j.eqRepl){ eqOpenDetail(j.eqRepl.code, false); } });
     });
   }
   el('eqFileCam').addEventListener('change', onEqFile); el('eqFileGal').addEventListener('change', onEqFile);
