@@ -410,6 +410,17 @@
   .toolrow .tool.on{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
   .toolrow .tool small{font-weight:700; color:var(--warn);} .toolrow .tool.on small{color:inherit;}
   .toolcard.shut{display:none;}
+  /* v1.71 ทะเบียนของใช้ */
+  .eqrow{border:1px solid var(--line); border-radius:10px; margin-top:8px; background:var(--surface);}
+  .eqrow.open{border-color:var(--accent); box-shadow:var(--shadow);}
+  .eqhead{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:9px 11px; cursor:pointer;}
+  .eqedit{padding:0 11px 11px;}
+  .eqst{font:700 12px var(--fs); padding:2px 9px; border-radius:999px; white-space:nowrap; flex:none;}
+  .eqst.ok{background:var(--ok-soft); color:var(--ok);} .eqst.warn{background:rgba(212,161,6,.18); color:#8a6500;} .eqst.bad{background:#d92d20; color:#fff;} .eqst.na{background:var(--surface-2); color:var(--muted);}
+  .eqhist{margin-top:8px; padding-top:8px; border-top:1px dashed var(--line); font-size:12px; color:var(--muted); line-height:1.6;} .eqhist b{color:var(--ink);}
+  .eqpend{padding:8px 0; border-top:1px dashed var(--line);} .eqpend:first-of-type{border-top:0;}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .eqst.warn{color:#f0c040;} }
+  :root[data-theme="dark"] .eqst.warn{color:#f0c040;}
   /* v1.61 รูปแนบใบขอเบิก + ของนอกระบบ */
   .dphoto{position:relative; width:72px; height:72px;} .dphoto img{width:72px; height:72px; object-fit:cover; border-radius:8px; border:1px solid var(--line);}
   .dphoto button{position:absolute; top:-6px; right:-6px; width:24px; height:24px; min-height:0; padding:0; border-radius:50%; font-size:14px; line-height:1;}
@@ -500,7 +511,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.70</span>
+      <span class="ver" id="appVer">v1.71</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -523,7 +534,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.70 · อัปเดต 14/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.71 · อัปเดต 15/10/2026</div>
     </div>
   </header>
 
@@ -565,7 +576,7 @@
     <!-- ── แท็บ ค้นหา ── -->
     <section id="v-find" hidden>
       <div class="card">
-        <div class="toolrow"><a class="chip tapchip tool" href="master.html">📋 ทะเบียน</a><button type="button" class="chip tapchip tool" data-tool="cntCard">🔢 เดินนับ <small id="cntDot"></small></button><button type="button" class="chip tapchip tool" data-tool="walkCard">📷 ถ่ายรูป <small id="walkDot"></small></button></div>
+        <div class="toolrow"><a class="chip tapchip tool" href="master.html">📋 ทะเบียน</a><button type="button" class="chip tapchip tool" data-tool="cntCard">🔢 เดินนับ <small id="cntDot"></small></button><button type="button" class="chip tapchip tool" data-tool="walkCard">📷 ถ่ายรูป <small id="walkDot"></small></button><button type="button" class="chip tapchip tool" data-tool="eqCard">🧰 ของใช้ <small id="eqDot"></small></button></div>
         <label class="fld" for="q">ค้นหาชื่อของหรือรหัส</label>
         <input type="text" id="q" placeholder="เช่น ถุงมือ, สีสเปรย์, CS-017" autocomplete="off">
         <div class="row" style="gap:8px; margin-top:8px; align-items:center">
@@ -588,6 +599,10 @@
         <div class="row" style="justify-content:space-between; gap:8px; align-items:center"><div><b>📷 เดินถ่ายรูป</b><div class="note" id="walkCount" style="margin:2px 0 0"></div></div>
         <button class="primary" id="walkGo" style="width:auto; padding:0 16px">เริ่ม</button></div>
         <div class="note" style="margin:6px 0 0">ถือมือถือเดินตามชั้น ระบบโชว์ชื่อของทีละชิ้น กดถ่าย → ไปชิ้นถัดไปเอง (เบิกบ่อยขึ้นก่อน) · ของหมดจะเตือนให้ถ่ายตอนของเข้า</div>
+      </div>
+      <div class="card toolcard shut" id="eqCard">
+        <b>🧰 ทะเบียนของใช้ (เครื่องมือไฟฟ้า / เครื่องมือช่าง)</b>
+        <div id="eqBody"></div>
       </div>
       <div class="card"><ul class="list" id="findList"></ul></div>
     </section>
@@ -1007,7 +1022,7 @@
   try { lastSave = JSON.parse(localStorage.getItem(K_LASTSAVE) || 'null'); } catch(e){}
   var ACT_TH = {append:'บันทึกเบิก/รับ', adjust:'ปรับยอด', additem:'เพิ่มของใหม่', edititem:'แก้ทะเบียน', bind:'ผูกบาร์โค้ด', unbind:'ยกเลิกบาร์โค้ด', movebind:'ย้ายบาร์โค้ด',
     price:'บันทึกราคา', setprice:'บันทึกราคา', prreceive:'รับเข้าตามใบ', request:'ส่งใบขอเบิก', fulfill:'จ่ายตามใบขอเบิก', cancelreq:'ยกเลิกใบขอเบิก', setimg:'บันทึกรูป',
-    setstatus:'เปลี่ยนสถานะของ', setgroup:'ตั้งกลุ่ม', cylset:'บันทึกถังแก๊ส', countround:'นับสต็อก', remove:'ลบรายการ', seed:'ตั้งทะเบียน'};
+    setstatus:'เปลี่ยนสถานะของ', setgroup:'ตั้งกลุ่ม', cylset:'บันทึกถังแก๊ส', countround:'นับสต็อก', remove:'ลบรายการ', seed:'ตั้งทะเบียน', eqadd:'ขึ้นทะเบียนของใช้', equpdate:'แก้ทะเบียนของใช้'};
   function hmT(t){ var d = new Date(t); return isNaN(d) ? '' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ' น.'; }
   function agoT(t){ var s = Math.round((Date.now() - new Date(t)) / 1000); if (isNaN(s)) return ''; if (s < 60) return 'เมื่อกี้'; if (s < 3600) return Math.floor(s / 60) + ' นาทีที่แล้ว';
     if (s < 86400 && new Date(t).getDate() === new Date().getDate()) return Math.floor(s / 3600) + ' ชม.ที่แล้ว'; return when(t); }
@@ -1039,6 +1054,7 @@
     if (j.requests){ requests = j.requests; lsSet(K_REQ, requests); }
     if (j.prs) PRS = j.prs; if (j.prmap) PRMAP = j.prmap;   // v1.17 ใบ PR
     if (j.cyl) CYL = j.cyl;   // v1.18 ถังแก๊ส
+    if (j.eq) EQ = j.eq; if (j.eqPend) EQP = j.eqPend;   // v1.71 ทะเบียนของใช้
     if ('count' in j) COUNT = j.count || null;   // v1.21 รอบนับ
     if (j.sheet && j.sheet.id){ SHEETINFO = j.sheet; lsSet('pcscan_sheet', SHEETINFO); }
     if (j.pin === true){ pinOk = true; PRICES = j.prices || {}; PURCH = j.purchases || []; lsSet(K_PRICE, PRICES); fillShops(); }
@@ -1258,7 +1274,7 @@
   /* ================= การ์ดรายการ ================= */
   function renderAll(){
     fillShops(); renderWalkCard(); renderCountCard(); if (cnt && !cnt.sum) cntProg(); renderStatus(); renderRecent(); renderLow(); renderFind(); if (sel || bindCode || lastDone) renderHit();
-    renderInbox(); renderReq(); renderMine(); renderPRCard();
+    renderInbox(); renderReq(); renderMine(); renderPRCard(); renderEq();
   }
 
   function renderStatus(){
@@ -3088,6 +3104,120 @@
   }
   function parseDoc(text){ var k = docKind(text); if (k === 'PO') return parsePO(text); if (k === 'TAX') return parseTax(text); if (k === 'PR'){ var d = parsePR(text); d.kind = 'PR'; return d; } return parseLinde(text); }
 
+  /* ================= v1.71 ทะเบียนของใช้ (เครื่องมือไฟฟ้า / เครื่องมือช่าง) — PC เท่านั้น =================
+   * 1 ชิ้น = 1 รหัส EQ-xxxx · ตามว่าอยู่แผนก/ใครถือ + สถานะ · ทุกการย้าย/เปลี่ยนสถานะเก็บประวัติ (EquipLog)
+   * ของที่จ่ายตรงแล้วยังไม่ขึ้นทะเบียน → กดขึ้นทะเบียนได้จากกล่อง "รอขึ้นทะเบียน" */
+  var EQ = {items:[], log:[]}, EQP = [], eqOpen = null, eqAddOpen = false, eqBusy = '', eqSkip = lsGet('pcscan_eqskip', {});
+  var EQ_ST = ['ใช้งาน', 'ส่งซ่อม', 'เสีย', 'หาย', 'ตัดจำหน่าย'], EQ_TYPES = ['เครื่องมือไฟฟ้า', 'เครื่องมือช่าง'];
+  var EQ_STC = {'ใช้งาน':'ok', 'ส่งซ่อม':'warn', 'เสีย':'bad', 'หาย':'bad', 'ตัดจำหน่าย':'na'};
+  function eqGuess(name){
+    var n = String(name || '');
+    if (/ใบเจียร|ใบตัด|ใบเลื่อย|ดอก|ลวด|เทป|ถ่าน|น้ำยา|น้ำมัน|สี|กาว|แปรง|กระดาษ|ผ้า|ถุง|หัวเชื่อม|ไส้กรอง|ตลับกรอง|เข็มขัด|ข้อต่อ|สาย(?!ไฟฟ้า)/.test(n.replace(/ไร้สาย/g, ''))) return {on:false, type:''};
+    var elec = /เครื่อง|สว่าน|แบต|แท่นชาร์จ|ชาร์จ|ปั๊ม|ปั้ม|พัดลม|ไร้สาย|\d+\s*W\b|MAKITA|BOSCH|DEWALT|HIKOKI|MILWAUKEE|ไฟฟ้า|มอเตอร์/i.test(n);
+    var hand = /ไขควง|คีม|ประแจ|ค้อน|ตลับเมตร|บล็อก|เลื่อยมือ|กรรไกร|คัตเตอร์|เวอร์เนีย|ฉาก|ตะไบ|สกัด|STANLEY|ONSITE|TACTIX/i.test(n);
+    return {on: elec || hand, type: elec ? 'เครื่องมือไฟฟ้า' : hand ? 'เครื่องมือช่าง' : ''};
+  }
+  function eqDeptOpts(v, blank){ return '<option value="">' + (blank || '— แผนก —') + '</option>' + DEPTS.concat(['PC / คลัง']).map(function(d){ return '<option' + (v === d ? ' selected' : '') + '>' + esc(d) + '</option>'; }).join(''); }
+  function eqTypeOpts(v){ return EQ_TYPES.map(function(t){ return '<option' + (v === t ? ' selected' : '') + '>' + t + '</option>'; }).join(''); }
+  function eqSave(action, payload, okMsg, btn){
+    if (btn){ btn.disabled = true; btn.dataset.t = btn.textContent; btn.textContent = '⏳ กำลังบันทึก…'; }
+    eqBusy = action;
+    return api(Object.assign({action: action, who: 'PC'}, payload)).then(function(j){
+      eqBusy = ''; takeServer(j); toast(okMsg); renderEq(); return j;
+    })['catch'](function(e){ eqBusy = ''; if (btn){ btn.disabled = false; btn.textContent = btn.dataset.t; } toast('บันทึกไม่สำเร็จ — ' + ((e && e.message) || 'เช็คเน็ต'), true); });
+  }
+  function renderEq(){
+    var c = el('eqCard'), b = el('eqBody'); if (!c || !b) return;
+    var tb = document.querySelector('[data-tool="eqCard"]'); if (tb) tb.hidden = DEPT_MODE;
+    if (DEPT_MODE){ c.hidden = true; return; }
+    if (!pinOk){ b.innerHTML = '<div class="note">ใส่ PIN ของ PC ในปุ่มตั้งค่าก่อน ถึงจะเห็นทะเบียนของใช้</div>'; return; }
+    var pend = EQP.filter(function(d){ return !eqSkip[d.key]; });
+    if (el('eqDot')) el('eqDot').textContent = pend.length ? pend.length : '';
+    var keep = {}; ['eqQ', 'eqD', 'eqS'].forEach(function(id){ if (el(id)) keep[id] = el(id).value; });
+    var q = String(keep.eqQ || '').trim().toLowerCase(), fd = keep.eqD || '', fs = keep.eqS == null ? 'active' : keep.eqS;
+    var cnt = {}; EQ.items.forEach(function(it){ cnt[it.st] = (cnt[it.st] || 0) + 1; });
+    var rows = EQ.items.filter(function(it){
+      if (fd && it.dept !== fd) return false;
+      if (fs === 'active' ? it.st === 'ตัดจำหน่าย' : fs && it.st !== fs) return false;
+      return !q || (it.code + ' ' + it.name + ' ' + it.model + ' ' + it.sn + ' ' + it.holder + ' ' + it.dept).toLowerCase().indexOf(q) >= 0;
+    });
+    var h = '<div class="note" style="margin:4px 0 8px">ของใช้ที่จ่ายให้แผนกแล้วตามได้ว่าอยู่ไหน ใครถือ ยังใช้ได้ไหม · ทั้งหมด <b>' + EQ.items.length + '</b> ชิ้น'
+      + EQ_ST.filter(function(s){ return cnt[s]; }).map(function(s){ return ' · ' + s + ' ' + cnt[s]; }).join('') + '</div>';
+    if (pend.length){
+      h += '<div class="pricebox" style="margin:0 0 10px"><b>📤 จ่ายตรงแล้ว ยังไม่ขึ้นทะเบียน ' + pend.length + ' รายการ</b><div class="note" style="margin:2px 0 6px">ถ้าเป็นเครื่องมือ กดขึ้นทะเบียน · ถ้าเป็นของสิ้นเปลือง กด "ไม่ใช่ของใช้"</div>'
+        + pend.slice(0, 15).map(function(d){
+          var g = eqGuess(d.desc);
+          return '<div class="eqpend" data-k="' + esc(d.key) + '"><div><b>' + esc(d.desc) + '</b></div><div class="li-meta">' + esc([d.dept, d.who].filter(Boolean).join(' · ') || 'ไม่ระบุแผนก') + ' · ' + fmt(d.qty) + ' ' + esc(d.unit) + ' · ' + esc(d.no) + ' · ' + when(d.ts) + '</div>'
+            + '<div class="row" style="gap:6px; margin-top:6px; flex-wrap:wrap"><select data-pt style="flex:1 1 140px">' + eqTypeOpts(g.type || 'เครื่องมือไฟฟ้า') + '</select>'
+            + '<button type="button" class="primary" data-preg style="flex:1 1 120px; min-height:36px">🧰 ขึ้นทะเบียน</button><button type="button" class="ghost" data-pskip style="flex:0 0 auto; min-height:36px; padding:0 10px">ไม่ใช่ของใช้</button></div></div>';
+        }).join('') + (pend.length > 15 ? '<div class="note">…อีก ' + (pend.length - 15) + ' รายการ</div>' : '') + '</div>';
+    }
+    h += '<div class="row" style="gap:6px; flex-wrap:wrap"><input type="text" id="eqQ" placeholder="ค้นชื่อ / รหัส / S/N / คนถือ" value="' + esc(keep.eqQ || '') + '" autocomplete="off" style="flex:1 1 100%">'
+      + '<select id="eqD" style="flex:1">' + eqDeptOpts(fd, 'ทุกแผนก') + '</select>'
+      + '<select id="eqS" style="flex:1"><option value="active"' + (fs === 'active' ? ' selected' : '') + '>ยังไม่ตัดจำหน่าย</option><option value=""' + (fs === '' ? ' selected' : '') + '>ทุกสถานะ</option>'
+      + EQ_ST.map(function(s){ return '<option' + (fs === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></div>'
+      + '<button type="button" class="ghost" id="eqAddBtn" style="width:100%; margin-top:8px">' + (eqAddOpen ? '✕ ปิดฟอร์ม' : '+ เพิ่มของใช้เอง (ของเก่า / ไม่ได้มาจากใบ)') + '</button>';
+    if (eqAddOpen){
+      h += '<div class="pricebox" style="margin-top:8px"><input type="text" id="eqNName" placeholder="ชื่อ * เช่น สว่านไร้สาย 18V MAKITA" autocomplete="off">'
+        + '<div class="row" style="gap:6px; margin-top:6px"><select id="eqNType" style="flex:1">' + eqTypeOpts('เครื่องมือไฟฟ้า') + '</select><input type="text" id="eqNModel" placeholder="ยี่ห้อ/รุ่น" style="flex:1" autocomplete="off"></div>'
+        + '<div class="row" style="gap:6px; margin-top:6px"><select id="eqNDept" style="flex:1">' + eqDeptOpts('') + '</select><input type="text" id="eqNWho" placeholder="ผู้ถือ" style="flex:1" autocomplete="off"></div>'
+        + '<div class="row" style="gap:6px; margin-top:6px"><input type="text" id="eqNSn" placeholder="S/N (ถ้ามี)" style="flex:1" autocomplete="off"><input type="number" id="eqNQty" value="1" min="1" max="20" style="width:80px" title="จำนวนชิ้น"></div>'
+        + '<input type="text" id="eqNNote" placeholder="หมายเหตุ เช่น ซื้อปี 2025 / ไม่มีใบ" style="margin-top:6px" autocomplete="off">'
+        + '<button type="button" class="primary" id="eqNSave" style="width:100%; margin-top:8px">บันทึกขึ้นทะเบียน</button></div>';
+    }
+    h += '<div class="note" style="margin:8px 0 4px">แสดง ' + rows.length + ' ชิ้น</div><div id="eqList">'
+      + (rows.length ? rows.map(eqRowHtml).join('') : '<div class="note">ยังไม่มีของใช้ในทะเบียน' + (pend.length ? ' — เริ่มจากกล่อง "จ่ายตรงแล้ว ยังไม่ขึ้นทะเบียน" ด้านบนได้เลย' : '') + '</div>') + '</div>';
+    b.innerHTML = h; bindEq();
+  }
+  function eqRowHtml(it){
+    var open = eqOpen === it.code, h = '<div class="eqrow' + (open ? ' open' : '') + '" data-code="' + esc(it.code) + '">'
+      + '<div class="eqhead" data-eqtap><div style="min-width:0"><b>' + esc(it.code) + '</b> · ' + esc(it.name)
+      + '<div class="li-meta">' + esc([it.type.replace('เครื่องมือ', ''), it.dept || 'ไม่ระบุแผนก', it.holder, it.sn ? 'S/N ' + it.sn : ''].filter(Boolean).join(' · ')) + '</div></div>'
+      + '<span class="eqst ' + (EQ_STC[it.st] || 'na') + '">' + esc(it.st) + '</span></div>';
+    if (open){
+      var hist = EQ.log.filter(function(l){ return l.code === it.code; }).slice().reverse();
+      h += '<div class="eqedit"><div class="row" style="gap:6px"><select data-e="dept" style="flex:1">' + eqDeptOpts(it.dept) + '</select><input type="text" data-e="holder" value="' + esc(it.holder) + '" placeholder="ผู้ถือ" style="flex:1" autocomplete="off"></div>'
+        + '<div class="row" style="gap:6px; margin-top:6px"><select data-e="st" style="flex:1">' + EQ_ST.map(function(s){ return '<option' + (it.st === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select>'
+        + '<select data-e="type" style="flex:1">' + eqTypeOpts(it.type) + '</select></div>'
+        + '<div class="row" style="gap:6px; margin-top:6px"><input type="text" data-e="model" value="' + esc(it.model) + '" placeholder="ยี่ห้อ/รุ่น" style="flex:1" autocomplete="off"><input type="text" data-e="sn" value="' + esc(it.sn) + '" placeholder="S/N" style="flex:1" autocomplete="off"></div>'
+        + '<input type="text" data-e="why" placeholder="เหตุผล / อาการ เช่น แปรงถ่านหมด, ย้ายไปไลน์ 2" style="margin-top:6px" autocomplete="off">'
+        + '<div class="row" style="gap:6px; margin-top:8px"><button type="button" class="primary" data-esave style="flex:2">บันทึก</button><button type="button" class="ghost" data-eclose style="flex:1">ปิด</button></div>'
+        + '<div class="li-meta" style="margin-top:8px">ได้มา ' + esc(when(it.date).replace(/ \d\d:\d\d$/, '')) + (it.price != null ? ' · ' + baht(it.price) : '') + (it.shop ? ' · ' + esc(it.shop) : '') + (it.no ? ' · ' + esc(it.no) : '') + '</div>'
+        + (hist.length ? '<div class="eqhist"><b>ประวัติ</b>' + hist.slice(0, 12).map(function(l){ return '<div>' + esc(when(l.ts)) + ' · ' + esc(l.what) + (l.from || l.to ? ': ' + esc(l.from || '–') + ' → ' + esc(l.to || '–') : '') + (l.note ? ' · ' + esc(l.note) : '') + '</div>'; }).join('') + '</div>' : '')
+        + '</div>';
+    }
+    return h + '</div>';
+  }
+  function bindEq(){
+    var b = el('eqBody');
+    ['eqQ'].forEach(function(id){ var x = el(id); if (x) x.addEventListener('input', function(){ var p = x.selectionStart; renderEq(); var y = el(id); y.focus(); try { y.setSelectionRange(p, p); } catch(e){} }); });
+    ['eqD', 'eqS'].forEach(function(id){ var x = el(id); if (x) x.addEventListener('change', renderEq); });
+    el('eqAddBtn').addEventListener('click', function(){ eqAddOpen = !eqAddOpen; renderEq(); if (eqAddOpen && el('eqNName')) el('eqNName').focus(); });
+    if (el('eqNSave')) el('eqNSave').addEventListener('click', function(){
+      var name = el('eqNName').value.trim(); if (!name){ toast('ใส่ชื่อของใช้ก่อน', true); el('eqNName').focus(); return; }
+      eqSave('eqadd', {items:[{name:name, type:el('eqNType').value, model:el('eqNModel').value.trim(), dept:el('eqNDept').value, holder:el('eqNWho').value.trim(),
+        sn:el('eqNSn').value.trim(), qty:+el('eqNQty').value || 1, note:el('eqNNote').value.trim(), src:'เพิ่มเอง'}]}, 'ขึ้นทะเบียน ' + name + ' แล้ว', this).then(function(j){ if (j){ eqAddOpen = false; renderEq(); } });
+    });
+    b.querySelectorAll('.eqpend').forEach(function(div){
+      var k = div.getAttribute('data-k'), d = EQP.filter(function(x){ return x.key === k; })[0]; if (!d) return;
+      div.querySelector('[data-pskip]').addEventListener('click', function(){ eqSkip[k] = 1; lsSet('pcscan_eqskip', eqSkip); renderEq(); });
+      div.querySelector('[data-preg]').addEventListener('click', function(){
+        eqSave('eqadd', {items:[{name:d.desc, type:div.querySelector('[data-pt]').value, dept:d.dept, holder:d.who, date:d.ts, price:d.price, shop:d.shop, no:d.no, inv:d.inv, qty:d.qty, src:k, note:d.note}]},
+          'ขึ้นทะเบียน ' + d.desc.slice(0, 24) + ' แล้ว', this);
+      });
+    });
+    b.querySelectorAll('.eqrow').forEach(function(row){
+      var code = row.getAttribute('data-code');
+      row.querySelector('[data-eqtap]').addEventListener('click', function(){ eqOpen = eqOpen === code ? null : code; renderEq(); var r = document.querySelector('.eqrow[data-code="' + code + '"]'); if (r) r.scrollIntoView({block:'nearest'}); });
+      var sv = row.querySelector('[data-esave]'); if (!sv) return;
+      row.querySelector('[data-eclose]').addEventListener('click', function(){ eqOpen = null; renderEq(); });
+      sv.addEventListener('click', function(){
+        var u = {code: code}; row.querySelectorAll('[data-e]').forEach(function(x){ u[x.getAttribute('data-e')] = x.value.trim(); });
+        eqSave('equpdate', {eq: u}, 'บันทึก ' + code + ' แล้ว', this).then(function(j){ if (j && j.eqUpd && !j.eqUpd.changed) toast('ไม่มีอะไรเปลี่ยน'); });
+      });
+    });
+  }
+
   /* ================= v1.17 รับของตามใบ PR ================= */
   var K_PRDRAFT = 'pcscan_prdraft';
   var CYL = [], PRS = [], PRMAP = [], prDoc = lsGet(K_PRDRAFT, null), prBusy = false;
@@ -3332,6 +3462,8 @@
         + ox.map(function(x){ var k = x.no + '|' + x.name; return '<option value="' + esc(k) + '"' + (l.dreq === k ? ' selected' : '') + '>' + esc(x.no + ' · ' + x.dept + ' · ' + x.name + ' ×' + fmt(x.qty) + (x.unit ? ' ' + x.unit : '')) + '</option>'; }).join('') + '</select>'
         + '<div class="row" style="gap:6px; margin-top:6px"><select data-f="ddept"' + (nf.ddept ? ' class="needf"' : '') + ' style="flex:1"><option value="">— แผนก * —</option>' + DEPTS.map(function(d){ return '<option' + (l.ddept === d ? ' selected' : '') + '>' + esc(d) + '</option>'; }).join('') + '</select>'
         + '<input type="text" data-f="dwho" value="' + esc(l.dwho || '') + '" placeholder="ผู้รับ" autocomplete="off" style="flex:1"></div>'
+        + '<div class="row" style="gap:8px; margin-top:6px; align-items:center; flex-wrap:wrap"><label class="li-meta" style="display:flex; gap:6px; align-items:center; flex:1 1 180px"><input type="checkbox" data-f="deq"' + (l.deq ? ' checked' : '') + ' style="width:auto; min-height:0"> 🧰 ขึ้นทะเบียนของใช้ (ตามว่าอยู่ไหน/เสียไหม)</label>'
+        + (l.deq ? '<select data-f="deqt" style="flex:1 1 130px">' + eqTypeOpts(l.deqt || 'เครื่องมือไฟฟ้า') + '</select>' : '') + '</div>'   // v1.71
         + '<button type="button" class="ghost" data-act="back" style="width:100%; margin-top:6px">ยกเลิกจ่ายตรง</button></div>';
     } else {
       var vd = prVerdict(l), sug = vd.s.map(function(x){ return x.it; });   // v1.60 เรียงตามชื่อ+ขนาด+ยี่ห้อ
@@ -3434,13 +3566,13 @@
             res.innerHTML = rows.map(function(it){ return '<button type="button" class="chip na tapchip" data-pick="' + esc(it.sku) + '" style="margin:6px 6px 0 0">' + esc(it.sku) + ' ' + esc(it.name.slice(0, 34)) + '</button>'; }).join('');
             res.querySelectorAll('[data-pick]').forEach(bindPick); return;
           }
-          if (inp.type === 'checkbox') l[f] = inp.checked; else l[f] = f === 'code' || f === 'nname' || f === 'nunit' || f === 'hand' || f === 'ngrp' || f === 'dreq' || f === 'ddept' || f === 'dwho' ? inp.value : (inp.value === '' ? '' : +inp.value);
+          if (inp.type === 'checkbox') l[f] = inp.checked; else l[f] = f === 'code' || f === 'nname' || f === 'nunit' || f === 'hand' || f === 'ngrp' || f === 'dreq' || f === 'ddept' || f === 'dwho' || f === 'deqt' ? inp.value : (inp.value === '' ? '' : +inp.value);
           if (f === 'factor') l.factorAsk = false;
           if (f === 'dreq' && l.dreq){ var rx = prOpenExtra().filter(function(x){ return x.no + '|' + x.name === l.dreq; })[0]; if (rx){ l.ddept = rx.dept; if (!l.dwho) l.dwho = rx.who; if (!(+l.recv > 0)) l.recv = rx.qty; } }   // v1.63 เลือกใบ → เติมแผนก/ผู้รับให้
           if (f === 'code'){ l.flags = (l.flags || []).filter(function(x){ return !/บาร์โค้ด/.test(x); }); if (eanOk(l.code) === false) l.flags.push('รหัสบาร์โค้ดอาจอ่านผิด');
             if (l.mode === 'pick'){ var mm = prMapOf(l); if (mm && getSku(mm.sku)){ l.sku = mm.sku; l.factor = mm.factor || 1; l.mode = 'ok'; l.factorAsk = false; l.on = !l.done && +l.recv > 0; } } }   // v1.58 พิมพ์รหัสในใบ → ระบบจำได้ จับคู่ให้เลย
           prSave();
-          if (f === 'on' || f === 'recv' || f === 'code' || f === 'rtnOn' || f === 'dreq' || f === 'ddept') { var y = window.scrollY; renderPR(); window.scrollTo(0, y); }
+          if (f === 'on' || f === 'recv' || f === 'code' || f === 'rtnOn' || f === 'dreq' || f === 'ddept' || f === 'deq') { var y = window.scrollY; renderPR(); window.scrollTo(0, y); }
         });
         if (f === 'factor' || f === 'nname' || f === 'price') inp.addEventListener('change', function(){ var y = window.scrollY; renderPR(); window.scrollTo(0, y); });   // v1.68 พิมพ์เสร็จ → อัปเดตสถานะการ์ด
       });
@@ -3459,6 +3591,7 @@
         if (a === 'back'){ l.sku = ''; l.mode = 'pick'; l.on = false; }
         if (a === 'direct'){   // v1.63 จ่ายตรง: เดาใบขอเบิกที่ชื่อใกล้สุด
           l.sku = 'DIRECT'; l.mode = 'direct'; l.on = !l.done; l.factor = 1; l.factorAsk = false; l.guess = false;
+          var eg = eqGuess(l.desc); if (l.deq == null){ l.deq = eg.on; l.deqt = eg.type || 'เครื่องมือไฟฟ้า'; }   // v1.71 เดาว่าเป็นเครื่องมือไหม
           var bx = null; prOpenExtra().forEach(function(x){ var a2 = triG(x.name + ' ' + (x.detail || '')), b2 = triG(l.desc), ka2 = Object.keys(a2), kb2 = Object.keys(b2), c2 = 0;
             ka2.forEach(function(k){ if (b2[k]) c2++; }); var sc2 = ka2.length + kb2.length ? 2 * c2 / (ka2.length + kb2.length) : 0; if (sc2 >= 0.3 && (!bx || sc2 > bx.sc)) bx = {x:x, sc:sc2}; });
           if (bx && !l.dreq){ l.dreq = bx.x.no + '|' + bx.x.name; l.ddept = bx.x.dept; l.dwho = l.dwho || bx.x.who; }
@@ -3499,7 +3632,7 @@
       if (l.mode === 'new') o.item = {name: String(l.nname != null ? l.nname : l.desc).trim(), unit: String(l.nunit != null ? l.nunit : normUnit(l.unit)).trim(), maker: d.shop,
         grp: String(l.ngrp != null ? l.ngrp : ((suggestGrp(l.nname != null ? l.nname : l.desc) || {}).g || '')).toUpperCase()};   // v1.57 + กลุ่ม
       if (l.mode === 'new' && !on){ o.sku = ''; delete o.item; }
-      if (l.mode === 'direct'){ o.sku = 'DIRECT'; o.factor = 1; o.direct = {dept: l.ddept || '', who: (l.dwho || '').trim(), reqNo: l.dreq ? l.dreq.split('|')[0] : '', reqName: l.dreq ? l.dreq.split('|').slice(1).join('|') : ''}; }   // v1.63
+      if (l.mode === 'direct'){ o.sku = 'DIRECT'; o.factor = 1; o.direct = {dept: l.ddept || '', who: (l.dwho || '').trim(), reqNo: l.dreq ? l.dreq.split('|')[0] : '', reqName: l.dreq ? l.dreq.split('|').slice(1).join('|') : ''}; if (l.deq) o.direct.eq = {type: l.deqt || eqGuess(l.desc).type || 'เครื่องมือไฟฟ้า'}; }   // v1.63 · v1.71 + ขึ้นทะเบียนของใช้
       if (l.done) o.recv = 0;
       if (l.note) o.note = l.note;
       if (l.hand && String(l.hand).trim()) o.note = (o.note ? o.note + ' · ' : '') + 'ในใบเขียน: ' + String(l.hand).trim();   // v1.57
