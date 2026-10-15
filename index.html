@@ -530,7 +530,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.72</span>
+      <span class="ver" id="appVer">v1.73</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -553,7 +553,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.72 · อัปเดต 15/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.73 · อัปเดต 15/10/2026</div>
     </div>
   </header>
 
@@ -1510,7 +1510,26 @@
       imgDelArm = null; uploadImg(it.sku, '', cur);
     });
   }
+  /* v1.73 รูป HEIC (H) → แปลงเป็น JPEG (J) ในเครื่องก่อนใช้ทุกที่ (รูปของ/ใบ/ของใช้/ใบขอเบิก) · ตัวแปลงโหลดเฉพาะตอนเจอ HEIC */
+  var heicP = null;
+  function isHeic(f){ return !!f && (/hei[cf]/i.test(f.type || '') || /\.hei[cf]$/i.test(f.name || '')); }
+  function loadHeic(){
+    return heicP || (heicP = new Promise(function(res, rej){
+      var s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+      s.onload = function(){ window.heic2any ? res(window.heic2any) : rej(new Error('โหลดตัวแปลง HEIC ไม่ได้')); };
+      s.onerror = function(){ heicP = null; rej(new Error('โหลดตัวแปลง HEIC ไม่ได้ — เช็คเน็ตแล้วลองใหม่')); };
+      document.head.appendChild(s);
+    }));
+  }
+  function heicToJpg(f){
+    toast('กำลังแปลงรูป HEIC → JPG…');
+    return loadHeic().then(function(h){ return h({blob: f, toType: 'image/jpeg', quality: 0.9}); }).then(function(b){
+      b = Array.isArray(b) ? b[0] : b;
+      return new File([b], String(f.name || 'photo').replace(/\.hei[cf]$/i, '') + '.jpg', {type: 'image/jpeg'});
+    })['catch'](function(e){ throw new Error(/โหลดตัวแปลง/.test((e && e.message) || '') ? e.message : 'แปลงรูป HEIC ไม่สำเร็จ — ลองแคปหน้าจอรูปนั้นแล้วเลือกรูปแคปแทน'); });
+  }
   function shrink(file){
+    if (isHeic(file)) return heicToJpg(file).then(shrink);   // v1.73
     return new Promise(function(resolve, reject){
       var url = URL.createObjectURL(file), im = new Image();
       im.onload = function(){
@@ -3470,6 +3489,7 @@
     var box = el('pr_review'); if (box) box.scrollIntoView({block:'start', behavior:'smooth'});
   }
   function fileToData(f){
+    if (isHeic(f)) return heicToJpg(f).then(fileToData);   // v1.73
     return new Promise(function(res, rej){
       if (isXlsFile(f)){   // v1.56
         if (f.size > 8e6){ rej(new Error('ไฟล์ Excel ใหญ่เกิน 8MB')); return; }
