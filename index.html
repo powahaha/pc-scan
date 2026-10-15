@@ -567,7 +567,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.77</span>
+      <span class="ver" id="appVer">v1.78</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -584,13 +584,18 @@
         <div class="note" style="margin-top:4px">ใส่ครั้งเดียว เครื่องนี้จำไว้ · เว้นว่างแล้วกดปลดล็อก = ออกจากโหมดราคา</div>
         <a class="sheetbtn" id="sheetAll" target="_blank" rel="noopener" href="#" style="margin-top:10px" hidden>📄 เปิด Google Sheet (แท็บ Master) ↗</a>
       </div>
+      <div id="lineWrap" style="margin-top:14px; padding-top:12px; border-top:1px solid var(--line)" hidden>
+        <div class="fld">🔔 แจ้งเตือน LINE กลุ่ม PC (ทุกใบขอเบิกใหม่)</div>
+        <div class="note" id="lineState" style="margin:4px 0 0"></div>
+        <button type="button" class="ghost" id="lineTest" style="margin-top:8px">ส่งข้อความทดสอบเข้ากลุ่ม</button>
+      </div>
       <div id="bulkWrap" style="margin-top:14px; padding-top:12px; border-top:1px solid var(--line)">
         <label class="fld" for="bulkImg">📷 อัปรูปหลายรูปพร้อมกัน (ตั้งชื่อไฟล์เป็นรหัส เช่น CS-012.jpg)</label>
         <input type="file" id="bulkImg" accept="image/*" multiple>
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.77 · อัปเดต 15/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.78 · อัปเดต 15/10/2026</div>
     </div>
   </header>
 
@@ -1141,6 +1146,7 @@
     if (j.prs) PRS = j.prs; if (j.prmap) PRMAP = j.prmap;   // v1.17 ใบ PR
     if (j.cyl) CYL = j.cyl;   // v1.18 ถังแก๊ส
     if (j.eq) EQ = j.eq; if (j.eqPend) EQP = j.eqPend;   // v1.71 ทะเบียนของใช้
+    if (j.line) renderLine(j.line);   // v1.78
     if ('count' in j) COUNT = j.count || null;   // v1.21 รอบนับ
     if (j.sheet && j.sheet.id){ SHEETINFO = j.sheet; lsSet('pcscan_sheet', SHEETINFO); }
     if (j.pin === true){ pinOk = true; PRICES = j.prices || {}; PURCH = j.purchases || []; lsSet(K_PRICE, PRICES); fillShops(); }
@@ -2525,6 +2531,21 @@
     if (!p.hidden) el('apiUrl').value = API;
   });
   if (DEPT_MODE) el('pinWrap').hidden = true;
+  /* v1.78 สถานะแจ้งเตือน LINE (เฉพาะ PC มี PIN) */
+  function renderLine(s){
+    var w = el('lineWrap'); if (!w || DEPT_MODE) return; w.hidden = false;
+    el('lineState').innerHTML = !s.token ? '⚪ ยังไม่ได้ใส่ <b>LINE_TOKEN</b> ใน Apps Script (ตั้งค่าโปรเจ็กต์ → พร็อพเพอร์ตีของสคริปต์)'
+      : !s.group ? '🟡 ใส่ token แล้ว — เชิญบอท (LINE OA) เข้ากลุ่ม PC ระบบจะผูกกลุ่มให้เอง (หรือพิมพ์ในกลุ่มว่า "ตั้งกลุ่มแจ้งเตือน")'
+      : '🟢 พร้อม — ใบขอเบิกใหม่จะเด้งเข้ากลุ่ม' + (s.skip ? ' · <b class="over">เดือนนี้ข้ามไป ' + s.skip + ' ใบ เพราะโควตาใกล้เต็ม</b>' : '');
+    el('lineTest').hidden = !(s.token && s.group);
+  }
+  if (el('lineTest')) el('lineTest').addEventListener('click', function(){
+    var b = this; b.disabled = true; b.textContent = '⏳ กำลังส่ง…';
+    api({action: 'linetest', who: 'PC'}).then(function(j){ takeServer(j); var r = j.lineTest || {};
+      toast(r.sent ? '✅ ส่งเข้ากลุ่มแล้ว' + (r.quota && r.quota.limit ? ' · โควตาเดือนนี้ใช้ ' + r.quota.used + '/' + r.quota.limit : '') : '⚠️ ไม่ได้ส่ง — ' + (r.why || ''), !r.sent); })
+      ['catch'](function(e){ toast('ส่งไม่สำเร็จ — ' + ((e && e.message) || ''), true); })
+      .then(function(){ b.disabled = false; b.textContent = 'ส่งข้อความทดสอบเข้ากลุ่ม'; });
+  });
   function refreshSheetAll(){ var a = el('sheetAll'); if (!a) return; a.hidden = DEPT_MODE || !SHEETINFO; if (SHEETINFO) a.href = sheetUrl(0); }
   refreshSheetAll();
   el('setBtn').addEventListener('click', refreshSheetAll);
