@@ -467,6 +467,10 @@
   .replbox{margin-top:6px;} .replbox.on{padding:8px; border:1.5px dashed var(--warn); border-radius:10px; background:color-mix(in srgb, var(--warn) 8%, transparent);}
   .replbox select{margin-top:6px;} .replchk{display:inline-flex; gap:6px; align-items:center; font-size:13px; font-weight:700; color:#e8590c; border:1.5px solid #e8590c; border-radius:999px; padding:5px 12px; cursor:pointer;} .replchk input{width:auto; min-height:0; margin:0;} .replbox.on .replchk{background:#e8590c; color:#fff;}
   .replpay{margin-top:6px; padding:8px 10px; border-left:4px solid var(--warn); border-radius:8px; background:color-mix(in srgb, var(--warn) 10%, transparent);}
+  .payline{grid-template-columns:1fr 80px; align-items:start;} .payline .full{grid-column:1 / -1;}
+  .paybox{display:flex; flex-direction:column; align-items:stretch; gap:2px;} .paybox input{width:100%; text-align:center;}
+  .rpsel2{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:6px 0 4px;} .rpsel2 label{display:flex; flex-direction:column; gap:2px; min-width:0;} .rpsel2 select{width:100%; min-width:0;}
+  @media (max-width:420px){ .rpsel2{grid-template-columns:1fr;} }
   .replflag{margin-top:6px; padding:6px 10px; border-radius:8px; background:var(--warn); color:#fff; font-size:13px;}
   .eqbackbar{position:sticky; top:-14px; z-index:6; display:flex; align-items:center; justify-content:space-between; gap:8px; margin:-14px -16px 10px; padding:10px 16px; background:var(--ground); border-bottom:1px solid var(--line);}
   .eqbackbar button{width:auto; min-height:38px; padding:0 14px;}
@@ -576,7 +580,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.81</span>
+      <span class="ver" id="appVer">v1.82</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -608,7 +612,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.81 · อัปเดต 15/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.82 · อัปเดต 16/10/2026</div>
     </div>
   </header>
 
@@ -2768,19 +2772,21 @@
             var it = getSku(l.sku), n = it ? onHand(it) : null;
             var paid = +l.paid || 0, rem = Math.max(0, l.qty - paid);
             var def = n == null ? rem : Math.max(0, Math.min(rem, Math.floor(n)));   // ของไม่พอ → ใส่เท่าที่มีให้ก่อน
-            return '<div class="reqline" style="grid-template-columns:1fr 88px"><div class="li-top" style="justify-content:flex-start">' + thumb(it) + '<div class="grow"><div class="li-name">' + esc(l.name) + '</div>'
+            return '<div class="reqline payline"><div class="li-top" style="justify-content:flex-start">' + thumb(it) + '<div class="grow"><div class="li-name">' + esc(l.name) + '</div>'
               + '<div class="li-meta">' + esc(l.sku) + ' · ขอ ' + fmt(l.qty) + ' ' + esc(l.unit)
               + (paid ? ' · <b>จ่ายแล้ว ' + fmt(paid) + ' ค้าง ' + fmt(rem) + '</b>' : '')
               + ' · ' + (n != null && n <= 0 ? '<span class="chip out">ของหมด</span>' : '<span class="' + (n != null && n < rem ? 'over' : '') + '">คงเหลือ ' + (n == null ? '—' : stockNum(it)) + '</span>') + '</div>'
               + '<label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:4px"><input type="checkbox" data-close="' + esc(l.sku) + '" style="width:auto; min-height:0"> ปิด ไม่จ่ายส่วนที่เหลือ</label>'
-              + (l.repl && !l.replDone ? (function(){ var ri = replInfo(l.repl), ty = (ri.e && ri.e.type) || eqGuess(l.name).type || 'เครื่องมือช่าง';
-                  return '<div class="replpay"><b>🔁 แลกของเก่า — ต้องได้ซากคืน</b><div class="li-meta">ตัวเก่า: ' + esc(ri.t) + '</div>'
-                    + '<div class="row" style="gap:6px; margin-top:6px"><select data-rst="' + esc(l.sku) + '" style="flex:1" aria-label="สถานะตัวเก่า"><option>เสีย</option><option>ส่งซ่อม</option></select>'
-                    + '<select data-rty="' + esc(l.sku) + '" style="flex:1" aria-label="ประเภทตัวใหม่">' + eqTypeOpts(ty) + '</select></div>'
-                    + '<div class="li-meta">กดจ่าย = ตัวใหม่ขึ้นทะเบียนเข้า <b>' + esc(g.dept) + '</b> ทันที · ตัวเก่าย้ายมา <b>PC / คลัง</b></div></div>'; })() : '')
               + '</div></div>'
-              + (it && it.ret ? '<label class="retpay">♻️ ได้ของเก่าคืน <input type="number" inputmode="decimal" min="0" data-ret="' + esc(l.sku) + '" value="' + def + '" aria-label="ของเก่าที่คืน"> ' + esc(l.unit || '') + (l.ret ? ' <span class="li-meta">(คืนแล้ว ' + fmt(l.ret) + ')</span>' : '') + '</label>' : '')   // v1.77
-              + '<input type="number" inputmode="decimal" min="0" max="' + rem + '" data-pay="' + esc(l.sku) + '" value="' + def + '" aria-label="จำนวนจ่ายรอบนี้"></div>';
+              + '<label class="paybox"><span class="li-meta">จ่าย</span><input type="number" inputmode="decimal" min="0" max="' + rem + '" data-pay="' + esc(l.sku) + '" value="' + def + '" aria-label="จำนวนจ่ายรอบนี้"></label>'
+              + (it && it.ret ? '<label class="retpay full">♻️ ได้ของเก่าคืน <input type="number" inputmode="decimal" min="0" data-ret="' + esc(l.sku) + '" value="' + def + '" aria-label="ของเก่าที่คืน"> ' + esc(l.unit || '') + (l.ret ? ' <span class="li-meta">(คืนแล้ว ' + fmt(l.ret) + ')</span>' : '') + '</label>' : '')   // v1.77
+              + (l.repl && !l.replDone ? (function(){ var ri = replInfo(l.repl), ty = (ri.e && ri.e.type) || eqGuess(l.name).type || 'เครื่องมือช่าง';   // v1.82 กล่องเต็มความกว้าง
+                  var old = /^NOREG:/.test(l.repl) ? '<b>ยังไม่อยู่ในทะเบียนของใช้</b> — กดจ่ายแล้วระบบขึ้นทะเบียนตัวเก่าให้เอง' : '<b>' + esc(ri.t) + '</b>';
+                  return '<div class="replpay full"><b>🔁 ของชำรุด ขอแลกเปลี่ยน — ต้องได้ซากคืนก่อนจ่าย</b><div class="li-meta" style="margin-top:2px">ตัวเก่า: ' + old + '</div>'
+                    + '<div class="rpsel2"><label><span class="li-meta">สถานะตัวเก่า</span><select data-rst="' + esc(l.sku) + '"><option>เสีย</option><option>ส่งซ่อม</option></select></label>'
+                    + '<label><span class="li-meta">ตัวใหม่เป็นของใช้ประเภท</span><select data-rty="' + esc(l.sku) + '">' + eqTypeOpts(ty) + '</select></label></div>'
+                    + '<div class="li-meta">กดจ่าย → ตัวใหม่ขึ้นทะเบียนเข้า <b>' + esc(g.dept) + '</b> · ตัวเก่าย้ายมา <b>PC / คลัง</b></div></div>'; })() : '')
+              + '</div>';
           }).join('')
         + '<div class="row" style="margin-top:10px; gap:8px">'
         +   '<button class="primary" data-act="pay" style="flex:2">จ่ายตามนี้</button>'
