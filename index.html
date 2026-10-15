@@ -471,6 +471,10 @@
   .paybox{display:flex; flex-direction:column; align-items:stretch; gap:2px;} .paybox input{width:100%; text-align:center;}
   .rpsel2{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:6px 0 4px;} .rpsel2 label{display:flex; flex-direction:column; gap:2px; min-width:0;} .rpsel2 select{width:100%; min-width:0;}
   @media (max-width:420px){ .rpsel2{grid-template-columns:1fr;} }
+  .pendcard{border:2px solid #e8a20c; background:color-mix(in srgb, #e8a20c 7%, var(--surface));}
+  .pendhead{display:flex; flex-direction:column; gap:2px; margin-bottom:6px;}
+  .pendline{display:flex; align-items:center; gap:8px; padding:6px 0; border-top:1px dashed var(--line);} .pendline .chip{flex:none; font-size:11px;}
+  .pendchip{display:inline-block; margin-top:4px; padding:2px 8px; border-radius:6px; background:#fff3d6; color:#8a5a00; font-size:12px; font-weight:700;}
   .replflag{margin-top:6px; padding:6px 10px; border-radius:8px; background:var(--warn); color:#fff; font-size:13px;}
   .eqbackbar{position:sticky; top:-14px; z-index:6; display:flex; align-items:center; justify-content:space-between; gap:8px; margin:-14px -16px 10px; padding:10px 16px; background:var(--ground); border-bottom:1px solid var(--line);}
   .eqbackbar button{width:auto; min-height:38px; padding:0 14px;}
@@ -580,7 +584,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.83</span>
+      <span class="ver" id="appVer">v1.84</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -612,7 +616,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.83 · อัปเดต 16/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.84 · อัปเดต 16/10/2026</div>
     </div>
   </header>
 
@@ -758,6 +762,7 @@
         </div>
         <select id="d_round" hidden><option>ในรอบศุกร์</option><option>ด่วนนอกรอบ</option></select>
       </div>
+      <div class="card pendcard" id="d_pend" hidden></div>
       <button type="button" class="replbig" id="d_replBig"><span class="rbrow"><span>🔁 ของชำรุด ขอแลกเปลี่ยน</span><span class="rbgo">แตะที่นี่ ›</span></span><small>ของใช้พัง/ชำรุด เอาตัวเก่า (ซาก) มาคืน PC แล้วรับตัวใหม่ — เลือกตัวเก่า · ถ่ายรูปซาก · เลือกตัวใหม่ จบในหน้าเดียว</small></button>
       <div class="card" id="d_quickCard">
         <div id="d_quick"></div>
@@ -2887,6 +2892,7 @@
     if (el('v-req').hidden) return;
     el('d_cut').innerHTML = cutText();
     renderWho();   // v1.76
+    renderPend();   // v1.84
     var sel_ = el('d_dept');
     if (!sel_.options.length){
       sel_.innerHTML = '<option value="">— เลือกแผนก —</option>' + DEPTS.map(function(d){ return '<option>' + esc(d) + '</option>'; }).join('');
@@ -2905,7 +2911,7 @@
     lst.innerHTML = rows.map(function(it){
       var n = onHand(it), inCart = cart.some(function(c){ return c.sku === it.sku; });
       return '<li class="tap' + (n > 0 ? '' : ' outrow') + '" data-add="' + esc(it.sku) + '"><div class="li-top"><span class="skucol">' + esc(it.sku) + '</span>' + thumb(it) + '<div class="grow">'
-        + '<div class="li-name">' + esc(it.name) + '</div>' + descLine(it) + retChip(it)
+        + '<div class="li-name">' + esc(it.name) + '</div>' + descLine(it) + retChip(it) + (function(){ var pd = pendSku(el('d_dept').value, it.sku); return pd.rem > 0 ? '<div class="pendchip">⏳ ขอไว้แล้ว ค้าง ' + fmt(pd.rem) + ' ' + esc(it.unit || '') + ' (ใบ ' + esc(pd.nos.join(', ')) + ')</div>' : ''; })()
         + (n > 0 ? '<div class="stk ' + stockCls(it) + '">📦 มีของ ' + fmt(n) + ' ' + esc(it.unit || '') + '</div>' : '<div class="stk out">⛔ ของหมด</div><div class="li-meta">ขอได้ — ใบจะค้างไว้จนของเข้า</div>')
         + '</div><span class="addbtn' + (inCart ? ' in' : '') + '" aria-label="' + (inCart ? 'อยู่ในใบแล้ว' : 'เพิ่ม') + '">' + (inCart ? '✓' : '+') + '</span></div></li>';
     }).join('') || '<li class="empty">ไม่พบ "' + esc(q) + '" — ลองคำอื่น หรือ <button type="button" class="ghost" data-xfill style="width:auto; min-height:32px; padding:0 10px">🆕 ขอเป็นของนอกระบบ</button></li>';   // v1.61
@@ -2914,6 +2920,9 @@
     el('d_list').querySelectorAll('[data-add]').forEach(function(li){
       li.addEventListener('click', function(){
         var it = getSku(li.getAttribute('data-add')); if (!it) return;
+        var pd = pendSku(el('d_dept').value, it.sku);   // v1.84 ขอไว้แล้วยังค้าง
+        if (pd.rem > 0 && !cart.some(function(c){ return c.sku === it.sku; }) && li.getAttribute('data-warned') !== '1'){
+          li.setAttribute('data-warned', '1'); toast('⚠️ ' + it.name.slice(0, 26) + ' ขอไว้แล้วในใบ ' + pd.nos.join(', ') + ' ยังค้าง ' + fmt(pd.rem) + ' — ถ้าต้องการเพิ่มจริง แตะอีกครั้ง', true); return; }
         if (!addToCart(it, 1)) return;                                   // v1.33 ต้องเลือกไลน์ก่อน
         saveCart(); renderReq(); flashLine(it.sku, false); toast('เพิ่ม ' + it.name.slice(0,30) + ' ในใบแล้ว');
       });
@@ -2927,7 +2936,7 @@
       var stock = n == null ? '' : '<div class="clstock ' + (n <= 0 ? 'out' : n < c.qty ? 'low' : 'ok') + '">📦 มีในคลังตอนนี้ <b>' + fmt(Math.max(0, n)) + '</b> ' + u + '</div>';
       var warn = n == null ? '' : n <= 0 ? '<div class="outnote">⛔ ของหมด — ส่งใบได้ PC จะค้างไว้ จ่ายเมื่อของเข้า</div>'
                : n < c.qty ? '<div class="outnote soft">มีไม่พอ — ได้ก่อน ' + fmt(n) + ' ที่เหลือค้างไว้</div>' : '';
-      return '<div class="cartline" data-sku="' + esc(c.sku) + '"><div class="clinfo"><div class="li-name"><span class="lnno">' + (i + 1) + '</span>' + esc(c.name) + '</div><div class="li-meta">' + esc(c.sku) + '</div>' + stock + warn + retChip(it) + replCtl('c', i, c.repl, cartDept) + '</div>'
+      return '<div class="cartline" data-sku="' + esc(c.sku) + '"><div class="clinfo"><div class="li-name"><span class="lnno">' + (i + 1) + '</span>' + esc(c.name) + '</div><div class="li-meta">' + esc(c.sku) + '</div>' + stock + warn + (function(){ var pd = pendSku(cartDept, c.sku); return pd.rem > 0 ? '<div class="pendchip">⏳ ขอไว้แล้วในใบ ' + esc(pd.nos.join(', ')) + ' ยังค้าง ' + fmt(pd.rem) + ' — แน่ใจว่าต้องการเพิ่ม?</div>' : ''; })() + retChip(it) + replCtl('c', i, c.repl, cartDept) + '</div>'
         + '<div class="clctl"><button class="ghost qb" data-dec="' + i + '" aria-label="ลด">−</button>'
         + '<input type="number" inputmode="decimal" min="0" data-q="' + i + '" value="' + c.qty + '" aria-label="จำนวนขอ">'
         + '<button class="ghost qb" data-inc="' + i + '" aria-label="เพิ่ม">+</button><span class="clu">' + u + '</span>'
@@ -3011,6 +3020,31 @@
   /* ---------- v1.76 หน้าขอเบิกแบบโล่ง: ป๊อปอัป แผนก/ชื่อ · ของนอกระบบ · หมายเหตุ/รูป · แลกของเก่า (ขั้นตอนเดียว) ---------- */
   function openPop(id){ var p = el(id); if (!p) return; p.hidden = false; if (id === 'pop_repl') renderReplPop(); }
   function closePop(id){ var p = el(id); if (!p || p.hidden) return; p.hidden = true; if (id === 'pop_who'){ renderReq(); } }
+  /* v1.84 ของที่แผนกขอไว้แล้ว PC ยังไม่ได้จ่าย — โชว์บนหน้าขอเบิก กันขอซ้ำ */
+  function pendOf(dept){
+    if (!dept) return [];
+    return (requests || []).filter(function(r){ return r.dept === dept && (r.st === 'รอจ่าย' || r.st === 'นอกระบบ'); }).map(function(r){
+      var rem = r.st === 'รอจ่าย' ? Math.max(0, (+r.qty || 0) - (+r.paid || 0)) : (+r.qty || 0);
+      return {sku: r.sku, name: r.name, unit: r.unit, rem: rem, no: r.no, ts: r.ts, x: r.st === 'นอกระบบ', paid: +r.paid || 0};
+    }).filter(function(p){ return p.rem > 0; }).sort(function(a, b){ return a.ts < b.ts ? -1 : 1; });
+  }
+  function pendSku(dept, sku){ return pendOf(dept).filter(function(p){ return !p.x && p.sku === sku; }).reduce(function(a, p){ a.rem += p.rem; a.nos.push(p.no); return a; }, {rem: 0, nos: []}); }
+  var pendAll = false;
+  function renderPend(){
+    var box = el('d_pend'); if (!box) return;
+    var dept = el('d_dept').value, list = pendOf(dept);
+    box.hidden = !list.length; if (!list.length){ box.innerHTML = ''; return; }
+    var shown = pendAll ? list : list.slice(0, 6);
+    box.innerHTML = '<div class="pendhead"><b>⏳ ของที่ ' + esc(dept) + ' ขอไว้แล้ว ยังไม่ได้ (' + list.length + ' รายการ)</b><span class="li-meta">ไม่ต้องขอซ้ำ — PC จ่ายให้เมื่อของเข้า</span></div>'
+      + shown.map(function(p){
+          var it = p.x ? null : getSku(p.sku), n = it ? onHand(it) : null;
+          var st = p.x ? '<span class="chip na">รอ PC จัดหา</span>' : n != null && n >= p.rem ? '<span class="chip ok">มีของแล้ว รอจ่าย</span>' : '<span class="chip warn">รอของเข้า</span>';
+          return '<div class="pendline">' + (it ? thumb(it) : '<span class="thumb none">🆕</span>') + '<div class="grow"><div class="li-name" style="font-weight:600">' + esc(p.name) + '</div>'
+            + '<div class="li-meta">ค้าง <b>' + fmt(p.rem) + ' ' + esc(p.unit || '') + '</b>' + (p.paid ? ' (ได้แล้ว ' + fmt(p.paid) + ')' : '') + ' · ใบ ' + esc(p.no) + ' · ' + whenTH(p.ts) + '</div></div>' + st + '</div>';
+        }).join('')
+      + (list.length > 6 ? '<button type="button" class="ghost" id="d_pendMore" style="width:100%; margin-top:6px">' + (pendAll ? 'ย่อ' : 'ดูทั้งหมด ' + list.length + ' รายการ') + '</button>' : '');
+    var mb = el('d_pendMore'); if (mb) mb.addEventListener('click', function(){ pendAll = !pendAll; renderPend(); });
+  }
   function renderWho(){
     var b = el('d_whoLine'); if (!b) return;
     var d = el('d_dept').value, w = (el('d_who').value || '').trim(), urg = el('d_round').value === 'ด่วนนอกรอบ';
