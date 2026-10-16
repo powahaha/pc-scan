@@ -648,7 +648,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.87</span>
+      <span class="ver" id="appVer">v1.88</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -680,7 +680,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.87 · อัปเดต 16/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.88 · อัปเดต 16/10/2026</div>
     </div>
   </header>
 
@@ -3190,6 +3190,29 @@
       });
     });
   }
+
+  /* v1.88 ลิงก์จากการ์ด LINE (?req=เลขใบ) → เปิดแท็บใบเบิก แล้วเลื่อนไปการ์ดใบนั้น + ไฮไลต์ */
+  (function(){
+    var m = QS.match(/[?&]req=([^&#]+)/); if (!m || DEPT_MODE) return;
+    var no = decodeURIComponent(m[1]).trim(), n = 0, clicked = false;
+    var tm = setInterval(function(){
+      n++;
+      var v = el('v-inbox'), tab = el('t-inbox'); if (!v || !tab) { clearInterval(tm); return; }
+      if (!clicked){ clicked = true; tab.click(); }
+      var hit = [].slice.call(v.querySelectorAll('details, .card')).filter(function(c){ return c.textContent.indexOf(no) >= 0; })
+        .sort(function(a, b){ return a.textContent.length - b.textContent.length; })[0];
+      if (hit){
+        clearInterval(tm);
+        var p = hit; while (p && p !== v){ if (p.tagName === 'DETAILS') p.open = true; p = p.parentElement; }
+        if (hit.tagName === 'DETAILS') hit.open = true;
+        setTimeout(function(){
+          hit.scrollIntoView({block:'center', behavior:'smooth'});
+          hit.style.transition = 'box-shadow .3s'; hit.style.boxShadow = '0 0 0 4px #F2B63C';
+          setTimeout(function(){ hit.style.boxShadow = ''; }, 4000);
+        }, 150);
+      } else if (n > 60){ clearInterval(tm); toast('ไม่เจอใบ ' + no + ' ในแท็บใบเบิก (อาจจ่ายครบ/ยกเลิกไปแล้ว)', true); }
+    }, 500);
+  })();
 
   /* v1.87 ส่งใบที่มีแค่ 1 รายการ → ป๊อปอัปถามก่อน (กันส่งทีละรายการ หลายใบ) */
   var dOneOk = false;
