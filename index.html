@@ -648,7 +648,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.86</span>
+      <span class="ver" id="appVer">v1.87</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -680,7 +680,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.85 · อัปเดต 16/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.87 · อัปเดต 16/10/2026</div>
     </div>
   </header>
 
@@ -3176,17 +3176,36 @@
       var rpAll = cart.filter(function(c){ return c.qty > 0; }).concat(dExtra).filter(function(o){ return o.repl != null; });   // v1.75 แลกของเก่า
       if (rpAll.some(function(o){ return o.repl === ''; })){ toast('เลือกตัวเก่าที่จะเอามาแลกก่อน (หาไม่เจอ เลือก "ไม่อยู่ในทะเบียน")', true); var ns = document.querySelector('[data-rpsel].needf'); if (ns){ ns.scrollIntoView({block:'center', behavior:'smooth'}); ns.focus(); } return; }
       if (rpAll.length && !dPhotos.length){ toast('แลกของเก่า — ถ่ายรูปตัวเก่าที่ชำรุดก่อน อย่างน้อย 1 รูป', true); openPop('pop_note'); return; }
+      if (lines.length + dExtra.length === 1 && !dOneOk){ askOneItem(); return; }   // v1.87 ใบละ 1 รายการ → ถามก่อน ให้เพิ่มของอื่นในใบเดียวกัน
+      dOneOk = false;
       lsSetRaw(K_DEPT, dept); lsSetRaw(K_RWHO, rw);
       reqAction({action:'request', req:{dept:dept, who:rw, round:el('d_round').value, note:(el('d_note').value || '').trim(), lines:lines, extra:dExtra.map(function(x){ return Object.assign({}, x, {repl: replOut(x)}); }), photos:dPhotos}},
                 '', el('d_send')).then(function(j){
         if (!j) return;
         if (!j.reqNo){ toast('ส่งไม่สำเร็จ — ระบบฝั่ง Sheet ยังไม่อัปเดต แจ้ง ' + OWN + '', true); return; }
-        toast('ส่งใบ ' + j.reqNo + ' ให้ ' + OWN + ' แล้ว');
+        toast(j.reqMerged ? '➕ เพิ่มเข้าใบ ' + j.reqNo + ' เดิมแล้ว (' + OWN + ' ยังไม่ได้จ่าย เลยรวมเป็นใบเดียว)' : 'ส่งใบ ' + j.reqNo + ' ให้ ' + OWN + ' แล้ว');   // v1.87
         cart = []; saveCart(); el('d_note').value = ''; el('d_q').value = ''; el('d_round').value = RNAME; el('d_urgent').checked = false; renderNoteSum();
         dExtra = []; lsSet('pcscan_dextra', dExtra); dPhotos = []; renderDExtra(); renderDPhotos();   // v1.61
         show('t-mine');
       });
     });
+  }
+
+  /* v1.87 ส่งใบที่มีแค่ 1 รายการ → ป๊อปอัปถามก่อน (กันส่งทีละรายการ หลายใบ) */
+  var dOneOk = false;
+  function askOneItem(){
+    var p = el('pop_one');
+    if (!p){
+      p = document.createElement('div'); p.className = 'pop'; p.id = 'pop_one'; p.hidden = true;
+      p.innerHTML = '<div class="popcard"><div class="pophead"><b>ใบนี้มีแค่ 1 รายการ</b><button type="button" class="ghost popx" data-oneclose aria-label="ปิด">✕</button></div>'
+        + '<div class="note" style="font-size:15px; margin:0 0 12px">ใบเดียวใส่ของได้หลายรายการ — ถ้ามีของอื่นจะขออีก <b>เพิ่มให้ครบก่อน แล้วค่อยกดส่งทีเดียว</b> ' + OWN + ' จะจ่ายได้ในรอบเดียว</div>'
+        + '<div class="row" style="gap:8px"><button type="button" class="primary" id="one_add" style="flex:2">➕ เพิ่มของอีก</button><button type="button" class="ghost" id="one_send" style="flex:1">ส่งเลย</button></div></div>';
+      document.body.appendChild(p);
+      p.addEventListener('click', function(e){ if (e.target === p || (e.target.closest && e.target.closest('[data-oneclose]'))) p.hidden = true; });
+      el('one_add').addEventListener('click', function(){ p.hidden = true; var q = el('d_q'); if (q){ q.scrollIntoView({block:'center', behavior:'smooth'}); setTimeout(function(){ q.focus(); }, 250); } });
+      el('one_send').addEventListener('click', function(){ p.hidden = true; dOneOk = true; el('d_send').click(); });
+    }
+    p.hidden = false;
   }
 
   /* ---------- v1.61 มุมมองแผนก: ของที่ไม่มีในระบบ + รูปแนบใบ ---------- */
