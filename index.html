@@ -3205,6 +3205,7 @@
         clearInterval(tm);
         var p = hit; while (p && p !== v){ if (p.tagName === 'DETAILS') p.open = true; p = p.parentElement; }
         if (hit.tagName === 'DETAILS') hit.open = true;
+        [].slice.call(hit.querySelectorAll('details')).forEach(function(d){ d.open = true; });   // เปิดรายการในใบให้เห็นเลย
         setTimeout(function(){
           hit.scrollIntoView({block:'center', behavior:'smooth'});
           hit.style.transition = 'box-shadow .3s'; hit.style.boxShadow = '0 0 0 4px #F2B63C';
