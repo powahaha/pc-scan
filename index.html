@@ -10,6 +10,60 @@
 <link rel="manifest" id="mf" href="manifest-pc.json">
 <link rel="icon" id="fav" href="icon-pc-192.png">
 <link rel="apple-touch-icon" id="ati" href="icon-pc-180.png">
+<script src="config.js"></script>
+<script>
+/* ===== v1.86 แม่แบบ (template): ค่าของแต่ละชุดอยู่ใน config.js ข้างไฟล์นี้ — ไฟล์ index.html เหมือนกันทุกชุด ===== */
+(function(){
+  var PC = {
+    id: 'pc', ls: '', name: 'โรงงาน 1', owner: 'PC', store: 'PC / คลัง', what: 'วัสดุสิ้นเปลือง',
+    api: 'https://script.google.com/macros/s/AKfycbwO41Enxx8NMRPOLbXLqdE9Y8GfoOxwDdiGxVUlSRGaNNfTuQr0RHPPimwfpnG1Beji/exec',
+    sku: 'CS', seed: true, file: 'pc-scan',
+    depts: ['CNC','Robot','Friction','Assy','Finishing & Hand weld','QA','MT/HW'],
+    qr: {cnc:'CNC', robot:'Robot', friction:'Friction', assy:'Assy', finish:'Finishing & Hand weld', qa:'QA', mthw:'MT/HW'},
+    mapImg: 'plant1-map.jpg',
+    spots: [
+      {k:'ตู้ 1', b:'ตู้ 1', x:59.7, y:52.3, w:3.6, h:8, sh:2},
+      {k:'ตู้ 2', b:'ตู้ 2', x:63.5, y:52.3, w:3.6, h:8, sh:3},
+      {k:'ตู้ 3', b:'ตู้ 3', x:67.1, y:52.3, w:3.6, h:8, sh:3},
+      {k:'ตู้ 4', b:'ตู้ 4 (ห้อง QA)', x:90.7, y:60.2, w:3.6, h:8, sh:0},
+      {k:'ห้องเก็บสารเคมี', b:'ห้องสารเคมี', re:'สารเคมี', x:17.2, y:77.3, w:15.4, h:12, sh:0}
+    ],
+    features: {}
+  };
+  var c = window.APP_CONFIG, err = '';
+  var pcRoot = /^\/pc-scan\/(index\.html|master\.html|ai-test\.html)?$/.test(location.pathname) || location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  var cfg;
+  if (!c && pcRoot) c = {id: 'pc'};
+  if (!c) err = 'ไม่พบไฟล์ config.js ของชุดนี้ — อัป config.js ไว้ในโฟลเดอร์เดียวกับ index.html';
+  else if (c.id === 'pc') { cfg = {}; for (var k in PC) cfg[k] = PC[k]; for (k in c) cfg[k] = c[k]; }
+  else {
+    // ชุดอื่น: ห้ามใช้ค่าของ PC เป็นค่าเริ่มต้น (กันข้อมูลเข้า Sheet ของ PC)
+    var own = c.owner || 'คลัง';
+    cfg = {ls: (c.id || 'x') + ':', name: '', owner: own, store: own + ' / คลัง', what: 'วัสดุสิ้นเปลือง', api: '', sku: '', seed: false,
+           file: (c.id || 'app') + '-scan', depts: [], qr: {}, mapImg: '', spots: [], features: {}};
+    for (k in c) cfg[k] = c[k];
+    cfg.seed = false;
+    if (!c.id || !/^[a-z0-9-]{2,20}$/.test(c.id)) err = 'config.js: id ต้องเป็นภาษาอังกฤษตัวเล็ก/ตัวเลข 2–20 ตัว';
+    else if (!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(cfg.api)) err = 'config.js: ยังไม่ได้ใส่ api (ลิงก์ /exec ของ Apps Script ชุดนี้)';
+    else if (cfg.api === PC.api) err = 'config.js: api ยังเป็นลิงก์ของ PC โรงงาน 1 — ต้องใช้ Apps Script ของชุดนี้เอง';
+    else if (!/^[A-Z]{1,4}$/.test(cfg.sku)) err = 'config.js: sku (ตัวนำหน้ารหัส เช่น MT) ต้องเป็นตัวอังกฤษใหญ่ 1–4 ตัว';
+    else if (!cfg.depts.length) err = 'config.js: ยังไม่ได้ใส่รายชื่อแผนก/ไลน์ (depts)';
+  }
+  window.APP_CFG = cfg || {}; window.APP_CFG_ERR = err;
+  // แยกที่จำในเครื่องของแต่ละชุด (ทุกชุดอยู่โดเมน powahaha.github.io เดียวกัน — ไม่แยกจะใช้ลิงก์/PIN/ใบขอเบิกปนกัน)
+  if (cfg && cfg.ls) {
+    var P = cfg.ls, S = Storage.prototype, g = S.getItem, st = S.setItem, rm = S.removeItem;
+    S.getItem = function(k){ return g.call(this, P + k); };
+    S.setItem = function(k, v){ return st.call(this, P + k, v); };
+    S.removeItem = function(k){ return rm.call(this, P + k); };
+  }
+  if (err) document.addEventListener('DOMContentLoaded', function(){
+    document.body.innerHTML = '<div style="max-width:520px;margin:40px auto;padding:20px;font:16px/1.6 sans-serif;border:2px solid #d92d20;border-radius:12px">'
+      + '<b style="color:#d92d20">⛔ ตั้งค่าชุดนี้ยังไม่ครบ</b><br>' + err.replace(/</g, '&lt;') + '<br><br><small>ดูคู่มือ "เปิดชุดใหม่" ของ PC</small></div>';
+  });
+  if (cfg && cfg.name) document.title = document.title.replace('โรงงาน 1', cfg.name);
+})();
+</script>
 <script>(function(){ if (/[?&]v=dept/.test(location.search)) { document.getElementById('mf').href = 'manifest-dept.json'; document.getElementById('fav').href = 'icon-dept-192.png'; document.getElementById('ati').href = 'icon-dept-180.png'; var t = document.querySelector('meta[name="theme-color"]'); if (t) t.content = '#1e7f45'; } })();</script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
@@ -594,7 +648,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.85</span>
+      <span class="ver" id="appVer">v1.86</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -922,7 +976,22 @@
 <script>
 (function(){
   "use strict";
-  var SEED = JSON.parse(document.getElementById('seed').textContent);
+  if (window.APP_CFG_ERR) return;
+  var CFG = window.APP_CFG, OWN = CFG.owner || 'PC', STORE = CFG.store || (OWN + ' / คลัง'), SKUP = CFG.sku || 'CS';
+  var TH_DAY = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'], RDAY = CFG.roundDay === undefined ? 5 : CFG.roundDay, RTIME = CFG.roundTime || '13:00', RHH = +RTIME.split(':')[0], RMM = +RTIME.split(':')[1] || 0, RNAME = RDAY == null ? 'ปกติ' : 'ในรอบ' + TH_DAY[RDAY];
+  (function(){   // v1.86 ชื่อชุด/ชื่อผู้ดูแลคลัง ในข้อความคงที่ของหน้า
+    var fin = function(){ var pl = document.querySelector('header .plant'); if (pl) pl.textContent = CFG.name;
+      var at = document.getElementById('appTitle'); if (at) at.textContent = 'สแกนเบิก-รับ ' + CFG.what;
+      var dr = document.getElementById('d_round'); if (dr && dr.options[0]) dr.options[0].textContent = RNAME; };
+    if (OWN === 'PC' && CFG.name === 'โรงงาน 1') return fin();
+    var W = /(^|[^A-Za-z_])PC(?![A-Za-z_])/g, tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), n;
+    while ((n = tw.nextNode())) { var v = n.nodeValue.replace(/โรงงาน 1/g, CFG.name).replace(/\bCS-(?=\d)/g, SKUP + '-').replace(/\bcs(?=0\d)/g, SKUP.toLowerCase()); if (/[\u0E00-\u0E7F]/.test(v)) v = v.replace(W, '$1' + OWN); n.nodeValue = v; }
+    Array.prototype.forEach.call(document.querySelectorAll('[placeholder],[title]'), function(e){
+      ['placeholder','title'].forEach(function(a){ var v = e.getAttribute(a); if (v) e.setAttribute(a, v.replace(/โรงงาน 1/g, CFG.name).replace(/\bCS-(?=\d)/g, SKUP + '-').replace(W, '$1' + OWN)); });
+    });
+    fin();
+  })();
+  var SEED = CFG.seed ? JSON.parse(document.getElementById('seed').textContent) : [];
   var ITEMS = [], BY_SKU = {}, BY_OLD = {}, BY_BC = {};
   // บาร์โค้ดเทียบแบบตัดเลข 0 ข้างหน้า — Sheet ชอบตัด 0 ทิ้ง ส่วนกล้องอ่านมาครบ
   function nz(s){ return String(s == null ? '' : s).trim().replace(/^0+/, ''); }
@@ -1016,7 +1085,7 @@
   function newGroup(name){            // สร้างกลุ่มใหม่ (ต้อง PIN) → คืนรหัสกลุ่ม
     name = String(name || '').trim();
     if (!name) return Promise.reject(new Error('ใส่ชื่อกลุ่มใหม่ก่อน'));
-    if (!pinOk) return Promise.reject(new Error('สร้างกลุ่มใหม่ต้องใส่ PIN ของ PC'));
+    if (!pinOk) return Promise.reject(new Error('สร้างกลุ่มใหม่ต้องใส่ PIN ของ ' + OWN + ''));
     var ex = GROUPS.filter(function(g){ return String(g.name).toLowerCase() === name.toLowerCase(); })[0];
     if (ex) return Promise.resolve(ex.g);
     return api({action:'setgroup', group:{name: name, kw: '', cat: ''}}).then(function(j){ takeServer(j); return j.group; });
@@ -1029,7 +1098,7 @@
     var L = bcList(it); if (!L.length) return '';
     return '<details class="bcbox" id="bcbox"' + (bcOpen === it.sku ? ' open' : '') + '><summary>🏷 บาร์โค้ดที่ผูกไว้ (' + L.length + ')</summary>'
       + L.map(function(c){ return '<div class="bcrow"><code>' + esc(c) + '</code>'
-        + (pinOk ? '<span class="bcbtns"><input type="text" class="bcmv" data-mvin="' + esc(c) + '" placeholder="ย้ายไป CS-…" autocomplete="off">'
+        + (pinOk ? '<span class="bcbtns"><input type="text" class="bcmv" data-mvin="' + esc(c) + '" placeholder="ย้ายไป ' + SKUP + '-…" autocomplete="off">'
           + '<button type="button" class="ghost" data-mv="' + esc(c) + '">↪ ย้าย</button>'
           + '<button type="button" class="ghost bcx" data-unbind="' + esc(c) + '">' + (bcArm === c ? 'แตะอีกครั้ง ยืนยัน' : '✕ ยกเลิกผูก') + '</button></span>' : '')
         + '</div>'; }).join('')
@@ -1048,7 +1117,7 @@
     }); });
     d.querySelectorAll('[data-mv]').forEach(function(b){ b.addEventListener('click', function(){
       var c = b.getAttribute('data-mv'), inp = d.querySelector('[data-mvin="' + c + '"]'), to = lookup(inp ? inp.value : '');
-      if (!to || to.off){ toast('ไม่พบรหัสปลายทาง — พิมพ์เช่น CS-003', true); if (inp) inp.focus(); return; }
+      if (!to || to.off){ toast('ไม่พบรหัสปลายทาง — พิมพ์เช่น ' + SKUP + '-003', true); if (inp) inp.focus(); return; }
       if (to.sku === it.sku){ toast('ผูกกับรหัสนี้อยู่แล้ว', true); return; }
       b.disabled = true;
       api({action:'movebind', barcode: c, sku: to.sku, who: 'PC'}).then(function(j){ takeServer(j); toast('ย้ายบาร์โค้ด ' + c + ' ไป ' + to.sku + ' แล้ว'); pick(getSku(to.sku), false); })
@@ -1071,7 +1140,7 @@
     [[p.s1,p.p1],[p.s2,p.p2],[p.s3,p.p3]].forEach(function(x){ if (x[0] && x[1] != null && x[1] > 0 && (!best || x[1] < best.price)) best = {shop:x[0], price:x[1]}; });
     return best;
   }
-  var DEPTS = ['CNC','Robot','Friction','Assy','Finishing & Hand weld','QA','MT/HW'];
+  var DEPTS = CFG.depts.slice();
 
   var log = [], bcMap = {}, pending = [];
   var sel = null, bindCode = null, dir = 'เบิกออก', qty = 1, pcMode = true, seedTried = false;
@@ -1091,7 +1160,7 @@
   function lsSetRaw(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
 
   // ลิงก์ Sheet ของโรงงาน 1 ฝังไว้ในตัว — ทุกเครื่องต่อ Sheet อัตโนมัติ ไม่ต้องไปตั้งค่าเอง
-  var DEFAULT_API = 'https://script.google.com/macros/s/AKfycbwO41Enxx8NMRPOLbXLqdE9Y8GfoOxwDdiGxVUlSRGaNNfTuQr0RHPPimwfpnG1Beji/exec';
+  var DEFAULT_API = CFG.api;
   API = lsGetRaw(K_API) || DEFAULT_API;
   who = lsGetRaw(K_WHO);
   log = lsGet(K_LOG, []);
@@ -1108,7 +1177,7 @@
   if (cart.length && !CARTS[cartDept]) CARTS[cartDept] = cart;
   cart = CARTS[cartDept] || [];
   // v1.36 QR ประจำไลน์: ?v=dept&d=cnc → เลือกไลน์ให้เลย (เปลี่ยนเองทีหลังได้)
-  var QR_DEPT = {cnc:'CNC', robot:'Robot', friction:'Friction', assy:'Assy', finish:'Finishing & Hand weld', qa:'QA', mthw:'MT/HW'};
+  var QR_DEPT = CFG.qr || {};
   (function(){
     var m = QS.match(/[?&]d=([^&]+)/), d = m && QR_DEPT[decodeURIComponent(m[1]).toLowerCase()];
     if (!DEPT_MODE || !d || d === cartDept) return;
@@ -1226,7 +1295,7 @@
     if (j.master && j.master.length){
       setItems(j.master); lsSet(K_MASTER, j.master);
       if (sel) sel = getSku(sel.sku) || null;     // ให้การ์ดที่เปิดอยู่ใช้ข้อมูลล่าสุด
-    } else if (j.master && !j.master.length && !seedTried){
+    } else if (j.master && !j.master.length && !seedTried && SEED.length){
       // แท็บ Master ยังว่าง — ใส่ทะเบียนตั้งต้นให้ครั้งเดียว (ฝั่ง Sheet กันใส่ซ้ำเอง)
       seedTried = true;
       api({action:'seed', items: SEED}).then(takeServer)['catch'](function(){});
@@ -1342,8 +1411,8 @@
       .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
   function lookup(raw){
-    var s0 = String(raw||'').trim(), mm = s0.match(/^c\s*s\s*[-_.\s]?\s*0*(\d{1,3})$/i);   // v1.31 cs071 / CS 71 / cs-071 = CS-071
-    if (mm){ var k = 'CS-' + ('00' + mm[1]).slice(-3); if (BY_SKU[k] || OFF_SKU[k]) return BY_SKU[k] || OFF_SKU[k]; }
+    var s0 = String(raw||'').trim(), mm = s0.match(new RegExp('^' + SKUP.split('').join('\\s*') + '\\s*[-_.\\s]?\\s*0*(\\d{1,3})$', 'i'));   // v1.31 cs071 / CS 71 / cs-071 = CS-071
+    if (mm){ var k = SKUP + '-' + ('00' + mm[1]).slice(-3); if (BY_SKU[k] || OFF_SKU[k]) return BY_SKU[k] || OFF_SKU[k]; }
     var s = String(raw||'').trim();
     if (!s) return null;
     var z = nz(s);
@@ -1406,8 +1475,8 @@
     if (!DEPT_MODE) nav.classList.add('pc');   // v1.46 แท็บ PC เป็นกรอบแยกกัน + ไอคอน แบบเดียวกับฝั่งแผนก
     if (DEPT_MODE){
       nav.classList.add('dept'); nav.style.gridTemplateColumns = '0.72fr 1.14fr 1.14fr';   // v1.35 รายการ ปุ่มเล็กซ้ายสุด
-      el('appTitle').textContent = 'ขอเบิกวัสดุสิ้นเปลือง';
-      document.title = 'ขอเบิกของ โรงงาน 1';
+      el('appTitle').textContent = 'ขอเบิก' + CFG.what;
+      document.title = 'ขอเบิกของ ' + CFG.name;
     }
   })();
   var curTab = '', listScroll = 0;
@@ -1541,10 +1610,10 @@
       +     DEPTS.map(function(d){ return '<option>' + esc(d) + '</option>'; }).join('')
       +   '</select></div>'
       +   '<div style="flex:1 1 120px"><label class="fld" for="rd">รอบ</label><select id="rd">'
-      +     '<option>ในรอบศุกร์</option><option>ด่วนนอกรอบ</option></select></div>'
+      +     '<option>' + RNAME + '</option><option>ด่วนนอกรอบ</option></select></div>'
       + '</div>'
       + '<div style="margin-top:12px"><label class="fld">ผู้ทำรายการ</label>'
-      +   '<label class="pcchk"><input type="checkbox" id="whPC"' + (pcMode ? ' checked' : '') + '><span>PC จ่ายของ</span></label>'
+      +   '<label class="pcchk"><input type="checkbox" id="whPC"' + (pcMode ? ' checked' : '') + '><span>' + OWN + ' จ่ายของ</span></label>'
       +   '<input type="text" id="wh" value="' + esc(who) + '" placeholder="ชื่อคนทำรายการ" autocomplete="off"'
       +   (pcMode ? ' hidden' : '') + ' style="margin-top:8px"></div>'
       + '<div style="margin-top:14px"><button class="primary savebtn" id="save">' + (dir === 'รับเข้า' ? '📥 บันทึก รับเข้า' : '📤 บันทึก เบิกออก') + '</button></div>'
@@ -1734,7 +1803,7 @@
     var p = pr(it) || {}, u = unitPrice(it), best = cheapest(it), f = pf(it);
     var unit = p.pu ? '/' + esc(p.pu) : (it.unit ? '/' + esc(it.unit) : '');
     var hist = PURCH.filter(function(h){ return String(h.sku).toUpperCase() === String(it.sku).toUpperCase(); }).slice(-3).reverse();
-    var h = '<div class="pricebox"><div class="row" style="justify-content:space-between"><b>ราคา & ร้าน</b><span class="chip na">เฉพาะ PC</span></div>';
+    var h = '<div class="pricebox"><div class="row" style="justify-content:space-between"><b>ราคา & ร้าน</b><span class="chip na">เฉพาะ ' + OWN + '</span></div>';
     if (priceEdit === it.sku){
       h += [1,2,3].map(function(i){
         return '<div class="row" style="gap:6px; margin-top:8px"><input type="text" list="shopList" id="pe_s' + i + '" placeholder="ร้าน ' + i + '" value="' + esc(p['s'+i] || '') + '" style="flex:2" autocomplete="off">'
@@ -1755,7 +1824,7 @@
         + (f !== 1 ? '<dt>แปลงหน่วย</dt><dd class="txt">1 ' + esc(p.pu || 'หน่วยราคา') + ' = ' + fmt(f) + ' ' + esc(it.unit || '') + ' · ' + baht(u / f) + '/' + esc(it.unit || 'หน่วย') + '</dd>' : '')
         + '<dt>มูลค่าคงเหลือ</dt><dd>' + (u != null ? baht(Math.max(0, n) * u / f) : '— (ยังไม่มีราคา)') + '</dd>'
         + (p.lastPo === 'PC แก้ราคาเอง'   // v1.42 ราคาที่ PC แก้ในฟอร์ม (ยังไม่มีใบ PR)
-            ? '<dt>อัปเดตราคา</dt><dd class="txt">PC แก้เอง · ' + esc(p.lastShop || '') + (p.lastTs ? ' · ' + when(p.lastTs).replace(/ \d\d:\d\d$/, '') : '') + '</dd>'
+            ? '<dt>อัปเดตราคา</dt><dd class="txt">' + OWN + ' แก้เอง · ' + esc(p.lastShop || '') + (p.lastTs ? ' · ' + when(p.lastTs).replace(/ \d\d:\d\d$/, '') : '') + '</dd>'
             : '<dt>ซื้อล่าสุด</dt><dd class="txt">' + (p.lastShop || p.lastTs ? esc(p.lastShop || 'ไม่ระบุร้าน') + (p.lastTs ? ' · ' + when(p.lastTs).replace(/ \d\d:\d\d$/, '') : '') + (p.lastPo ? ' · PO ' + esc(p.lastPo) : '') : '—') + '</dd>')
         + '</dl>'
         + '<ul class="list" style="margin-top:6px">' + [1,2,3].map(function(i){
@@ -1909,8 +1978,8 @@
       +   '<input type="text" id="ie_gnew" hidden placeholder="ชื่อกลุ่มใหม่ เช่น ดอกสว่านเจาะเหล็ก" autocomplete="off" style="margin-top:6px"></div>'
       + '<div style="margin-top:8px"><label class="fld" for="ie_loc">จุดเก็บ (ชั้น/ตู้)</label><input type="text" id="ie_loc" list="locList" value="' + esc(it.loc || '') + '" placeholder="เช่น A-2, ตู้เหล็ก 1" autocomplete="off"></div>'
       + '<div style="margin-top:8px"><label class="fld" for="ie_link">ลิงก์ดูรูปสินค้า (หน้าเว็บผู้ขาย ไม่บังคับ)</label><input type="url" id="ie_link" value="' + esc(linkOf(it) ? linkOf(it).url : '') + '" placeholder="https://..." autocomplete="off"></div>'
-      + '<label class="hidebox"><input type="checkbox" id="ie_hide"' + (isHidden(it) ? ' checked' : '') + '> <span><b>ซ่อนจากแผนก</b><br><span class="note" style="margin:0">ของที่ PC ซื้อเติมเองเรื่อยๆ (เช่น กระดาษ) — แผนกค้นไม่เจอ + ไม่ขึ้นในรายการ "ต้องเติม"</span></span></label>'
-      + '<label class="hidebox"><input type="checkbox" id="ie_ret"' + (it.ret ? ' checked' : '') + '> <span><b>♻️ ต้องเอาของเก่ามาคืนก่อนเบิก</b><br><span class="note" style="margin:0">เช่น ใบเจียร ใบตัด — แผนกเห็นป้ายตอนขอ · PC ใส่จำนวนของเก่าที่ได้คืนตอนจ่าย</span></span></label>'
+      + '<label class="hidebox"><input type="checkbox" id="ie_hide"' + (isHidden(it) ? ' checked' : '') + '> <span><b>ซ่อนจากแผนก</b><br><span class="note" style="margin:0">ของที่ ' + OWN + ' ซื้อเติมเองเรื่อยๆ (เช่น กระดาษ) — แผนกค้นไม่เจอ + ไม่ขึ้นในรายการ "ต้องเติม"</span></span></label>'
+      + '<label class="hidebox"><input type="checkbox" id="ie_ret"' + (it.ret ? ' checked' : '') + '> <span><b>♻️ ต้องเอาของเก่ามาคืนก่อนเบิก</b><br><span class="note" style="margin:0">เช่น ใบเจียร ใบตัด — แผนกเห็นป้ายตอนขอ · ' + OWN + ' ใส่จำนวนของเก่าที่ได้คืนตอนจ่าย</span></span></label>'
       + '<div class="row" style="gap:8px; margin-top:10px"><button class="primary" id="ie_save" style="flex:2">บันทึกข้อมูลของ</button><button class="ghost" id="ie_cancel" style="flex:1">ยกเลิก</button></div>'
       + '</div>';
   }
@@ -1920,7 +1989,7 @@
         var k = b.getAttribute('data-miss');
         if (k === 'img'){ var t = el('imgTake'); if (t) t.click(); return; }
         if (k === 'price'){
-          if (!pinOk){ toast('ใส่ PIN ของ PC ในปุ่มตั้งค่าก่อน ถึงจะใส่ราคาได้', true); return; }
+          if (!pinOk){ toast('ใส่ PIN ของ ' + OWN + ' ในปุ่มตั้งค่าก่อน ถึงจะใส่ราคาได้', true); return; }
           priceEdit = it.sku; renderHit(); var pe = el('pe_p1'); if (pe){ pe.scrollIntoView({block:'center'}); pe.focus(); } return;
         }
         if (k === 'maker' && pinOk){ priceEdit = it.sku; renderHit(); var s1 = el('pe_s1'); if (s1){ s1.scrollIntoView({block:'center'}); s1.focus(); } return; }
@@ -2135,7 +2204,7 @@
     if (pcMode) byWho = 'PC';
     else {
       who = (el('wh').value || '').trim();
-      if (!who){ toast('ใส่ชื่อผู้ทำรายการ หรือติ๊ก PC', true); return; }
+      if (!who){ toast('ใส่ชื่อผู้ทำรายการ หรือติ๊ก ' + OWN + '', true); return; }
       lsSetRaw(K_WHO, who); byWho = who;
     }
     var rec = {
@@ -2673,7 +2742,7 @@
       return [it.sku, it.name, g ? g.name : '', it.unit || '', a.n, a.out, Math.round(a.out / nM * 100) / 100, a.inn, a.adj, onHand(it),
         it.mn == null || it.mn === '' ? null : +it.mn, it.mx == null || it.mx === '' ? null : +it.mx, up, Math.round(a.val * 100) / 100, it.desc || ''];
     }).sort(function(a, b){ return (b[13] - a[13]) || (b[5] - a[5]) || (a[0] < b[0] ? -1 : 1); });
-    var info0 = [['ข้อมูลเบิก-รับ วัสดุสิ้นเปลือง โรงงาน 1'], ['ช่วงวันที่', (from || 'เริ่มต้น') + ' ถึง ' + (to || 'ล่าสุด')], ['ดึงข้อมูลเมื่อ', new Date()], [],
+    var info0 = [['ข้อมูลเบิก-รับ ' + CFG.what + ' ' + CFG.name], ['ช่วงวันที่', (from || 'เริ่มต้น') + ' ถึง ' + (to || 'ล่าสุด')], ['ดึงข้อมูลเมื่อ', new Date()], [],
       ['แท็บ', 'มีอะไร'], ['เคลื่อนไหวสต็อก', 'ทุกรายการ เบิกออก / รับเข้า / ปรับยอด (1 แถว = 1 ครั้ง) · ผลต่อสต็อก: เบิก = ติดลบ'], ['ใบขอเบิก', 'ทุกบรรทัดในใบขอเบิกจากแผนก · ขอ / จ่ายแล้ว / ค้าง / สถานะ'],
       ['สรุปแผนก×เดือน', 'มูลค่าเบิกออกจริง แยกแผนก × เดือน (บาท)'], ['สรุปรายของ', 'เบิกรวม / เฉลี่ยต่อเดือน (' + nM + ' เดือน) / คงเหลือตอนนี้ / MIN-MAX → ใช้ตั้ง MIN/MAX และวางแผนสั่งซื้อ'], [],
       ['หมายเหตุ', 'มูลค่า = จำนวน × ราคาล่าสุดต่อหน่วยนับ (ราคาปัจจุบัน ไม่ใช่ราคา ณ วันที่เบิก) · ของที่ยังไม่มีราคา มูลค่าว่าง'],
@@ -2692,7 +2761,7 @@
     X.utils.book_append_sheet(wb, sheetOf(['วันที่', 'เดือน', 'แผนก', 'ผู้รับ', 'ชื่อของ', 'จำนวน', 'หน่วย', 'ราคา/หน่วย', 'มูลค่า (บาท)', 'PO/PR', 'อินวอยซ์', 'ร้าน', 'ใบขอเบิก', 'ผู้บันทึก', 'หมายเหตุ'],
       JR, [16, 8, 16, 12, 40, 7, 7, 10, 12, 12, 12, 20, 12, 10, 24], [0]), 'จ่ายตรง (นอกสต็อก)');
     var nw = new Date(), hm = ('0' + nw.getHours()).slice(-2) + ('0' + nw.getMinutes()).slice(-2);   // v1.53 + วันเวลาที่โหลด แยกไฟล์ง่าย
-    var fn = 'pc-scan_' + (from || 'all') + (to ? '_to_' + to : '') + '_dl' + ymd(nw).slice(5).replace('-', '') + '-' + hm + '.xlsx';   // ชื่อไฟล์ภาษาอังกฤษ — บางเบราว์เซอร์ตัดชื่อไทยเหลือ "download"
+    var fn = CFG.file + '_' + (from || 'all') + (to ? '_to_' + to : '') + '_dl' + ymd(nw).slice(5).replace('-', '') + '-' + hm + '.xlsx';   // ชื่อไฟล์ภาษาอังกฤษ — บางเบราว์เซอร์ตัดชื่อไทยเหลือ "download"
     var blob = new Blob([X.write(wb, {bookType: 'xlsx', type: 'array', compression: true})], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
     var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fn; document.body.appendChild(a); a.click();
     setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 4000);
@@ -2700,7 +2769,7 @@
   }
   function xGo(){
     var btn = el('x_go'), from = el('x_from').value, to = el('x_to').value;
-    if (!pinOk){ toast('ดาวน์โหลดข้อมูลต้องใส่ PIN ของ PC ในปุ่มตั้งค่าก่อน', true); return; }
+    if (!pinOk){ toast('ดาวน์โหลดข้อมูลต้องใส่ PIN ของ ' + OWN + ' ในปุ่มตั้งค่าก่อน', true); return; }
     if (!API){ toast('ต้องต่อ Google Sheet ก่อน', true); return; }
     if (from && to && from > to){ toast('วันที่เริ่มอยู่หลังวันที่สิ้นสุด — เช็คอีกที', true); return; }
     btn.disabled = true; btn.textContent = 'กำลังดึงข้อมูล…'; el('x_msg').textContent = '';
@@ -2796,7 +2865,7 @@
   function replTag(l){
     if (!l.repl) return '';
     var ok = l.replDone && !/^ยังไม่/.test(l.replDone);
-    return ' <span class="chip ' + (ok ? 'ok' : 'warn') + '">🔁 แลกของเก่า' + (l.replDone ? ' · ' + esc(l.replDone) : ' · เอาตัวเก่ามาคืน PC') + '</span>';
+    return ' <span class="chip ' + (ok ? 'ok' : 'warn') + '">🔁 แลกของเก่า' + (l.replDone ? ' · ' + esc(l.replDone) : ' · เอาตัวเก่ามาคืน ' + OWN + '') + '</span>';
   }
   function replCtl(kind, i, val, dept){
     var on = val != null, h = '<label class="replchk"><input type="checkbox" data-rpon="' + kind + i + '"' + (on ? ' checked' : '') + '> 🔁 ของชำรุด ขอแลกเปลี่ยน</label>';
@@ -2805,7 +2874,7 @@
       h += '<select data-rpsel="' + kind + i + '"' + (val === '' ? ' class="needf"' : '') + '><option value="">— เลือกตัวเก่าที่จะเอามาคืน * —</option>'
         + opts.map(function(e){ return '<option value="' + esc(e.code) + '"' + (val === e.code ? ' selected' : '') + '>' + esc(e.code + ' · ' + e.name + (e.holder ? ' · ' + e.holder : '') + (e.st !== 'ใช้งาน' ? ' (' + e.st + ')' : '')) + '</option>'; }).join('')
         + '<option value="NOREG:"' + (/^NOREG:/.test(val) ? ' selected' : '') + '>ไม่อยู่ในทะเบียน / หาในรายการไม่เจอ</option></select>'
-        + '<div class="li-meta">ต้องเอาตัวเก่ามาคืน PC ตอนรับของ · <b>ถ่ายรูปซาก</b>ที่ปุ่ม 📝 บอก PC เพิ่มเติม / แนบรูป</div>';
+        + '<div class="li-meta">ต้องเอาตัวเก่ามาคืน ' + OWN + ' ตอนรับของ · <b>ถ่ายรูปซาก</b>ที่ปุ่ม 📝 บอก ' + OWN + ' เพิ่มเติม / แนบรูป</div>';
     }
     return '<div class="replbox' + (on ? ' on' : '') + '">' + h + '</div>';
   }
@@ -2839,7 +2908,7 @@
   function grpHead(g, st){      // หัวใบ: แผนก (ตัวใหญ่) + วันที่ + สถานะ
     return '<div class="grphead"><div class="grow">' + deptChip(g.dept)
       + '<div class="grpdate">📅 ' + whenTH(g.ts) + '</div>'
-      + '<div class="li-meta">' + esc(g.no) + ' · ' + esc(g.who) + ' · ' + esc(g.round || 'ในรอบศุกร์') + ' · ' + g.lines.length + ' รายการ</div></div>'
+      + '<div class="li-meta">' + esc(g.no) + ' · ' + esc(g.who) + ' · ' + esc(g.round || RNAME) + ' · ' + g.lines.length + ' รายการ</div></div>'
       + '<span class="chip ' + st.k + '">' + st.t + '</span></div>';
   }
   function lineText(l){
@@ -2856,7 +2925,7 @@
   }
   function reqExtra(g){
     var x = g.lines.filter(function(l){ return l.st === 'นอกระบบ' || l.st === 'จ่ายตรงแล้ว'; }); if (!x.length) return '';
-    return '<div class="outnote soft" style="margin-top:6px">🆕 <b>ของที่ไม่มีในระบบ</b> (แผนกขอมา ให้ PC พิจารณา):' + x.map(function(l){
+    return '<div class="outnote soft" style="margin-top:6px">🆕 <b>ของที่ไม่มีในระบบ</b> (แผนกขอมา ให้ ' + OWN + ' พิจารณา):' + x.map(function(l){
       return '<div style="margin-top:4px">• <b>' + esc(l.name) + '</b> × ' + fmt(l.qty) + (l.unit ? ' ' + esc(l.unit) : '') + replTag(l) + (l.st === 'จ่ายตรงแล้ว' ? ' <span class="chip ok">✅ จ่ายตรงแล้ว' + (l.paidBy ? ' · ' + esc(String(l.paidBy).split('·').pop().trim()) : '') + '</span>' : '')
         + (l.detail ? '<div class="li-meta" style="margin-left:12px">' + esc(l.detail).replace(/ · (ใช้ทำ:)/, '<br>$1') + '</div>' : '') + '</div>'; }).join('') + '</div>';   // v1.62 + ลักษณะ / ใช้ทำอะไร
   }
@@ -2885,11 +2954,12 @@
   }
   // ตัดรอบ: ส่งก่อนศุกร์ 13:00 ได้ของศุกร์นั้น
   function cutText(){
+    if (RDAY == null) return 'ส่งใบได้ทุกวัน · ของด่วนติ๊ก ⚡ ด่วนนอกรอบ';
     var now = new Date(), d = now.getDay();
-    var fri = new Date(now); fri.setHours(13,0,0,0); fri.setDate(now.getDate() + ((5 - d + 7) % 7));
+    var fri = new Date(now); fri.setHours(RHH, RMM, 0, 0); fri.setDate(now.getDate() + ((RDAY - d + 7) % 7));
     if (now > fri) fri.setDate(fri.getDate() + 7);
     var label = fri.getDate() + '/' + (fri.getMonth()+1);
-    return 'ส่งใบก่อน <b>ศุกร์ 13:00</b> — ใบที่ส่งตอนนี้ได้ของ<b>รอบศุกร์ ' + label + '</b> · ของด่วนเลือกรอบ "ด่วนนอกรอบ"';
+    return 'ส่งใบก่อน <b>' + TH_DAY[RDAY] + ' ' + RTIME + '</b> — ใบที่ส่งตอนนี้ได้ของ<b>รอบ' + TH_DAY[RDAY] + ' ' + label + '</b> · ของด่วนเลือกรอบ "ด่วนนอกรอบ"';
   }
 
   /* ---------- มุมมอง PC: ใบเบิกเข้า ---------- */
@@ -2908,7 +2978,7 @@
       return '<div class="card reqgrp' + (urgent ? ' urgent' : '') + '" data-no="' + esc(g.no) + '">'
         + '<div class="grphead"><div class="grow">' + deptChip(g.dept) + '<div class="grpdate">📅 ' + whenTH(g.ts) + '</div>'
         +   '<div class="li-meta">' + esc(g.no) + ' · ' + esc(g.who) + '</div></div>'
-        +   '<span class="chip ' + (urgent ? 'warn' : 'na') + '">' + esc(g.round || 'ในรอบศุกร์') + '</span></div>'
+        +   '<span class="chip ' + (urgent ? 'warn' : 'na') + '">' + esc(g.round || RNAME) + '</span></div>'
         + (g.lines.some(function(l){ return l.repl && !l.replDone; }) ? '<div class="replflag">🔁 <b>ต้องได้ซากคืน</b> — ใบนี้แลกของเก่าที่ชำรุด รับตัวเก่าคืนก่อนจ่าย</div>' : '')
         + (g.note ? '<div class="note" style="margin:4px 0 0">หมายเหตุ: ' + esc(g.note) + '</div>' : '') + reqPics(g) + reqExtra(g)
         + g.lines.filter(function(l){ return l.st === 'รอจ่าย'; }).map(function(l){
@@ -2928,7 +2998,7 @@
                   return '<div class="replpay full"><b>🔁 ของชำรุด ขอแลกเปลี่ยน — ต้องได้ซากคืนก่อนจ่าย</b><div class="li-meta" style="margin-top:2px">ตัวเก่า: ' + old + '</div>'
                     + '<div class="rpsel2"><label><span class="li-meta">สถานะตัวเก่า</span><select data-rst="' + esc(l.sku) + '"><option>เสีย</option><option>ส่งซ่อม</option></select></label>'
                     + '<label><span class="li-meta">ตัวใหม่เป็นของใช้ประเภท</span><select data-rty="' + esc(l.sku) + '">' + eqTypeOpts(ty) + '</select></label></div>'
-                    + '<div class="li-meta">กดจ่าย → ตัวใหม่ขึ้นทะเบียนเข้า <b>' + esc(g.dept) + '</b> · ตัวเก่าย้ายมา <b>PC / คลัง</b></div></div>'; })() : '')
+                    + '<div class="li-meta">กดจ่าย → ตัวใหม่ขึ้นทะเบียนเข้า <b>' + esc(g.dept) + '</b> · ตัวเก่าย้ายมา <b>' + esc(STORE) + '</b></div></div>'; })() : '')
               + '</div>';
           }).join('')
         + '<div class="row" style="margin-top:10px; gap:8px">'
@@ -3014,7 +3084,7 @@
       if (!j) return;
       var g = groupReq(requests.filter(function(r){ return r.no === no; }))[0];
       var left = g ? g.lines.filter(function(l){ return l.st === 'รอจ่าย'; }).length : 0;
-      var rp = (j.repl || []).map(function(r){ return r.err ? '⚠️ ' + (r.name || '') + ' ' + r.err : '🔁 ' + r.code + ' แทน ' + r.old + ' (ตัวเก่าไป PC / คลัง)'; }).join(' · ');
+      var rp = (j.repl || []).map(function(r){ return r.err ? '⚠️ ' + (r.name || '') + ' ' + r.err : '🔁 ' + r.code + ' แทน ' + r.old + ' (ตัวเก่าไป ' + STORE + ')'; }).join(' · ');
       toast('ใบ ' + no + ' · จ่าย ' + n + ' รายการ' + (left ? ' · ค้าง ' + left + ' รายการ รอของ' : ' · ปิดใบแล้ว') + (rp ? ' · ' + rp : ''), (j.repl || []).some(function(r){ return r.err; }));
     });
   }
@@ -3072,7 +3142,7 @@
       var u = esc(c.unit || '');
       // v1.30 โชว์จำนวนที่มีในคลังตอนนี้เสมอ + สีบอกพอ/ไม่พอ/หมด
       var stock = n == null ? '' : '<div class="clstock ' + (n <= 0 ? 'out' : n < c.qty ? 'low' : 'ok') + '">📦 มีในคลังตอนนี้ <b>' + fmt(Math.max(0, n)) + '</b> ' + u + '</div>';
-      var warn = n == null ? '' : n <= 0 ? '<div class="outnote">⛔ ของหมด — ส่งใบได้ PC จะค้างไว้ จ่ายเมื่อของเข้า</div>'
+      var warn = n == null ? '' : n <= 0 ? '<div class="outnote">⛔ ของหมด — ส่งใบได้ ' + OWN + ' จะค้างไว้ จ่ายเมื่อของเข้า</div>'
                : n < c.qty ? '<div class="outnote soft">มีไม่พอ — ได้ก่อน ' + fmt(n) + ' ที่เหลือค้างไว้</div>' : '';
       return '<div class="cartline" data-sku="' + esc(c.sku) + '"><div class="clinfo"><div class="li-name"><span class="lnno">' + (i + 1) + '</span>' + esc(c.name) + '</div><div class="li-meta">' + esc(c.sku) + '</div>' + stock + warn + (function(){ var pd = pendSku(cartDept, c.sku); return pd.rem > 0 ? '<div class="pendchip">⏳ ขอไว้แล้วในใบ ' + esc(pd.nos.join(', ')) + ' ยังค้าง ' + fmt(pd.rem) + ' — แน่ใจว่าต้องการเพิ่ม?</div>' : ''; })() + retChip(it) + replCtl('c', i, c.repl, cartDept) + '</div>'
         + '<div class="clctl"><button class="ghost qb" data-dec="' + i + '" aria-label="ลด">−</button>'
@@ -3110,9 +3180,9 @@
       reqAction({action:'request', req:{dept:dept, who:rw, round:el('d_round').value, note:(el('d_note').value || '').trim(), lines:lines, extra:dExtra.map(function(x){ return Object.assign({}, x, {repl: replOut(x)}); }), photos:dPhotos}},
                 '', el('d_send')).then(function(j){
         if (!j) return;
-        if (!j.reqNo){ toast('ส่งไม่สำเร็จ — ระบบฝั่ง Sheet ยังไม่อัปเดต แจ้ง PC', true); return; }
-        toast('ส่งใบ ' + j.reqNo + ' ให้ PC แล้ว');
-        cart = []; saveCart(); el('d_note').value = ''; el('d_q').value = ''; el('d_round').value = 'ในรอบศุกร์'; el('d_urgent').checked = false; renderNoteSum();
+        if (!j.reqNo){ toast('ส่งไม่สำเร็จ — ระบบฝั่ง Sheet ยังไม่อัปเดต แจ้ง ' + OWN + '', true); return; }
+        toast('ส่งใบ ' + j.reqNo + ' ให้ ' + OWN + ' แล้ว');
+        cart = []; saveCart(); el('d_note').value = ''; el('d_q').value = ''; el('d_round').value = RNAME; el('d_urgent').checked = false; renderNoteSum();
         dExtra = []; lsSet('pcscan_dextra', dExtra); dPhotos = []; renderDExtra(); renderDPhotos();   // v1.61
         show('t-mine');
       });
@@ -3133,7 +3203,7 @@
     var n = (el('d_xname').value || '').trim(), q = +el('d_xqty').value || 0, u = (el('d_xunit').value || '').trim();
     var sp = (el('d_xspec').value || '').trim(), us = (el('d_xuse').value || '').trim();   // v1.62 ลักษณะ + ใช้ทำอะไร ให้ PC ตัดสินใจ
     if (!n){ toast('ใส่ชื่อของก่อน', true); el('d_xname').focus(); return false; }
-    if (!us){ toast('บอกด้วยว่าใช้ทำอะไร — PC ใช้ตัดสินใจ', true); el('d_xuse').focus(); return false; }
+    if (!us){ toast('บอกด้วยว่าใช้ทำอะไร — ' + OWN + ' ใช้ตัดสินใจ', true); el('d_xuse').focus(); return false; }
     if (!(q > 0)){ toast('ใส่จำนวนก่อน', true); el('d_xqty').focus(); return false; }
     dExtra.push({name: n, qty: q, unit: u, spec: sp, use: us}); lsSet('pcscan_dextra', dExtra);
     ['d_xname','d_xqty','d_xunit','d_xspec','d_xuse'].forEach(function(id){ el(id).value = ''; }); renderDExtra(); return true;
@@ -3173,10 +3243,10 @@
     var dept = el('d_dept').value, list = pendOf(dept);
     box.hidden = !list.length; if (!list.length){ box.innerHTML = ''; return; }
     var shown = pendAll ? list : list.slice(0, 6);
-    box.innerHTML = '<div class="pendhead"><b>⏳ ของที่ ' + esc(dept) + ' ขอไว้แล้ว ยังไม่ได้ (' + list.length + ' รายการ)</b><span class="li-meta">ไม่ต้องขอซ้ำ — PC จ่ายให้เมื่อของเข้า</span></div>'
+    box.innerHTML = '<div class="pendhead"><b>⏳ ของที่ ' + esc(dept) + ' ขอไว้แล้ว ยังไม่ได้ (' + list.length + ' รายการ)</b><span class="li-meta">ไม่ต้องขอซ้ำ — ' + OWN + ' จ่ายให้เมื่อของเข้า</span></div>'
       + shown.map(function(p){
           var it = p.x ? null : getSku(p.sku), n = it ? onHand(it) : null;
-          var st = p.x ? '<span class="chip na">รอ PC จัดหา</span>' : n != null && n >= p.rem ? '<span class="chip ok">มีของแล้ว รอจ่าย</span>' : '<span class="chip warn">รอของเข้า</span>';
+          var st = p.x ? '<span class="chip na">รอ ' + OWN + ' จัดหา</span>' : n != null && n >= p.rem ? '<span class="chip ok">มีของแล้ว รอจ่าย</span>' : '<span class="chip warn">รอของเข้า</span>';
           return '<div class="pendline">' + (it ? thumb(it) : '<span class="thumb none">🆕</span>') + '<div class="grow"><div class="li-name" style="font-weight:600">' + esc(p.name) + '</div>'
             + '<div class="li-meta">ค้าง <b>' + fmt(p.rem) + ' ' + esc(p.unit || '') + '</b>' + (p.paid ? ' (ได้แล้ว ' + fmt(p.paid) + ')' : '') + ' · ใบ ' + esc(p.no) + ' · ' + whenTH(p.ts) + '</div></div>' + st + '</div>';
         }).join('')
@@ -3196,7 +3266,7 @@
     var n = (el('d_note').value || '').trim(), k = dPhotos.length;
     s.hidden = !n && !k;
     s.innerHTML = (n ? 'หมายเหตุ: ' + esc(n) : '') + (n && k ? ' · ' : '') + (k ? '📷 รูปแนบ ' + k + ' รูป' : '');
-    if (el('d_noteOpen')) el('d_noteOpen').textContent = '📝 บอก PC เพิ่มเติม / แนบรูป' + (k ? ' (' + k + ')' : '');
+    if (el('d_noteOpen')) el('d_noteOpen').textContent = '📝 บอก ' + OWN + ' เพิ่มเติม / แนบรูป' + (k ? ' (' + k + ')' : '');
   }
   function addPhotoFiles(inp){
     var fs = [].slice.call(inp.files || [], 0, 3 - dPhotos.length);
@@ -3210,12 +3280,12 @@
     var rows = exactFirst(ITEMS.filter(function(it){ return !isHidden(it) && !it.off && itemMatch(it, q); }), q).slice(0, 6);
     return '<div class="rpgrid">' + rows.map(function(it){
       return '<button type="button" class="rpcard' + (RP.sku === it.sku ? ' on' : '') + '" data-rpsku="' + esc(it.sku) + '">' + thumb(it) + '<span><b>' + esc(it.name) + '</b><div class="li-meta">' + esc(it.sku) + ' · มี ' + fmt(Math.max(0, onHand(it))) + ' ' + esc(it.unit || '') + '</div></span></button>';
-    }).join('') + '<button type="button" class="rpcard' + (RP.xnew ? ' on' : '') + '" data-rpxnew><span class="ph">🆕</span><span><b>ไม่มีในระบบ</b><div class="li-meta">พิมพ์ชื่อเอง ให้ PC จัดหา</div></span></button></div>';
+    }).join('') + '<button type="button" class="rpcard' + (RP.xnew ? ' on' : '') + '" data-rpxnew><span class="ph">🆕</span><span><b>ไม่มีในระบบ</b><div class="li-meta">พิมพ์ชื่อเอง ให้ ' + OWN + ' จัดหา</div></span></button></div>';
   }
   function renderReplPop(){
     var b = el('rp_body'); if (!b) return;
     var dept = el('d_dept').value, mine = EQPUB.filter(function(e){ return e.dept === dept; }), it = RP.sku ? getSku(RP.sku) : null;
-    var h = '<div class="note" style="margin:0">ของใช้ของ <b>' + esc(dept) + '</b> · ต้องเอาตัวเก่า (ซาก) มาคืน PC ตอนรับของ</div>'
+    var h = '<div class="note" style="margin:0">ของใช้ของ <b>' + esc(dept) + '</b> · ต้องเอาตัวเก่า (ซาก) มาคืน ' + OWN + ' ตอนรับของ</div>'
       + '<div class="rpstep">① ตัวเก่าตัวไหน' + (RP.old || RP.noreg ? ' ✅' : ' <span class="need">*</span>') + '</div>'
       + '<div class="rpgrid">' + mine.map(function(e){
           return '<button type="button" class="rpcard' + (RP.old === e.code ? ' on' : '') + '" data-rpold="' + esc(e.code) + '">' + (e.photo ? '<img alt="" loading="lazy" src="' + imgUrl(e.photo, 120) + '">' : '<span class="ph">🧰</span>')
@@ -3274,7 +3344,7 @@
       p.querySelectorAll('[data-popclose]').forEach(function(x){ x.addEventListener('click', function(){ closePop(p.id); }); });
     });
     el('d_whoLine').addEventListener('click', function(){ openPop('pop_who'); });
-    el('d_urgent').addEventListener('change', function(){ el('d_round').value = this.checked ? 'ด่วนนอกรอบ' : 'ในรอบศุกร์'; renderWho(); });
+    el('d_urgent').addEventListener('change', function(){ el('d_round').value = this.checked ? 'ด่วนนอกรอบ' : RNAME; renderWho(); });
     el('d_xOpen').addEventListener('click', function(){ if (needDept()) return; openPop('pop_x'); setTimeout(function(){ el('d_xname').focus(); }, 50); });
     el('d_noteOpen').addEventListener('click', function(){ openPop('pop_note'); });
     el('d_note').addEventListener('input', renderNoteSum);
@@ -3653,7 +3723,7 @@
     var hand = /ไขควง|คีม|ประแจ|ค้อน|ตลับเมตร|บล็อก|เลื่อยมือ|กรรไกร|คัตเตอร์|เวอร์เนีย|ฉาก|ตะไบ|สกัด|STANLEY|ONSITE|TACTIX/i.test(n);
     return {on: elec || hand, type: elec ? 'เครื่องมือไฟฟ้า' : hand ? 'เครื่องมือช่าง' : ''};
   }
-  function eqDeptOpts(v, blank){ return '<option value="">' + (blank || '— แผนก —') + '</option>' + DEPTS.concat(['PC / คลัง']).map(function(d){ return '<option' + (v === d ? ' selected' : '') + '>' + esc(d) + '</option>'; }).join(''); }
+  function eqDeptOpts(v, blank){ return '<option value="">' + (blank || '— แผนก —') + '</option>' + DEPTS.concat([STORE]).map(function(d){ return '<option' + (v === d ? ' selected' : '') + '>' + esc(d) + '</option>'; }).join(''); }
   function eqTypeOpts(v){ return EQ_TYPES.map(function(t){ return '<option' + (v === t ? ' selected' : '') + '>' + t + '</option>'; }).join(''); }
   function eqStOpts(v){ return EQ_ST.map(function(s){ return '<option' + (v === s ? ' selected' : '') + '>' + s + '</option>'; }).join(''); }
   function eqGet(code){ for (var i = 0; i < EQ.items.length; i++) if (EQ.items[i].code === code) return EQ.items[i]; return null; }
@@ -3682,7 +3752,7 @@
     var b = el('eqBody'); if (!b || DEPT_MODE) return;
     var pend = EQP.filter(function(d){ return !eqSkip[d.key]; });
     if (el('eqBadge')){ el('eqBadge').textContent = pend.length; el('eqBadge').hidden = !pend.length || !pinOk; }
-    if (!pinOk){ b.innerHTML = '<div class="card"><h2>🧰 ของใช้ประจำไลน์</h2><div class="note">ใส่ PIN ของ PC ในปุ่มตั้งค่าก่อน ถึงจะเห็นทะเบียนของใช้</div></div>'; return; }
+    if (!pinOk){ b.innerHTML = '<div class="card"><h2>🧰 ของใช้ประจำไลน์</h2><div class="note">ใส่ PIN ของ ' + OWN + ' ในปุ่มตั้งค่าก่อน ถึงจะเห็นทะเบียนของใช้</div></div>'; return; }
     if (eqView && eqGet(eqView)) renderEqDetail(b, eqGet(eqView)); else { eqView = null; renderEqList(b, pend); }
   }
   function renderEqList(b, pend){
@@ -3719,10 +3789,10 @@
             + '<button type="button" class="primary" data-preg style="flex:1 1 120px; min-height:36px">🧰 ขึ้นทะเบียน</button><button type="button" class="ghost" data-pskip style="flex:0 0 auto; min-height:36px; padding:0 10px">ไม่ใช่ของใช้</button></div></div>';
         }).join('') + (pend.length > 15 ? '<div class="note">…อีก ' + (pend.length - 15) + ' รายการ</div>' : '') + '</div>';
     }
-    var lines = DEPTS.concat(['PC / คลัง', '']);
+    var lines = DEPTS.concat([STORE, '']);
     h += lines.map(function(d){
       var its = rows.filter(function(it){ return (it.dept || '') === d || (d === '' && it.dept && lines.indexOf(it.dept) < 0); });
-      if (!its.length && (q || d === '' || d === 'PC / คลัง')) return '';
+      if (!its.length && (q || d === '' || d === STORE)) return '';
       var open = q ? true : !!eqLines[d || '_'], val = its.filter(function(it){ return EQ_IN[it.st]; }).reduce(function(a, it){ return a + (+it.price || 0); }, 0);
       var bad = its.filter(function(it){ return it.st === 'ส่งซ่อม' || it.st === 'เสีย'; }).length;
       return '<div class="card eqline' + (open ? ' open' : '') + (its.length ? '' : ' empty') + '" data-line="' + esc(d || '_') + '"><div class="eqlh" data-ltap><b>' + esc(d || 'ไม่ระบุไลน์') + '</b>'
@@ -4044,7 +4114,7 @@
   }
   function prScanFile(f){
     if (!f) return;
-    if (!pinOk){ toast('ใส่ PIN ของ PC ในปุ่มตั้งค่าก่อน', true); return; }
+    if (!pinOk){ toast('ใส่ PIN ของ ' + OWN + ' ในปุ่มตั้งค่าก่อน', true); return; }
     if (!API){ toast('ต้องต่อ Google Sheet ก่อน', true); return; }
     if (prBusy) return; prBusy = true;
     var stt = el('pr_status'), xls = isXlsFile(f), wbP = null;
@@ -4146,7 +4216,7 @@
         + (function(){ var lx = ox.filter(function(x){ return x.no + '|' + x.name === l.dreq; })[0]; if (!lx || !lx.repl) return '';   // v1.75 ใบขอเบิกนี้แลกของเก่า
             return '<div class="replpay"><b>🔁 แลกของเก่า — ต้องได้ซากคืน</b><div class="li-meta">ตัวเก่า: ' + esc(replInfo(lx.repl).t) + '</div>'
               + '<div class="row" style="gap:6px; margin-top:6px; align-items:center"><span class="li-meta">สถานะตัวเก่า</span><select data-f="drst" style="flex:1"><option' + (l.drst !== 'ส่งซ่อม' ? ' selected' : '') + '>เสีย</option><option' + (l.drst === 'ส่งซ่อม' ? ' selected' : '') + '>ส่งซ่อม</option></select></div>'
-              + '<div class="li-meta">กดรับ = ตัวใหม่ขึ้นทะเบียนเข้าแผนก · ตัวเก่าย้ายมา PC / คลัง</div></div>'; })()
+              + '<div class="li-meta">กดรับ = ตัวใหม่ขึ้นทะเบียนเข้าแผนก · ตัวเก่าย้ายมา ' + esc(STORE) + '</div></div>'; })()
         + '<div class="row" style="gap:6px; margin-top:6px"><select data-f="ddept"' + (nf.ddept ? ' class="needf"' : '') + ' style="flex:1"><option value="">— แผนก * —</option>' + DEPTS.map(function(d){ return '<option' + (l.ddept === d ? ' selected' : '') + '>' + esc(d) + '</option>'; }).join('') + '</select>'
         + '<input type="text" data-f="dwho" value="' + esc(l.dwho || '') + '" placeholder="ผู้รับ" autocomplete="off" style="flex:1"></div>'
         + '<div class="row" style="gap:8px; margin-top:6px; align-items:center; flex-wrap:wrap"><label class="li-meta" style="display:flex; gap:6px; align-items:center; flex:1 1 180px"><input type="checkbox" data-f="deq"' + (l.deq ? ' checked' : '') + ' style="width:auto; min-height:0"> 🧰 ขึ้นทะเบียนของใช้ (ตามว่าอยู่ไหน/เสียไหม)</label>'
@@ -4572,7 +4642,7 @@
       b.innerHTML = '<div class="note" style="margin:4px 0 0">ยังไม่มีรอบนับ · เริ่มรอบแล้วน้องๆ นับพร้อมกันได้หลายเครื่อง ระบบจำว่าชิ้นไหนนับแล้ว</div>'
         + '<button class="primary" id="cntStart" style="margin-top:10px">เริ่มรอบนับใหม่</button>';
       el('cntStart').addEventListener('click', function(){
-        if (!pinOk){ toast('ต้องใส่ PIN ในตั้งค่าก่อน (เริ่ม/ปิดรอบนับ = งาน PC)', true); return; }
+        if (!pinOk){ toast('ต้องใส่ PIN ในตั้งค่าก่อน (เริ่ม/ปิดรอบนับ = งาน ' + OWN + ')', true); return; }
         if (!confirm('เริ่มรอบนับใหม่ทั้งคลัง?\nของทุกชิ้นจะนับเป็น "ยังไม่นับ" ในรอบนี้')) return;
         reqAction({action:'countround', op:'start', who: lsGetRaw('pcscan_counter') || 'PC'}, 'เริ่มรอบนับแล้ว', el('cntStart'));
       });
@@ -4677,18 +4747,13 @@
     if (!who) el('cw_who').focus(); else q.focus();
   }
   /* ================= v1.39 แผนที่จุดเก็บ (ผังโรงงาน 1) — กระพริบที่ตู้/ห้องที่เก็บ ================= */
-  var MAP_IMG = 'plant1-map.jpg';
-  var SPOTS = [   // ตำแหน่งเป็น % ของรูปผัง · sh = จำนวนชั้น (0 = ไม่มีชั้น)
-    {k:'ตู้ 1', b:'ตู้ 1', x:59.7, y:52.3, w:3.6, h:8, sh:2},
-    {k:'ตู้ 2', b:'ตู้ 2', x:63.5, y:52.3, w:3.6, h:8, sh:3},
-    {k:'ตู้ 3', b:'ตู้ 3', x:67.1, y:52.3, w:3.6, h:8, sh:3},
-    {k:'ตู้ 4', b:'ตู้ 4 (ห้อง QA)', x:90.7, y:60.2, w:3.6, h:8, sh:0},
-    {k:'ห้องเก็บสารเคมี', b:'ห้องสารเคมี', x:17.2, y:77.3, w:15.4, h:12, sh:0}
-  ];
+  var MAP_IMG = CFG.mapImg || '';
+  var SPOTS = (CFG.spots || []).slice();   // ตำแหน่งเป็น % ของรูปผัง · sh = จำนวนชั้น (0 = ไม่มีชั้น) · มาจาก config
   function parseLoc(s){
     s = String(s || ''); var sp = null;
-    if (/สารเคมี/.test(s)) sp = SPOTS[4];
-    else { var m = s.match(/ตู้\s*(\d+)/); if (m) sp = SPOTS.filter(function(x){ return x.k === 'ตู้ ' + m[1]; })[0] || null; }
+    var m = s.match(/ตู้\s*(\d+)/);
+    if (m) sp = SPOTS.filter(function(x){ return x.k === 'ตู้ ' + m[1]; })[0] || null;
+    if (!sp) sp = SPOTS.filter(function(x){ return x.re ? new RegExp(x.re).test(s) : s.indexOf(x.k) >= 0; })[0] || null;
     if (!sp) return null;
     var c = s.match(/ชั้น\s*(\d+)/);
     return {spot: sp, shelf: c && sp.sh ? Math.min(+c[1], sp.sh) : 0};
@@ -4705,7 +4770,8 @@
   function locTag(i, n){ return i ? (n > 2 ? 'สำรอง ' + i : 'สำรอง') : 'หลัก'; }
   function mapHtml(list){
     list = (list || []).filter(function(p){ return p && p.spot; });
-    return '<div class="lmap" data-lmap title="แตะเพื่อขยาย"><div class="lmapin"><img src="' + MAP_IMG + '" alt="ผังโรงงาน 1" loading="lazy">'
+    if (!MAP_IMG) return '';
+    return '<div class="lmap" data-lmap title="แตะเพื่อขยาย"><div class="lmapin"><img src="' + MAP_IMG + '" alt="ผัง' + esc(CFG.name) + '" loading="lazy">'
       + list.map(function(p, i){ var s = p.spot, c = i ? ' spare' : '';
           return '<span class="lring' + c + '" style="left:' + s.x + '%; top:' + s.y + '%"></span>'
             + '<span class="lbox' + c + '" style="left:' + s.x + '%; top:' + s.y + '%; width:' + s.w + '%; height:' + s.h + '%"></span>'
@@ -4720,7 +4786,7 @@
       return '<div class="locbox"><div class="lhead">📍 <b>เลือกจุดเก็บ</b></div><div class="lpick" id="lv_lp"></div>'
         + '<div class="row" style="gap:8px; margin-top:8px"><button type="button" class="ghost" id="lv_cancel" style="flex:1">ยกเลิก</button>'
         + '<button type="button" class="primary" id="lv_save" style="flex:2">บันทึกจุดเก็บ</button></div></div>';
-    if (!it.loc) return '<button type="button" class="ghost locset" id="lv_edit">📍 ยังไม่ระบุจุดเก็บ · แตะเพื่อเลือกจากแผนที่</button>';
+    if (!it.loc) return '<button type="button" class="ghost locset" id="lv_edit">📍 ยังไม่ระบุจุดเก็บ · แตะเพื่อเลือก' + (MAP_IMG ? 'จากแผนที่' : '') + '</button>';
     var L = parseLocs(it.loc), multi = L.length > 1, hasSh = L.some(function(p){ return p.spot.sh; });
     return '<div class="locbox"><div class="lhead"><span class="lpin">📍</span><div style="flex:1; min-width:0"><div class="li-meta">เก็บอยู่ที่</div>'
       + (L.length ? L.map(function(p, i){ return '<div class="lrow' + (i ? ' spare' : '') + '">' + (multi ? '<span class="lbadge' + (i ? ' spare' : '') + '">' + locTag(i, L.length) + '</span>' : '')
@@ -4743,6 +4809,11 @@
   // ตัวเลือกจุดเก็บ: ที่เก็บ 1–3 ที่ (ที่แรก = หลัก) · ปุ่มตู้ + ปุ่มชั้น + แผนที่กระพริบตามที่เลือก
   function bindPicker(id, loc, onChange){
     var box = el(id); if (!box) return;
+    if (!SPOTS.length){   // v1.86 ชุดที่ไม่ได้ตั้งจุดเก็บ → พิมพ์ชื่อที่เก็บเอง
+      box.innerHTML = '<input type="text" class="locfree" value="' + esc(loc || '') + '" placeholder="เช่น ชั้นวาง A ช่อง 2" autocomplete="off">';
+      box.querySelector('input').addEventListener('input', function(e){ onChange(e.target.value.trim()); });
+      return;
+    }
     var L = parseLocs(loc);
     var st = {list: L.map(function(p){ return {spot: p.spot.k, shelf: p.shelf}; }), a: 0, raw: L.length ? '' : (loc || '')};
     if (!st.list.length) st.list = [{spot: '', shelf: 0}];
@@ -4854,8 +4925,8 @@
       if (!API){ toast('ต้องต่อ Google Sheet ก่อน', true); return; }
       var jobs = [], skipHas = [], skipNo = [];
       files.forEach(function(f){
-        var m = f.name.match(/CS-?(\d{1,3})/i); if (!m){ skipNo.push(f.name); return; }
-        var sku = 'CS-' + ('00' + m[1]).slice(-3), it = getSku(sku);
+        var m = f.name.match(new RegExp(SKUP + '-?(\\d{1,3})', 'i')); if (!m){ skipNo.push(f.name); return; }
+        var sku = SKUP + '-' + ('00' + m[1]).slice(-3), it = getSku(sku);
         if (!it){ skipNo.push(f.name); return; }
         if (it.img && !over){ skipHas.push(sku); return; }
         jobs.push({sku: sku, f: f});
@@ -4871,7 +4942,7 @@
           toast('อัปรูปเสร็จ ' + ok + ' รายการ'); return;
         }
         var J = jobs[i++];
-        shrink(J.f).then(function(d){ return api({action:'setimg', sku: J.sku, data: d, who: 'PC (อัปหลายรูป)'}); })
+        shrink(J.f).then(function(d){ return api({action:'setimg', sku: J.sku, data: d, who: '' + OWN + ' (อัปหลายรูป)'}); })
           .then(function(j){ ok++; if (i === jobs.length || ok % 10 === 0) takeServer(j); })
           ['catch'](function(){ bad.push(J.sku); })
           .then(function(){ msg(); next(); });
@@ -4924,7 +4995,7 @@
   function addToCart(it, q, quiet){
     if (!it) return false;
     if (!quiet && needDept()) return false;
-    if (it.off || isHidden(it)){ if (!quiet) toast(it.name.slice(0, 30) + ' — แผนกขอผ่านระบบไม่ได้ แจ้ง PC', true); return false; }
+    if (it.off || isHidden(it)){ if (!quiet) toast(it.name.slice(0, 30) + ' — แผนกขอผ่านระบบไม่ได้ แจ้ง ' + OWN + '', true); return false; }
     var c = cart.filter(function(x){ return x.sku === it.sku; })[0];
     if (c) c.qty += (q || 1); else cart.push({sku: it.sku, name: it.name, unit: it.unit || '', qty: q || 1});
     return true;
@@ -5016,11 +5087,11 @@
     dsc.last = text; dsc.t = now;
     var it = lookup(text);
     try { if (navigator.vibrate) navigator.vibrate(it ? 60 : [40, 60, 40]); } catch(e){}
-    if (!it){ el('dscanMsg').innerHTML = '❓ ไม่รู้จักรหัส <b>' + esc(text) + '</b><br>ลองค้นหาด้วยชื่อแทน หรือแจ้ง PC ผูกบาร์โค้ด'; return; }
+    if (!it){ el('dscanMsg').innerHTML = '❓ ไม่รู้จักรหัส <b>' + esc(text) + '</b><br>ลองค้นหาด้วยชื่อแทน หรือแจ้ง ' + OWN + ' ผูกบาร์โค้ด'; return; }
     if (addToCart(it, 1)){
       saveCart(); renderReq();
       el('dscanMsg').innerHTML = '✓ เพิ่ม <b>' + esc(it.name) + '</b> แล้ว · ในใบมี ' + cart.length + ' รายการ<br><span class="li-meta">สแกนชิ้นต่อไปได้เลย หรือกด "เสร็จ"</span>';
-    } else el('dscanMsg').innerHTML = '⛔ <b>' + esc(it.name) + '</b> ขอผ่านระบบไม่ได้ แจ้ง PC';
+    } else el('dscanMsg').innerHTML = '⛔ <b>' + esc(it.name) + '</b> ขอผ่านระบบไม่ได้ แจ้ง ' + OWN + '';
   }
   function dScanOpen(){
     if (needDept()) return;                                            // v1.33
