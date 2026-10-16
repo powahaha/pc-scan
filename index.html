@@ -3191,26 +3191,29 @@
     });
   }
 
-  /* v1.88 ลิงก์จากการ์ด LINE (?req=เลขใบ) → เปิดแท็บใบเบิก แล้วเลื่อนไปการ์ดใบนั้น + ไฮไลต์ */
+  /* v1.88 ลิงก์จากการ์ด LINE (?req=เลขใบ) → เปิดแท็บใบเบิก แล้วเลื่อนไปการ์ดใบนั้น + เปิดรายการ + ไฮไลต์
+     (หน้าจอวาดการ์ดใหม่ตอนข้อมูลจาก Sheet มาถึง → คอยเปิดซ้ำ ~10 วิ หลังเจอ) */
   (function(){
     var m = QS.match(/[?&]req=([^&#]+)/); if (!m || DEPT_MODE) return;
-    var no = decodeURIComponent(m[1]).trim(), n = 0, clicked = false;
+    var no = decodeURIComponent(m[1]).trim(), n = 0, clicked = false, last = null, found = 0;
+    function findCard(v){ return [].slice.call(v.querySelectorAll('details, .card')).filter(function(c){ return c.textContent.indexOf(no) >= 0; })
+      .sort(function(a, b){ return a.textContent.length - b.textContent.length; })[0]; }
     var tm = setInterval(function(){
       n++;
       var v = el('v-inbox'), tab = el('t-inbox'); if (!v || !tab) { clearInterval(tm); return; }
       if (!clicked){ clicked = true; tab.click(); }
-      var hit = [].slice.call(v.querySelectorAll('details, .card')).filter(function(c){ return c.textContent.indexOf(no) >= 0; })
-        .sort(function(a, b){ return a.textContent.length - b.textContent.length; })[0];
+      var hit = findCard(v);
       if (hit){
-        clearInterval(tm);
+        found++;
         var p = hit; while (p && p !== v){ if (p.tagName === 'DETAILS') p.open = true; p = p.parentElement; }
-        if (hit.tagName === 'DETAILS') hit.open = true;
-        [].slice.call(hit.querySelectorAll('details')).forEach(function(d){ d.open = true; });   // เปิดรายการในใบให้เห็นเลย
-        setTimeout(function(){
-          hit.scrollIntoView({block:'center', behavior:'smooth'});
+        [].slice.call(hit.querySelectorAll('details')).forEach(function(d){ d.open = true; });
+        if (hit !== last){
+          last = hit;
+          setTimeout(function(){ hit.scrollIntoView({block:'center', behavior:'smooth'}); }, 120);
           hit.style.transition = 'box-shadow .3s'; hit.style.boxShadow = '0 0 0 4px #F2B63C';
-          setTimeout(function(){ hit.style.boxShadow = ''; }, 4000);
-        }, 150);
+          setTimeout(function(){ hit.style.boxShadow = ''; }, 5000);
+        }
+        if (found > 20) clearInterval(tm);
       } else if (n > 60){ clearInterval(tm); toast('ไม่เจอใบ ' + no + ' ในแท็บใบเบิก (อาจจ่ายครบ/ยกเลิกไปแล้ว)', true); }
     }, 500);
   })();
