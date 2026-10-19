@@ -648,7 +648,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.89</span>
+      <span class="ver" id="appVer">v1.90</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -680,7 +680,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.89 · อัปเดต 19/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.90 · อัปเดต 19/10/2026</div>
     </div>
   </header>
 
@@ -3540,7 +3540,7 @@
           if (/TOTAL|จ[ํำ]?านวนเงิน/i.test(tk)) break;
           if (/^\d[\d,]*\.\d{2}\s*\|?\s*[A-Z]{2,4}$/.test(tk)){ seenP = true; continue; }
           if (/^\d[\d,]*\.\d{2}$/.test(tk)){ if (!seenP && nd.length) nq.push(prNum(tk)); continue; }
-          if (/\b(CYL|KG|M3|GAS|CO2|ARGON|OXYGEN|NITROGEN|LPG|ACETYLENE)\b|surcharge|ค่าธรรมเนียม|ค่าขนส่ง|ค่าเช่า/i.test(tk) && !/CYL\.?\s*RET|Billing|Document/i.test(tk) && !/^\d/.test(tk)) nd.push(tk);
+          if (/\b(CYL|KG|M3|GAS|CO2|ARGON|OXYGEN|NITROGEN|LPG|ACETYLENE)\b|surcharge|ค่าธรรมเนียม|ค่าขนส่ง|ค่าเช่า/i.test(tk) && !/CYL\.?\s*RET|Billing|Document/i.test(tk) && !/^\d/.test(tk) && !/^(CYL|KG|M3|GAS|UOM|PCS)[\s.|:]*$/i.test(tk)) nd.push(tk);   // v1.90 ตัดคำหน่วยลอยๆ (OCR แยก "360.00" กับ "CYL" คนละบรรทัด)
         }
         if (nd.length){
           descs = nd;
