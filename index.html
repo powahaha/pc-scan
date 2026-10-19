@@ -648,7 +648,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.88</span>
+      <span class="ver" id="appVer">v1.89</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -680,7 +680,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.88 · อัปเดต 16/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.89 · อัปเดต 19/10/2026</div>
     </div>
   </header>
 
@@ -3490,6 +3490,7 @@
   /* ---------- v1.18 อินวอยซ์ / ใบส่งของ Linde (ถังแก๊ส) ---------- */
   function docKind(text){
     var t = String(text || '');
+    if (/INVOICE/i.test(t) && (/Linde|ลินเด้/i.test(t) || /Sys\.?\s*ORDER|Ref\.?\s*DD|CYL\.?\s*RET|Billing\s*Document/i.test(t))) return 'INV';   // v1.89 อินวอยซ์ Linde (บางรูป OCR ไม่เห็นโลโก้ Linde + มีคำ PURCHASE ORDER → เคยถูกอ่านเป็นใบ PO)
     if ((/RFPU-GE-006|Purchase\s*Order/i.test(t)) && !/REQUISITION/i.test(t)) return 'PO';   // v1.57 สำเนาใบ PO ของเรา
     if (/PURCHASE\s*REQUISITION|RFPU-GE/i.test(t)) return 'PR';
     if (/DELIVERY\s*DOCKET/i.test(t)) return 'DD';
@@ -3497,7 +3498,9 @@
     if (/INVOICE/i.test(t) && /Linde|ลินเด้/i.test(t)) return 'INV';
     return 'PR';
   }
-  function matCode(t){ var m = String(t || '').trim().match(/^E?(\d{3}-\d{2,3})$/i); return m ? m[1] : ''; }
+  var LINDE_CODES = ['241-30'];   // v1.89 รหัสของ Linde ที่รู้จัก — OCR ตัดเลขหน้าหาย (1-30) ก็เดาให้
+  function matCode(t){ var m = String(t || '').trim().match(/^E?(\d{1,3}-\d{2,3})$/i); if (!m) return ''; if (/^\d{3}-/.test(m[1])) return m[1];
+    var hit = LINDE_CODES.filter(function(c){ return c.slice(-m[1].length) === m[1]; }); return hit.length === 1 ? hit[0] : ''; }
   function afterLabel(toks, re, test, span){
     for (var i = 0; i < toks.length; i++) if (re.test(toks[i])){
       for (var k = i; k < Math.min(toks.length, i + (span || 12)); k++){ var m = test(toks[k], k === i); if (m) return m; }
@@ -3513,9 +3516,11 @@
     if (kind === 'INV'){
       var m = raw.match(/INVOICE\s*NO\.?\s*:?\s*(\d{6,})/i); if (m) out.no = 'INV-' + m[1];
       m = raw.match(/DATE\s*:?\s*(\d{1,2}\.\d{1,2}\.\d{2,4})/i); if (m) out.date = m[1];
-      m = raw.match(/ORDER\s*No\.?\s*:?\s*(\d{6,})/i); if (m) out.so = m[1];
+      out.so = afterLabel(toks, /Sys\.?\s*ORDER/i, function(t){ var x = t.match(/(?:^|\s)(\d{9,10})$/); return x && x[1]; }, 8);   // v1.89 เดิมคว้าเลขลูกค้า (CUST No.) มาแทน
+      if (!out.so){ m = raw.match(/ORDER\s*No\.?\s*:?\s*(\d{9,10})/i); if (m) out.so = m[1]; }
       out.ref = afterLabel(toks, /Ref\.?\s*DD/i, function(t){ var x = t.match(/^\d{9,10}$/); return x && x[0]; }, 10);
-      var po = afterLabel(toks, /PURCHASE\s*ORDER/i, function(t, first){ var x = first ? null : t.match(/^\d{6,8}$/); return x && x[0]; }, 6);
+      var po = afterLabel(toks, /PURCHASE\s*ORDER/i, function(t, first){ var x = first ? null : t.match(/^(?:PO)?(\d{2}(?:0[1-9]|1[0-2])\d{3})$/i); return x && x[1]; }, 10);   // v1.89 เลข PO ของเรา = ปีเดือน+3 หลัก (กันคว้าเลขลูกค้า 3169301)
+      if (!po) po = afterLabel(toks, /PURCHASE\s*ORDER/i, function(t, first){ var x = first ? null : t.match(/^\d{6,8}$/); return x && x[0]; }, 6);
       if (po) out.note = 'PO ' + po;
       var di = toks.findIndex(function(t){ return /^DESCRIPTION$/i.test(t); }), descs = [];
       for (var i = di + 1; di >= 0 && i < toks.length && !/QTY|OTY|จ[ํำ]?านวน/i.test(toks[i]); i++) descs.push(toks[i]);
@@ -3526,6 +3531,29 @@
         while ((mm = re.exec(seg)) && prices.length < descs.length) prices.push({p:prNum(mm[1]), u:mm[2].toUpperCase()}); }
       var ai = toks.findIndex(function(t){ return /^AMOUNT$/i.test(t); }), amts = [];
       for (var a = ai + 1; ai >= 0 && a < toks.length && prNum(toks[a]) != null; a++) amts.push(prNum(toks[a]));
+      /* v1.89 ใบรุ่นที่ OCR อ่านหัวตารางครบก่อน แล้วค่อยมาข้อมูล (หลังคำว่า AMOUNT) → หาชื่อ/จำนวน/ราคา/ยอดจากบล็อกข้อมูลแทน */
+      var badDesc = !descs.length || descs.some(function(d){ return /BILL TO|SHIP TO|ADDRESS|ภาษี|เลขประจ/i.test(d); });
+      if (badDesc || !qtys.length){
+        var nd = [], nq = [], seenP = false;
+        for (var b = (ai >= 0 ? ai + 1 : 0); b < toks.length; b++){
+          var tk = toks[b];
+          if (/TOTAL|จ[ํำ]?านวนเงิน/i.test(tk)) break;
+          if (/^\d[\d,]*\.\d{2}\s*\|?\s*[A-Z]{2,4}$/.test(tk)){ seenP = true; continue; }
+          if (/^\d[\d,]*\.\d{2}$/.test(tk)){ if (!seenP && nd.length) nq.push(prNum(tk)); continue; }
+          if (/\b(CYL|KG|M3|GAS|CO2|ARGON|OXYGEN|NITROGEN|LPG|ACETYLENE)\b|surcharge|ค่าธรรมเนียม|ค่าขนส่ง|ค่าเช่า/i.test(tk) && !/CYL\.?\s*RET|Billing|Document/i.test(tk) && !/^\d/.test(tk)) nd.push(tk);
+        }
+        if (nd.length){
+          descs = nd;
+          if (nq.length){ qtys = descs.map(function(){ return nq[0]; }); out.rtn = nq.length > 1 ? nq[1] : null; }   // จำนวนส่ง (ค่าธรรมเนียมคิดต่อถังเท่ากัน) · ถังเปล่าคืน
+          prices = []; var re2 = /(\d[\d,]*\.\d{2})\s*\|?\s*\n?\s*([A-Z]{2,4})\b/g, m2, seg2 = raw.slice(raw.search(/UNIT\s*PRICE/i) >= 0 ? raw.search(/UNIT\s*PRICE/i) : 0).replace(/UOM|DISC|VAT|UNIT PRICE/gi, ' ');
+          while ((m2 = re2.exec(seg2)) && prices.length < descs.length) prices.push({p:prNum(m2[1]), u:m2[2].toUpperCase()});
+          if (amts.length < descs.length){   // ยอดเงินมักติดกันบรรทัดเดียว "5,400 120"
+            toks.forEach(function(tk){ if (amts.length >= descs.length) return; var ns = tk.split(/\s+/).map(prNum);
+              if (ns.length === descs.length && ns.every(function(x){ return x !== null; }) && ns.every(function(x, i){ return qtys[i] == null || !prices[i] || Math.abs(qtys[i] * prices[i].p - x) < 0.05; })) amts = ns; });
+          }
+          if (out.rtn != null && out.rtn > 0) out.warn.push('ถังเปล่าคืนไปกับรถ ' + out.rtn + ' ถัง (ตามใบ)');
+        }
+      }
       descs.forEach(function(d, k){
         var l = {ln:k + 1, code: mats[k] || (k === 0 ? mats[0] || '' : ''), desc:d, qty: qtys[k] != null ? qtys[k] : null, unit: prices[k] ? prices[k].u : 'CYL',
                  price: prices[k] ? prices[k].p : null, total: amts[k] != null ? amts[k] : null, flags:[]};
