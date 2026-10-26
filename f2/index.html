@@ -568,6 +568,7 @@
   .buyrow .li-top{align-items:center;} .buychk{flex:none; display:flex; align-items:center; padding:4px;} .buychk input{width:26px; height:26px; accent-color:var(--ok);}
   .buyrow.done .li-name{text-decoration:line-through; opacity:.65;} .buyrow [data-bopen]{cursor:pointer;}
   .buyedit{margin-top:10px; padding:10px; border:1px dashed var(--line); border-radius:10px;}
+  .rcvbox{border:1.5px solid var(--ok); background:var(--ok-soft);} .rcvbox button{width:auto;}   /* v1.96 */
   #wire_toggle{width:auto;} .wiregrid{display:grid; grid-template-columns:1.1fr 1.3fr .8fr .7fr; gap:6px; align-items:center; margin-top:8px;} .wiregrid .wh{font:600 12px var(--fs); color:var(--muted);} .wiregrid input,.wiregrid select{min-height:40px;}
   .wiretbl{border-collapse:collapse; font-size:12px;} .wiretbl th,.wiretbl td{border:1px solid var(--line); padding:4px 6px; text-align:center; white-space:nowrap;}   /* v1.95 */
   #mckCard .li-top{align-items:center;} #mckCard .li-top>button{flex:none; width:auto; min-width:48px; min-height:44px; padding:8px 14px; font-size:18px;}   /* v1.93 ปุ่ม ➕/✕ ในใบเช็คกว้างเต็มแถวทับชื่อ */
@@ -660,7 +661,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.95</span>
+      <span class="ver" id="appVer">v1.96</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -692,7 +693,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.95 · อัปเดต 26/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.96 · อัปเดต 26/10/2026</div>
     </div>
   </header>
 
@@ -2688,6 +2689,38 @@
   /* ================= v1.91 สมุดจดของที่จะซื้อ (เช่น ออกไปซื้อ Hardwarehouse รอบเดือน) =================
    * ไม่เกี่ยวกับ MIN/MAX · PC เท่านั้น (ต้องมี PIN) · ติ๊กซื้อแล้วอย่างเดียว ไม่แตะสต็อก */
   var BUY = lsGet('pcscan_buy', []), buyPick = null, buyPhoto = '', buyEdit = null, buyEditPhoto = '';
+  var buyRcv = null, buyAddCtx = null;   // v1.96 ติ๊กซื้อแล้ว → ยืนยันรับเข้าสต็อก
+  var RCV_RE = /\s*\[รับเข้า ([\d.]+)(?: ([A-Z]+-\d+))?\]/;
+  function rcvInfo(b){ var m = String(b.note || '').match(RCV_RE); return m ? {q: +m[1], sku: m[2] || b.sku} : null; }
+  function rcvNote(note, q, sku){ return (String(note || '').replace(RCV_RE, '') + ' [รับเข้า ' + q + (sku ? ' ' + sku : '') + ']').trim(); }
+  function buyReceive(b, q, p, btn){   // ของในทะเบียน: บันทึกรับเข้า (+ ราคา/ร้าน) แล้วติ๊กซื้อแล้ว
+    var it = getSku(b.sku); if (!it){ toast('ไม่พบ ' + b.sku + ' ในทะเบียน', true); return; }
+    var shop = b.shop || BUY_SHOP_DEF;
+    var rec = {id: 'r' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), sku: it.sku, name: it.name, dir: 'รับเข้า', qty: q,
+      dept: '', round: '', who: 'PC', ts: new Date().toISOString(), note: 'ซื้อ ' + shop + ' (สมุดซื้อ)'};
+    if (p > 0 && pinOk){ rec.pur = {shop: shop, price: Math.round(p * pf(it) * 100) / 100, po: '', pf: pf(it)}; rememberShop(shop); }
+    if (btn){ btn.disabled = true; btn.textContent = 'กำลังรับเข้า…'; }
+    addRecord(rec);
+    buyCall('set', {id: b.id, st: 'ซื้อแล้ว', qty: q, price: p === '' ? '' : p, note: rcvNote(b.note, q, it.sku)}, '📦 รับเข้า ' + it.sku + ' ' + fmt(q) + ' ' + (it.unit || '') + ' + ติ๊กซื้อแล้ว')
+      .then(function(j){ if (j){ buyRcv = null; renderBuy(); } else if (btn){ btn.disabled = false; btn.textContent = '✅ ยืนยัน รับเข้าสต็อก'; } });
+  }
+  function buyToAdd(b, q, p){   // ของใหม่: พาไปหน้าเพิ่มของ เติมจากสมุดให้ — บันทึกแล้วได้รหัสใหม่ + สต็อก + ติ๊กซื้อแล้ว
+    var shop = b.shop || BUY_SHOP_DEF;
+    buyAddCtx = {id: b.id, name: b.name, qty: q, price: p, shop: shop, unit: b.unit || '', note: b.note || '', t: Date.now()};
+    buyRcv = null; renderBuy();
+    show('t-add');
+    el('a_name').value = b.name; el('a_unit').value = b.unit || ''; el('a_stock').value = q; el('a_maker').value = shop;
+    el('a_name').dispatchEvent(new Event('input'));
+    el('a_msg').textContent = '📝 จากสมุดซื้อ: ' + b.name + ' — ตรวจ/เติมที่เหลือแล้วกด "เพิ่ม" → ได้รหัสใหม่ สต็อก ' + fmt(q) + ' + ติ๊กซื้อแล้วในสมุดให้';
+    setTimeout(function(){ try { el('a_name').scrollIntoView({block:'center'}); } catch(e){} }, 100);
+  }
+  function buyAfterAdd(newSku, item){
+    var c = buyAddCtx; if (!c) return; buyAddCtx = null;
+    if (Date.now() - c.t > 3600000 || !newSku) return;
+    var q = +item.stock > 0 ? +item.stock : c.qty;
+    buyCall('set', {id: c.id, st: 'ซื้อแล้ว', qty: q, price: c.price === '' ? '' : c.price, note: rcvNote(c.note, q, newSku)}, '📝 ติ๊กซื้อแล้วในสมุด (' + newSku + ')');
+    if (+c.price > 0 && pinOk) api({action:'setprice', p: {sku: newSku, name: item.name, s1: c.shop, p1: c.price, pu: item.unit, pf: 1, who: 'PC'}}).then(takeServer)['catch'](function(){});
+  }
   var BUY_SHOP_DEF = 'Hardwarehouse';
   function buyShop(){ var v = (el('b_shop') && el('b_shop').value || '').trim(); return v || BUY_SHOP_DEF; }
   function shopKey(s){ s = String(s || '').toLowerCase().replace(/[\s.()\-]/g, ''); return /^(hwh|hardwarehouse|ฮาร์ดแวร์เฮา?้?ส์?)/.test(s) ? 'hwh' : s; }
@@ -2777,13 +2810,22 @@
         + '<label class="buychk" title="ซื้อแล้ว"><input type="checkbox" data-bchk="' + esc(b.id) + '"' + (isDone ? ' checked' : '') + ' aria-label="ซื้อแล้ว"></label>'
         + buyThumb(b) + '<div class="grow" data-bopen="' + esc(b.id) + '">'
         + '<div class="li-name">' + esc(b.name) + '</div>'
-        + '<div class="nums">' + (b.sku ? '<span class="skutag">' + esc(b.sku) + '</span> ' : '<span class="chip na">ของใหม่</span> ')
+        + '<div class="nums">' + (b.sku || (rcvInfo(b) && rcvInfo(b).sku) ? '<span class="skutag">' + esc(b.sku || rcvInfo(b).sku) + '</span> ' : '<span class="chip na">ของใหม่</span> ')
         + '<span class="nl">ซื้อ <b class="nv">' + (b.qty != null ? fmt(b.qty) : '?') + '</b> <span class="nu">' + esc(b.unit || '') + '</span></span>'
         + (pinOk && b.price != null ? '<span class="nl">≈ <b class="nv">' + baht(t != null ? t : b.price) + '</b>' + (t != null && b.qty > 1 ? ' <span class="nu">(' + baht(b.price) + '/' + esc(b.unit || 'หน่วย') + ')</span>' : '') + '</span>' : '')
         + (it ? '<span class="nl">มี <b class="nv">' + fmt(Math.max(0, onHand(it))) + '</b></span>' : '') + '</div>'
-        + (b.note ? '<div class="note" style="margin:2px 0 0">📝 ' + esc(b.note) + '</div>' : '')
-        + (isDone && b.bt ? '<div class="note" style="margin:2px 0 0">✅ ซื้อแล้ว ' + esc(when(b.bt)) + '</div>' : '')
+        + (String(b.note || '').replace(RCV_RE, '') ? '<div class="note" style="margin:2px 0 0">📝 ' + esc(String(b.note).replace(RCV_RE, '')) + '</div>' : '')
+        + (isDone && b.bt ? '<div class="note" style="margin:2px 0 0">✅ ซื้อแล้ว ' + esc(when(b.bt)) + (rcvInfo(b) ? ' · 📦 รับเข้าสต็อกแล้ว ' + fmt(rcvInfo(b).q) + ' ' + esc(b.unit || '') + ' (' + esc(rcvInfo(b).sku || '') + ')' : ' · ไม่ได้รับเข้าสต็อก') + '</div>' : '')
         + '</div></div>';
+      if (!isDone && buyRcv === b.id){
+        var isReg = !!it, rq = b.qty != null ? b.qty : '', rp = b.price != null ? b.price : '';
+        h += '<div class="buyedit rcvbox"><div><b>✅ ซื้อแล้ว — ' + (isReg ? 'รับเข้าสต็อก ' + esc(b.sku) : 'ของใหม่ ยังไม่มีในทะเบียน') + '</b></div>'
+          + '<div class="row" style="gap:8px; flex-wrap:wrap; margin-top:6px"><div style="flex:1 1 90px"><label class="fld">ได้มาจริง (' + esc(b.unit || (it && it.unit) || 'หน่วย') + ')</label><input type="number" inputmode="decimal" min="0" step="any" id="rc_qty" value="' + rq + '"></div>'
+          + '<div style="flex:1 1 110px"><label class="fld">ราคาจริง/หน่วย (฿)</label><input type="number" inputmode="decimal" min="0" step="any" id="rc_price" value="' + rp + '" placeholder="ไม่บังคับ"></div></div>'
+          + '<div class="note" style="margin:4px 0 0">ร้าน ' + esc(b.shop || BUY_SHOP_DEF) + (isReg ? ' · ใส่ราคา → บันทึกราคาซื้อล่าสุดให้ด้วย' : ' · กดแล้วไปหน้าเพิ่มของ เติมจากสมุดให้') + '</div>'
+          + '<div class="row" style="gap:8px; margin-top:8px; flex-wrap:wrap"><button type="button" class="primary" id="rc_ok" style="flex:2 1 180px">' + (isReg ? '✅ ยืนยัน รับเข้าสต็อก' : '➕ เพิ่มเข้าทะเบียน + รับเข้า') + '</button>'
+          + '<button type="button" class="ghost" id="rc_only" style="flex:1 1 120px">ซื้อแล้ว ไม่รับเข้า</button><button type="button" class="ghost" id="rc_cancel" style="flex:1 1 80px">ยกเลิก</button></div></div>';
+      }
       if (editing) h += '<div class="buyedit">'
         + '<div class="row" style="gap:8px; flex-wrap:wrap"><div style="flex:1 1 90px"><label class="fld">จำนวน</label><input type="number" inputmode="decimal" min="0" step="any" id="be_qty" value="' + (b.qty != null ? b.qty : '') + '"></div>'
         + '<div style="flex:1 1 90px"><label class="fld">หน่วย</label><input type="text" list="units" id="be_unit" value="' + esc(b.unit || '') + '"></div>'
@@ -2804,6 +2846,9 @@
       var L = el(id);
       L.querySelectorAll('[data-bchk]').forEach(function(c){ c.addEventListener('change', function(){
         var id2 = c.getAttribute('data-bchk'), st = c.checked ? 'ซื้อแล้ว' : 'รอซื้อ';
+        if (c.checked){ c.checked = false; if (!pinOk){ toast('ต้องใส่ PIN ของ PC ในปุ่มตั้งค่าก่อน', true); return; } buyRcv = id2; buyEdit = null; renderBuy(); var qi = el('rc_qty'); if (qi) qi.focus(); return; }   // v1.96 ถามก่อน รับเข้าสต็อก
+        var bx = BUY.filter(function(b){ return b.id === id2; })[0];
+        if (bx && rcvInfo(bx) && !confirm('"' + bx.name + '" รับเข้าสต็อกไปแล้ว ' + fmt(rcvInfo(bx).q) + ' — เอาติ๊กออกจะไม่ลบยอดรับเข้า (ต้องไปลบรายการรับเข้าในหน้าสแกนเอง)\n\nเอาติ๊กออกไหม?')){ c.checked = true; return; }
         c.disabled = true;
         buyCall('set', {id: id2, st: st}, c.checked ? '✅ ซื้อแล้ว' : '↩ กลับไปรอซื้อ').then(function(j){ if (!j){ c.checked = !c.checked; c.disabled = false; } });
       }); });
@@ -2813,6 +2858,17 @@
         var id2 = g.getAttribute('data-bopen'); buyEdit = buyEdit === id2 ? null : id2; buyEditPhoto = ''; renderBuy();
       }); });
     });
+    if (buyRcv && el('rc_ok')){
+      var rb = BUY.filter(function(b){ return b.id === buyRcv; })[0];
+      var rv = function(){ var q = el('rc_qty').value, p = el('rc_price').value; return {q: q === '' ? null : +q, p: p === '' ? '' : +p}; };
+      el('rc_cancel').addEventListener('click', function(){ buyRcv = null; renderBuy(); });
+      el('rc_only').addEventListener('click', function(){ var v = rv();
+        buyCall('set', v.q == null ? {id: buyRcv, st: 'ซื้อแล้ว', price: v.p} : {id: buyRcv, st: 'ซื้อแล้ว', qty: v.q, price: v.p}, '✅ ซื้อแล้ว (ไม่รับเข้าสต็อก)', el('rc_only')).then(function(j){ if (j){ buyRcv = null; renderBuy(); } }); });
+      el('rc_ok').addEventListener('click', function(){ var v = rv();
+        if (!(v.q > 0)){ toast('ใส่จำนวนที่ได้มาจริงก่อน', true); el('rc_qty').focus(); return; }
+        if (rb && rb.sku && getSku(rb.sku)) buyReceive(rb, v.q, v.p, el('rc_ok')); else if (rb) buyToAdd(rb, v.q, v.p);
+      });
+    }
     if (buyEdit && el('be_save')){
       var cur = BUY.filter(function(b){ return b.id === buyEdit; })[0];
       el('be_cancel').addEventListener('click', function(){ buyEdit = null; buyEditPhoto = ''; renderBuy(); });
@@ -3079,6 +3135,7 @@
       fillShops();
       el('a_dup').hidden = true; el('a_msg').textContent = '';
       toast('เพิ่ม ' + j.newSku + ' เข้าทะเบียนแล้ว');
+      try { buyAfterAdd(j.newSku, item); } catch(e){}   // v1.96 เพิ่มจากสมุดซื้อ
       var it = BY_SKU[String(j.newSku).toUpperCase()];
       if (it) pick(it, false);
     })['catch'](function(){
