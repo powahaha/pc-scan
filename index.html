@@ -661,7 +661,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.96</span>
+      <span class="ver" id="appVer">v1.97</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -693,7 +693,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.96 · อัปเดต 26/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.97 · อัปเดต 26/10/2026</div>
     </div>
   </header>
 
@@ -2607,6 +2607,9 @@
     var kg = (prev.pct - cur.pct) / 100 * WIRE_KG + WIRE_KG * (cur.nw || 0);
     return kg >= 0 ? Math.round(kg) : null;
   }
+  function wToday(){ var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function wDateFor(mon){ var x = WIRE.filter(function(w){ return w.mon === mon && w.d; }).map(function(w){ return w.d; }).sort().pop(); return x || wToday(); }   // v1.97 วันที่เช็ค
+  function wDTh(d){ var p = String(d || '').split('-'); return p.length === 3 ? +p[2] + '/' + +p[1] : ''; }
   function wDefWire(mc){ var m = WIRE_MC.filter(function(x){ return x.mc === mc; })[0]; return m ? m.w : (WIRE_TYPES[0] && WIRE_TYPES[0].w); }
   function wMachines(){ var s = {}, out = []; WIRE_MC.forEach(function(x){ s[x.mc] = 1; out.push(x.mc); }); WIRE.forEach(function(w){ if (!s[w.mc]){ s[w.mc] = 1; out.push(w.mc); } }); return out; }
   function renderWire(force){
@@ -2621,11 +2624,12 @@
     var mon = (el('wire_mon') && el('wire_mon').value) || wMon();
     var mcs = wMachines();
     var form = '<div class="row" style="gap:8px; align-items:flex-end; margin-top:10px; flex-wrap:wrap"><div><label class="fld" for="wire_mon">เดือน</label><input type="month" id="wire_mon" value="' + esc(mon) + '"></div>'
+      + '<div><label class="fld" for="wire_d">วันที่เช็ค</label><input type="date" id="wire_d" value="' + esc(wDateFor(mon)) + '"></div>'
       + '<div class="note" style="margin:0 0 6px">ถังละ ' + WIRE_KG + ' กก. · % ที่เหลือในถังตอนสิ้นเดือน · เปิดถังใหม่ในเดือน = กี่ถัง</div></div>'
       + '<div class="wiregrid"><div class="wh">เครื่อง</div><div class="wh">ลวด</div><div class="wh">% เหลือ</div><div class="wh">ถังใหม่</div>'
       + mcs.map(function(mc){
         var cur = wGet(mon, mc), last = wLastBefore(mon, mc), w = cur ? cur.wire : (last ? last.wire : wDefWire(mc));
-        return '<div class="wmc"><b>' + esc(mc) + '</b>' + (last ? '<br><span class="nu">' + esc(wMonTh(last.mon)) + ' ' + fmt(last.pct) + '%</span>' : '') + '</div>'
+        return '<div class="wmc"><b>' + esc(mc) + '</b>' + (last ? '<br><span class="nu">' + (last.d ? esc(wDTh(last.d)) + ' ' : '') + esc(wMonTh(last.mon)) + ' ' + fmt(last.pct) + '%</span>' : '') + '</div>'
           + '<div><select data-wwire="' + esc(mc) + '">' + WIRE_TYPES.map(function(t){ return '<option' + (t.w === w ? ' selected' : '') + '>' + esc(t.w) + '</option>'; }).join('') + '</select></div>'
           + '<div><input type="number" inputmode="decimal" min="0" max="100" step="5" data-wpct="' + esc(mc) + '" value="' + (cur && cur.pct != null ? cur.pct : '') + '" placeholder="%"></div>'
           + '<div><input type="number" inputmode="numeric" min="0" step="1" data-wnw="' + esc(mc) + '" value="' + (cur && cur.nw ? cur.nw : '') + '" placeholder="0"></div>';
@@ -2637,7 +2641,7 @@
     var hist = '';
     if (ml.length){
       var byType = {};
-      hist = '<div class="note" style="margin:14px 0 4px"><b>ย้อนหลัง</b> — % ที่เหลือ · (ใช้ไป กก.)</div><div style="overflow-x:auto"><table class="wiretbl"><thead><tr><th>เครื่อง</th>' + ml.map(function(m){ return '<th>' + esc(wMonTh(m)) + '</th>'; }).join('') + '<th>เฉลี่ย/เดือน</th></tr></thead><tbody>'
+      hist = '<div class="note" style="margin:14px 0 4px"><b>ย้อนหลัง</b> — % ที่เหลือ · (ใช้ไป กก.)</div><div style="overflow-x:auto"><table class="wiretbl"><thead><tr><th>เครื่อง</th>' + ml.map(function(m){ var dd = WIRE.filter(function(w){ return w.mon === m && w.d; }).map(function(w){ return w.d; }).sort().pop(); return '<th>' + esc(wMonTh(m)) + (dd ? '<br><span class="nu">เช็ค ' + esc(wDTh(dd)) + '</span>' : '') + '</th>'; }).join('') + '<th>เฉลี่ย/เดือน</th></tr></thead><tbody>'
         + mcs.map(function(mc){
           var sum = 0, n = 0;
           var tds = ml.map(function(m){ var x = wGet(m, mc), u = wUsed(m, mc);
@@ -2652,11 +2656,12 @@
     }
     el('wire_panel').innerHTML = form + hist;
     el('wire_mon').addEventListener('change', function(){ wireDirty = false; renderWire(true); });
-    el('wire_panel').querySelectorAll('[data-wpct],[data-wnw],[data-wwire]').forEach(function(x){ x.addEventListener('input', function(){ wireDirty = true; }); x.addEventListener('change', function(){ wireDirty = true; }); });
+    el('wire_panel').querySelectorAll('[data-wpct],[data-wnw],[data-wwire],#wire_d').forEach(function(x){ x.addEventListener('input', function(){ wireDirty = true; }); x.addEventListener('change', function(){ wireDirty = true; }); });
     el('wire_save').addEventListener('click', function(){
       var mon2 = el('wire_mon').value; if (!/^\d{4}-\d{2}$/.test(mon2)){ toast('เลือกเดือนก่อน', true); return; }
+      if (!el('wire_d').value){ toast('ใส่วันที่เช็คก่อน', true); el('wire_d').focus(); return; }
       var rows = mcs.map(function(mc){ var p = el('wire_panel').querySelector('[data-wpct="' + mc + '"]').value, nw = el('wire_panel').querySelector('[data-wnw="' + mc + '"]').value;
-        return {mon: mon2, mc: mc, wire: el('wire_panel').querySelector('[data-wwire="' + mc + '"]').value, pct: p === '' ? '' : +p, nw: nw === '' ? 0 : +nw}; })
+        return {mon: mon2, d: el('wire_d').value || '', mc: mc, wire: el('wire_panel').querySelector('[data-wwire="' + mc + '"]').value, pct: p === '' ? '' : +p, nw: nw === '' ? 0 : +nw}; })
         .filter(function(r){ return r.pct !== '' || r.nw; });
       if (!rows.length){ toast('ยังไม่ได้ใส่ % เลย', true); return; }
       if (rows.some(function(r){ return r.pct !== '' && (r.pct < 0 || r.pct > 100); })){ toast('% ต้องอยู่ระหว่าง 0–100', true); return; }
@@ -2666,11 +2671,11 @@
   function wirePrintHtml(){   // ตารางในใบเช็คที่พิมพ์
     if (!WIRE_MC.length) return '';
     var mon = wMon();
-    return '<h2 style="font-size:14px; margin:14px 0 4px; color:#000; text-transform:none; letter-spacing:0; font-weight:700">ถังลวดเชื่อม Pailpack (' + WIRE_KG + ' กก./ถัง) ที่เครื่อง Robot — เขียน % ที่เหลือในถัง</h2>'
+    return '<h2 style="font-size:14px; margin:14px 0 4px; color:#000; text-transform:none; letter-spacing:0; font-weight:700">ถังลวดเชื่อม Pailpack (' + WIRE_KG + ' กก./ถัง) ที่เครื่อง Robot — เขียน % ที่เหลือในถัง</h2><div style="font-size:12px; margin:0 0 4px">วันที่เช็ค ........../........../.......... &nbsp; ผู้เช็ค ..............................</div>'
       + '<table><thead><tr><th>เครื่อง</th><th>ลวดที่ใช้ (วงกลม)</th><th>% ที่เหลือ</th><th>เปิดถังใหม่เดือนนี้ (ถัง)</th><th>หมายเหตุ</th></tr></thead><tbody>'
       + wMachines().map(function(mc){ var last = wLastBefore(mon + '-99', mc), w = last ? last.wire : wDefWire(mc);
         return '<tr><td><b>' + esc(mc) + '</b></td><td>' + WIRE_TYPES.map(function(t){ return (t.w === w ? '<b>' + esc(t.w) + '</b>' : esc(t.w)); }).join(' / ') + '</td>'
-          + '<td style="width:90px">' + (last && last.pct != null ? '<span class="u">ล่าสุด ' + esc(wMonTh(last.mon)) + ' ' + fmt(last.pct) + '%</span>' : '') + '</td><td style="width:90px"></td><td></td></tr>'; }).join('')
+          + '<td style="width:90px">' + (last && last.pct != null ? '<span class="u">ล่าสุด ' + (last.d ? esc(wDTh(last.d)) + ' ' : '') + esc(wMonTh(last.mon)) + ' ' + fmt(last.pct) + '%</span>' : '') + '</td><td style="width:90px"></td><td></td></tr>'; }).join('')
       + '</tbody></table>';
   }
   (function initWire(){
