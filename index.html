@@ -657,7 +657,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.93</span>
+      <span class="ver" id="appVer">v1.94</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -689,7 +689,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.93 · อัปเดต 26/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.94 · อัปเดต 26/10/2026</div>
     </div>
   </header>
 
@@ -2549,7 +2549,7 @@
       + '<button type="button" class="primary" data-mckon="' + esc(it.sku) + '">➕</button></div></li>'; }).join('') : '<li class="empty">ไม่เจอในทะเบียน</li>';
     box.querySelectorAll('[data-mckon]').forEach(function(b){ b.addEventListener('click', function(){ mckSet(getSku(b.getAttribute('data-mckon')), true, b); }); });
   }
-  function mckPrint(){
+  function mckPrint(){   // v1.94 แสดงใบในหน้าเดิม (ไม่เปิดหน้าต่างใหม่ — มือถือ/แอปที่ติดตั้งบล็อกป๊อปอัป) แล้วสั่งพิมพ์
     var L = mckItems(); if (!L.length){ toast('ยังไม่มีรายการในใบเช็ค', true); return; }
     var DEM = pendingDemand(), d = new Date(), TH_M = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
     var title = 'ใบเช็คสต็อกสิ้นเดือน ' + TH_M[d.getMonth()] + ' ' + (d.getFullYear() + 543);
@@ -2560,24 +2560,28 @@
       return '<tr><td class="c">' + (mckNum(it.sku) || esc(it.sku)) + '</td><td>' + esc(it.name) + (it.unit ? ' <span class="u">(' + esc(it.unit) + ')</span>' : '') + '</td>'
         + '<td class="c s" style="background:' + bg + '">' + fmt(n) + '</td>' + DEPTS.map(function(){ return '<td></td>'; }).join('') + '<td class="r">' + esc(rem) + '</td></tr>';
     }).join('');
-    var html = '<!doctype html><html lang="th"><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>'
-      + '@page{size:A4 portrait; margin:10mm} body{font-family:Sarabun,"Noto Sans Thai",Tahoma,sans-serif; margin:0; color:#000}'
-      + 'h1{font-size:17px; margin:0 0 2px} .sub{font-size:11px; color:#444; margin:0 0 8px} table{border-collapse:collapse; width:100%; font-size:12px}'
-      + 'th,td{border:1px solid #000; padding:3px 4px; height:22px} th{background:#eee; font-size:11px} td.c{text-align:center; width:34px} td.s{font-weight:700; width:52px}'
-      + 'th.d{width:46px} td.r{font-size:10px; width:90px} .u{color:#555; font-size:10px} .lg{font-size:10px; margin-top:6px}'
-      + '.lg span{display:inline-block; width:12px; height:10px; border:1px solid #000; margin:0 3px 0 10px; vertical-align:middle}'
-      + '.sig{margin-top:18px; font-size:12px; display:flex; gap:40px} .noprint{margin:10px 0} @media print{.noprint{display:none}}'
-      + '</style></head><body>'
-      + '<div class="noprint"><button onclick="print()" style="font-size:16px; padding:8px 18px">🖨 พิมพ์</button></div>'
+    var P = '#mckPrintView ';
+    var css = '<style>@page{size:A4 portrait; margin:10mm}'
+      + '#mckPrintView{position:fixed; inset:0; z-index:99999; overflow:auto; background:#fff; color:#000; padding:12px; line-height:1.25; font-family:Sarabun,"Noto Sans Thai",Tahoma,sans-serif}'
+      + P + 'h1{font-size:17px; margin:0 0 2px; color:#000} ' + P + '.sub{font-size:11px; color:#444; margin:0 0 8px} ' + P + 'table{border-collapse:collapse; width:100%; font-size:12px; color:#000; background:#fff}'
+      + P + 'th,' + P + 'td{border:1px solid #000; padding:3px 4px; height:22px} ' + P + 'th{background:#eee; font-size:11px} ' + P + 'td.c{text-align:center; width:34px} ' + P + 'td.s{font-weight:700; width:52px}'
+      + P + 'th.d{width:46px} ' + P + 'td.r{font-size:10px; width:90px} ' + P + '.u{color:#555; font-size:10px} ' + P + '.lg{font-size:10px; margin-top:6px}'
+      + P + '.lg span{display:inline-block; width:12px; height:10px; border:1px solid #000; margin:0 3px 0 10px; vertical-align:middle}'
+      + P + '.sig{margin-top:18px; font-size:12px; display:flex; gap:40px} ' + P + '.mpbar{display:flex; gap:8px; margin:0 0 10px} ' + P + '.mpbar button{width:auto; flex:none; padding:10px 18px; font-size:16px}'
+      + '@media print{ body > *:not(#mckPrintView){display:none !important} #mckPrintView{position:static; overflow:visible; padding:0} ' + P + '.mpbar{display:none} }'
+      + '</style>';
+    var html = css
+      + '<div class="mpbar"><button type="button" class="primary" id="mp_print">🖨 พิมพ์</button><button type="button" class="ghost" id="mp_close">✕ ปิด</button></div>'
       + '<h1>' + esc(title) + '</h1><div class="sub">' + esc(CFG.name || '') + ' · ยอดคลัง ' + OWN + ' ณ ' + d.toLocaleString('th-TH', {dateStyle:'medium', timeStyle:'short'}) + ' · ' + L.length + ' รายการ · แต่ละไลน์จดยอดที่เหลือที่ไลน์ตัวเอง</div>'
       + '<table><thead><tr><th>ลำดับ</th><th>รายการ</th><th>คลัง ' + esc(OWN) + '</th>' + DEPTS.map(function(x){ return '<th class="d">' + esc(x) + '</th>'; }).join('') + '<th>รอจ่าย/หมายเหตุ</th></tr></thead><tbody>' + rows + '</tbody></table>'
       + '<div class="lg">สีช่องคลัง:<span style="background:#a9d08e"></span>ปกติ<span style="background:#ffe699"></span>ถึง MIN<span style="background:#f4b183"></span>ต่ำกว่า MIN<span style="background:#ff8b8b"></span>หมด<span style="background:#fff"></span>ไม่ได้ตั้ง MIN</div>'
-      + '<div class="sig"><div>ผู้เช็ค ............................ วันที่ ............</div><div>' + esc(OWN) + ' รับ ............................ วันที่ ............</div></div>'
-      + '</body></html>';
-    var w = window.open('', '_blank');
-    if (!w){ toast('เบราว์เซอร์บล็อกหน้าต่างใหม่ — อนุญาตป๊อปอัปก่อน', true); return; }
-    w.document.open(); w.document.write(html); w.document.close();
-    setTimeout(function(){ try { w.focus(); w.print(); } catch(e){} }, 400);
+      + '<div class="sig"><div>ผู้เช็ค ............................ วันที่ ............</div><div>' + esc(OWN) + ' รับ ............................ วันที่ ............</div></div>';
+    var old = el('mckPrintView'); if (old) old.remove();
+    var v = document.createElement('div'); v.id = 'mckPrintView'; v.innerHTML = html; document.body.appendChild(v);
+    var close = function(){ v.remove(); };
+    el('mp_close').addEventListener('click', close);
+    el('mp_print').addEventListener('click', function(){ window.print(); });
+    setTimeout(function(){ try { window.print(); } catch(e){} }, 300);
   }
   (function initMck(){
     if (DEPT_MODE || !el('mckCard')) return;
