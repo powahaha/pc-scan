@@ -19,6 +19,7 @@
     api: 'https://script.google.com/macros/s/AKfycbwO41Enxx8NMRPOLbXLqdE9Y8GfoOxwDdiGxVUlSRGaNNfTuQr0RHPPimwfpnG1Beji/exec',
     sku: 'CS', seed: true, file: 'pc-scan',
     depts: ['CNC','Robot','Friction','Assy','Finishing & Hand weld','QA','MT/HW'],
+    wireMc: [{mc:'RB008', w:'YM-28'}, {mc:'RB045', w:'YM-26'}, {mc:'RB047', w:'YM-28'}, {mc:'RB064', w:'YM-28'}, {mc:'RB053', w:'YM-28'}],   // v1.95 ถังลวดเชื่อมที่เครื่อง Robot
     qr: {cnc:'CNC', robot:'Robot', friction:'Friction', assy:'Assy', finish:'Finishing & Hand weld', qa:'QA', mthw:'MT/HW'},
     mapImg: 'plant1-map.jpg',
     spots: [
@@ -567,6 +568,8 @@
   .buyrow .li-top{align-items:center;} .buychk{flex:none; display:flex; align-items:center; padding:4px;} .buychk input{width:26px; height:26px; accent-color:var(--ok);}
   .buyrow.done .li-name{text-decoration:line-through; opacity:.65;} .buyrow [data-bopen]{cursor:pointer;}
   .buyedit{margin-top:10px; padding:10px; border:1px dashed var(--line); border-radius:10px;}
+  #wire_toggle{width:auto;} .wiregrid{display:grid; grid-template-columns:1.1fr 1.3fr .8fr .7fr; gap:6px; align-items:center; margin-top:8px;} .wiregrid .wh{font:600 12px var(--fs); color:var(--muted);} .wiregrid input,.wiregrid select{min-height:40px;}
+  .wiretbl{border-collapse:collapse; font-size:12px;} .wiretbl th,.wiretbl td{border:1px solid var(--line); padding:4px 6px; text-align:center; white-space:nowrap;}   /* v1.95 */
   #mckCard .li-top{align-items:center;} #mckCard .li-top>button{flex:none; width:auto; min-width:48px; min-height:44px; padding:8px 14px; font-size:18px;}   /* v1.93 ปุ่ม ➕/✕ ในใบเช็คกว้างเต็มแถวทับชื่อ */
   .dphoto{position:relative; width:72px; height:72px;} .dphoto img{width:72px; height:72px; object-fit:cover; border-radius:8px; border:1px solid var(--line);}
   .dphoto button{position:absolute; top:-6px; right:-6px; width:24px; height:24px; min-height:0; padding:0; border-radius:50%; font-size:14px; line-height:1;}
@@ -657,7 +660,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.94</span>
+      <span class="ver" id="appVer">v1.95</span>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -689,7 +692,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.94 · อัปเดต 26/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.95 · อัปเดต 26/10/2026</div>
     </div>
   </header>
 
@@ -805,6 +808,7 @@
           <div><b>🗓 ใบเช็คสต็อกสิ้นเดือน</b> · <span id="mck_n">0</span> รายการ<div class="note" style="margin:0">ของที่ไลน์ไม่ได้เบิกทีละชิ้น (น้ำมัน ลวดเชื่อม แก๊ส…) ให้ไลน์จดยอดที่เหลือ</div></div>
           <div class="row" style="gap:6px"><button type="button" class="ghost" id="mck_toggle">✏️ เลือกรายการ</button><button type="button" class="primary" id="mck_print">🖨 พิมพ์ใบเช็ค</button></div>
         </div>
+        <div id="wireBox" hidden style="margin-top:8px"><button type="button" class="ghost" id="wire_toggle">🧵 ถังลวด Robot</button><div id="wire_panel" hidden></div></div>
         <div id="mck_edit" hidden style="margin-top:10px">
           <input type="text" id="mck_q" placeholder="ค้นของในทะเบียนเพื่อเพิ่ม เช่น น้ำมัน / NITTESU" autocomplete="off">
           <ul class="list" id="mck_sug"></ul>
@@ -1344,13 +1348,14 @@
     if (j.prs) PRS = j.prs; if (j.prmap) PRMAP = j.prmap;   // v1.17 ใบ PR
     if (j.cyl) CYL = j.cyl;   // v1.18 ถังแก๊ส
     if (j.buy){ BUY = j.buy; lsSet('pcscan_buy', BUY); }   // v1.91 สมุดจดซื้อ
+    if (j.wire) WIRE = j.wire;   // v1.95 ถังลวด Robot
     if (j.eq) EQ = j.eq; if (j.eqPend) EQP = j.eqPend;   // v1.71 ทะเบียนของใช้
     if (j.line) renderLine(j.line);   // v1.78
     if ('count' in j) COUNT = j.count || null;   // v1.21 รอบนับ
     if (j.sheet && j.sheet.id){ SHEETINFO = j.sheet; lsSet('pcscan_sheet', SHEETINFO); }
     if (j.pin === true){ pinOk = true; PRICES = j.prices || {}; PURCH = j.purchases || []; lsSet(K_PRICE, PRICES); fillShops(); }
     else if (j.pin === false){   // PIN เก่า/ผิด — ล้างทิ้ง กันไปนับครั้งผิดจนระบบล็อก
-      pinOk = false; PRICES = {}; PURCH = []; lsSet(K_PRICE, {}); BUY = []; lsSet('pcscan_buy', []);
+      pinOk = false; PRICES = {}; PURCH = []; lsSet(K_PRICE, {}); BUY = []; lsSet('pcscan_buy', []); WIRE = [];
       if (PIN){ PIN = ''; lsSetRaw(K_PIN, ''); toast('PIN ไม่ถูกแล้ว — ใส่ใหม่ในปุ่มตั้งค่า', true); }
     }
     if (j.master && j.master.length){
@@ -2526,6 +2531,7 @@
   }
   function renderMck(){
     var c = el('mckCard'); if (!c) return;
+    renderWire();   // v1.95
     var L = mckItems();
     el('mck_n').textContent = L.length;
     el('mck_print').disabled = !L.length;
@@ -2575,6 +2581,7 @@
       + '<h1>' + esc(title) + '</h1><div class="sub">' + esc(CFG.name || '') + ' · ยอดคลัง ' + OWN + ' ณ ' + d.toLocaleString('th-TH', {dateStyle:'medium', timeStyle:'short'}) + ' · ' + L.length + ' รายการ · แต่ละไลน์จดยอดที่เหลือที่ไลน์ตัวเอง</div>'
       + '<table><thead><tr><th>ลำดับ</th><th>รายการ</th><th>คลัง ' + esc(OWN) + '</th>' + DEPTS.map(function(x){ return '<th class="d">' + esc(x) + '</th>'; }).join('') + '<th>รอจ่าย/หมายเหตุ</th></tr></thead><tbody>' + rows + '</tbody></table>'
       + '<div class="lg">สีช่องคลัง:<span style="background:#a9d08e"></span>ปกติ<span style="background:#ffe699"></span>ถึง MIN<span style="background:#f4b183"></span>ต่ำกว่า MIN<span style="background:#ff8b8b"></span>หมด<span style="background:#fff"></span>ไม่ได้ตั้ง MIN</div>'
+      + wirePrintHtml()
       + '<div class="sig"><div>ผู้เช็ค ............................ วันที่ ............</div><div>' + esc(OWN) + ' รับ ............................ วันที่ ............</div></div>';
     var old = el('mckPrintView'); if (old) old.remove();
     var v = document.createElement('div'); v.id = 'mckPrintView'; v.innerHTML = html; document.body.appendChild(v);
@@ -2583,6 +2590,93 @@
     el('mp_print').addEventListener('click', function(){ window.print(); });
     setTimeout(function(){ try { window.print(); } catch(e){} }, 300);
   }
+
+  /* ================= v1.95 ถังลวดเชื่อมที่เครื่อง Robot (% ที่เหลือ สิ้นเดือน) =================
+   * ใบเช็คที่พิมพ์มีตารางให้ไลน์เขียน % · PC กรอกในแอป (ต้องมี PIN) → เก็บใน Sheet "ถังลวดRobot" · คิดใช้ไป กก./เดือน ต่อเครื่อง + ต่อชนิดลวด */
+  var WIRE = [], wireOpen = false, wireDirty = false, WIRE_KG = 300;
+  var WIRE_MC = (CFG.wireMc || []).slice(), WIRE_TYPES = CFG.wireTypes || [{w:'YM-28', sku:'CS-148'}, {w:'YM-26', sku:'CS-150'}];
+  function wMon(d){ d = d || new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+  function wPrevMon(m){ var p = m.split('-'), y = +p[0], mo = +p[1] - 1; if (mo < 1){ mo = 12; y--; } return y + '-' + String(mo).padStart(2, '0'); }
+  function wMonTh(m){ var p = String(m).split('-'), TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']; return TH[+p[1] - 1] + ' ' + String(+p[0] + 543).slice(2); }
+  function wGet(mon, mc){ for (var i = WIRE.length - 1; i >= 0; i--) if (WIRE[i].mon === mon && WIRE[i].mc === mc) return WIRE[i]; return null; }
+  function wLastBefore(mon, mc){ var best = null; WIRE.forEach(function(w){ if (w.mc === mc && w.mon < mon && w.pct != null && (!best || w.mon > best.mon)) best = w; }); return best; }
+  function wUsed(mon, mc){   // กก. ที่ใช้ในเดือนนั้น (ต้องมี % เดือนก่อนหน้าติดกัน)
+    var cur = wGet(mon, mc), prev = wGet(wPrevMon(mon), mc);
+    if (!cur || cur.pct == null || !prev || prev.pct == null) return null;
+    var kg = (prev.pct - cur.pct) / 100 * WIRE_KG + WIRE_KG * (cur.nw || 0);
+    return kg >= 0 ? Math.round(kg) : null;
+  }
+  function wDefWire(mc){ var m = WIRE_MC.filter(function(x){ return x.mc === mc; })[0]; return m ? m.w : (WIRE_TYPES[0] && WIRE_TYPES[0].w); }
+  function wMachines(){ var s = {}, out = []; WIRE_MC.forEach(function(x){ s[x.mc] = 1; out.push(x.mc); }); WIRE.forEach(function(w){ if (!s[w.mc]){ s[w.mc] = 1; out.push(w.mc); } }); return out; }
+  function renderWire(force){
+    var box = el('wireBox'); if (!box || !WIRE_MC) return;
+    box.hidden = !WIRE_MC.length;
+    if (!WIRE_MC.length) return;
+    el('wire_toggle').textContent = wireOpen ? 'ปิด' : '🧵 ถังลวด Robot';
+    el('wire_panel').hidden = !wireOpen;
+    if (!wireOpen) return;
+    if (wireDirty && !force) return;   // กำลังพิมพ์อยู่ — ข้อมูลซิงค์เข้ามาไม่ล้างช่องที่กรอก
+    if (!pinOk){ el('wire_panel').innerHTML = '<div class="note" style="margin:8px 0 0">🔒 ต้องใส่ PIN ของ PC ในปุ่มตั้งค่าก่อน</div>'; return; }
+    var mon = (el('wire_mon') && el('wire_mon').value) || wMon();
+    var mcs = wMachines();
+    var form = '<div class="row" style="gap:8px; align-items:flex-end; margin-top:10px; flex-wrap:wrap"><div><label class="fld" for="wire_mon">เดือน</label><input type="month" id="wire_mon" value="' + esc(mon) + '"></div>'
+      + '<div class="note" style="margin:0 0 6px">ถังละ ' + WIRE_KG + ' กก. · % ที่เหลือในถังตอนสิ้นเดือน · เปิดถังใหม่ในเดือน = กี่ถัง</div></div>'
+      + '<div class="wiregrid"><div class="wh">เครื่อง</div><div class="wh">ลวด</div><div class="wh">% เหลือ</div><div class="wh">ถังใหม่</div>'
+      + mcs.map(function(mc){
+        var cur = wGet(mon, mc), last = wLastBefore(mon, mc), w = cur ? cur.wire : (last ? last.wire : wDefWire(mc));
+        return '<div class="wmc"><b>' + esc(mc) + '</b>' + (last ? '<br><span class="nu">' + esc(wMonTh(last.mon)) + ' ' + fmt(last.pct) + '%</span>' : '') + '</div>'
+          + '<div><select data-wwire="' + esc(mc) + '">' + WIRE_TYPES.map(function(t){ return '<option' + (t.w === w ? ' selected' : '') + '>' + esc(t.w) + '</option>'; }).join('') + '</select></div>'
+          + '<div><input type="number" inputmode="decimal" min="0" max="100" step="5" data-wpct="' + esc(mc) + '" value="' + (cur && cur.pct != null ? cur.pct : '') + '" placeholder="%"></div>'
+          + '<div><input type="number" inputmode="numeric" min="0" step="1" data-wnw="' + esc(mc) + '" value="' + (cur && cur.nw ? cur.nw : '') + '" placeholder="0"></div>';
+      }).join('') + '</div>'
+      + '<button type="button" class="primary" id="wire_save" style="margin-top:10px">💾 บันทึกเดือน ' + esc(wMonTh(mon)) + '</button>';
+    // ประวัติ 6 เดือนล่าสุด
+    var mons = {}; WIRE.forEach(function(x){ mons[x.mon] = 1; });
+    var ml = Object.keys(mons).sort().slice(-6);
+    var hist = '';
+    if (ml.length){
+      var byType = {};
+      hist = '<div class="note" style="margin:14px 0 4px"><b>ย้อนหลัง</b> — % ที่เหลือ · (ใช้ไป กก.)</div><div style="overflow-x:auto"><table class="wiretbl"><thead><tr><th>เครื่อง</th>' + ml.map(function(m){ return '<th>' + esc(wMonTh(m)) + '</th>'; }).join('') + '<th>เฉลี่ย/เดือน</th></tr></thead><tbody>'
+        + mcs.map(function(mc){
+          var sum = 0, n = 0;
+          var tds = ml.map(function(m){ var x = wGet(m, mc), u = wUsed(m, mc);
+            if (u != null){ sum += u; n++; var t = x.wire || wDefWire(mc); byType[t] = byType[t] || {}; byType[t][m] = (byType[t][m] || 0) + u; }
+            return '<td>' + (x && x.pct != null ? fmt(x.pct) + '%' : '–') + (x && x.nw ? ' <span class="nu">+' + x.nw + ' ถัง</span>' : '') + (u != null ? '<br><span class="nu">ใช้ ' + fmt(u) + '</span>' : '') + '</td>'; }).join('');
+          return '<tr><td><b>' + esc(mc) + '</b></td>' + tds + '<td>' + (n ? fmt(Math.round(sum / n)) + ' กก.' : '–') + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+      var tl = Object.keys(byType);
+      if (tl.length) hist += '<div class="note" style="margin:8px 0 0">' + tl.map(function(t){ var v = Object.keys(byType[t]).map(function(m){ return byType[t][m]; }), avg = v.reduce(function(a, b){ return a + b; }, 0) / v.length;
+        return '<b>' + esc(t) + '</b> ใช้เฉลี่ย ' + fmt(Math.round(avg)) + ' กก./เดือน ≈ ' + (Math.round(avg / WIRE_KG * 10) / 10) + ' ถัง/เดือน (' + v.length + ' เดือน)'; }).join('<br>') + '</div>';
+      else hist += '<div class="note" style="margin:8px 0 0">ต้องมีข้อมูล 2 เดือนติดกันขึ้นไป ถึงจะคิดยอดใช้ได้</div>';
+    }
+    el('wire_panel').innerHTML = form + hist;
+    el('wire_mon').addEventListener('change', function(){ wireDirty = false; renderWire(true); });
+    el('wire_panel').querySelectorAll('[data-wpct],[data-wnw],[data-wwire]').forEach(function(x){ x.addEventListener('input', function(){ wireDirty = true; }); x.addEventListener('change', function(){ wireDirty = true; }); });
+    el('wire_save').addEventListener('click', function(){
+      var mon2 = el('wire_mon').value; if (!/^\d{4}-\d{2}$/.test(mon2)){ toast('เลือกเดือนก่อน', true); return; }
+      var rows = mcs.map(function(mc){ var p = el('wire_panel').querySelector('[data-wpct="' + mc + '"]').value, nw = el('wire_panel').querySelector('[data-wnw="' + mc + '"]').value;
+        return {mon: mon2, mc: mc, wire: el('wire_panel').querySelector('[data-wwire="' + mc + '"]').value, pct: p === '' ? '' : +p, nw: nw === '' ? 0 : +nw}; })
+        .filter(function(r){ return r.pct !== '' || r.nw; });
+      if (!rows.length){ toast('ยังไม่ได้ใส่ % เลย', true); return; }
+      if (rows.some(function(r){ return r.pct !== '' && (r.pct < 0 || r.pct > 100); })){ toast('% ต้องอยู่ระหว่าง 0–100', true); return; }
+      reqAction({action:'wire', rows: rows, who: 'PC'}, '🧵 บันทึกถังลวด ' + wMonTh(mon2) + ' แล้ว (' + rows.length + ' เครื่อง)', el('wire_save')).then(function(j){ if (j){ wireDirty = false; renderWire(true); } });
+    });
+  }
+  function wirePrintHtml(){   // ตารางในใบเช็คที่พิมพ์
+    if (!WIRE_MC.length) return '';
+    var mon = wMon();
+    return '<h2 style="font-size:14px; margin:14px 0 4px; color:#000; text-transform:none; letter-spacing:0; font-weight:700">ถังลวดเชื่อม Pailpack (' + WIRE_KG + ' กก./ถัง) ที่เครื่อง Robot — เขียน % ที่เหลือในถัง</h2>'
+      + '<table><thead><tr><th>เครื่อง</th><th>ลวดที่ใช้ (วงกลม)</th><th>% ที่เหลือ</th><th>เปิดถังใหม่เดือนนี้ (ถัง)</th><th>หมายเหตุ</th></tr></thead><tbody>'
+      + wMachines().map(function(mc){ var last = wLastBefore(mon + '-99', mc), w = last ? last.wire : wDefWire(mc);
+        return '<tr><td><b>' + esc(mc) + '</b></td><td>' + WIRE_TYPES.map(function(t){ return (t.w === w ? '<b>' + esc(t.w) + '</b>' : esc(t.w)); }).join(' / ') + '</td>'
+          + '<td style="width:90px">' + (last && last.pct != null ? '<span class="u">ล่าสุด ' + esc(wMonTh(last.mon)) + ' ' + fmt(last.pct) + '%</span>' : '') + '</td><td style="width:90px"></td><td></td></tr>'; }).join('')
+      + '</tbody></table>';
+  }
+  (function initWire(){
+    if (DEPT_MODE || !el('wireBox')) return;
+    el('wire_toggle').addEventListener('click', function(){ wireOpen = !wireOpen; wireDirty = false; renderWire(true); });
+    renderWire();
+  })();
   (function initMck(){
     if (DEPT_MODE || !el('mckCard')) return;
     el('mck_toggle').addEventListener('click', function(){ mckOpen = !mckOpen; renderMck(); if (mckOpen) el('mck_q').focus(); });
