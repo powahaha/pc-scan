@@ -665,7 +665,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v2.01</span>
+      <span class="ver" id="appVer">v2.02</span>
       <a class="homebtn" id="homeBtn" hidden href="#">← เมนูหลัก</a>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
@@ -698,7 +698,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 2.01 · อัปเดต 04/11/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 2.02 · อัปเดต 04/11/2026</div>
     </div>
   </header>
 
@@ -4800,7 +4800,7 @@
     var h = '<div class="prline st-' + st.k + (l.done ? ' done' : '') + '" data-i="' + i + '">'
       + '<div class="prhead"><div class="row" style="gap:8px; align-items:center"><span class="prno">#' + l.ln + '</span><span class="prst s-' + st.k + '">' + esc(st.t) + '</span></div>'
       + '<button type="button" class="ghost" data-act="drop" title="ลบบรรทัดนี้ (อ่านผิด/ไม่ใช่ของ)" style="width:auto; min-height:30px; padding:0 10px">🗑 ลบ</button></div>'   // v1.58
-      + '<div class="li-name" style="font-weight:600; font-size:16px">' + esc(l.desc || '—') + '</div>'
+      + '<div class="li-meta" style="margin:2px 0 0">📄 ในใบเขียนว่า</div><div class="li-name" style="font-weight:600; font-size:16px">' + esc(l.desc || '—') + '</div>'   // v2.02 แยกให้ชัด: ชื่อในใบ ≠ ของที่จะรับเข้า
       + '<div class="li-meta" style="margin-top:2px">รหัสในใบ <input class="prcode' + (nf.code ? ' needf' : '') + '" data-f="code" value="' + esc(l.code || '') + '" placeholder="รหัสในใบ"></div>'
       + '<div class="li-meta">' + (prDoc && prDoc.kind === 'DD' ? 'ถังเต็มส่งมา' : prDoc && (prDoc.kind === 'INV' || prDoc.kind === 'TAX') ? 'ส่งมา' : 'ใบสั่ง') + ' <b>' + fmt(l.qty) + ' ' + esc(l.unit) + '</b>' + (l.price != null ? ' × ' + baht(l.price) : '') + (l.prev ? ' · รับไปแล้ว ' + fmt(l.prev) + ' · <b class="over">ค้าง ' + fmt(rem) + '</b>' : '') + '</div>'
       + (needs.length && !(needs.length === 1 && needs[0].todo) ? (st.k === 'need' ? '<div class="prneed">👉 บรรทัด #' + l.ln + ' ต้องทำก่อนบันทึก<ol>' : '<div class="prneed check">👀 บรรทัด #' + l.ln + ' ควรเทียบกับใบจริง (ไม่บังคับ)<ol>') + needs.map(function(x){ return '<li' + (x.soft ? ' class="soft"' : '') + '>' + esc(x.t) + '</li>'; }).join('') + '</ol></div>' : '')
@@ -4818,7 +4818,7 @@
     } else if (l.sku === 'SKIP'){
       h += '<div class="row" style="gap:6px; margin-top:6px"><span class="chip na">ไม่เข้าสต็อก</span><button type="button" class="ghost" data-act="change">เปลี่ยน</button></div>';
     } else if (it && l.mode === 'ok'){
-      h += '<div class="prmatch"><span>→ <b>' + esc(it.sku) + '</b> ' + esc(it.name) + '</span><button type="button" class="ghost" data-act="change">เปลี่ยน</button></div>'
+      h += '<div class="prmatch"><span><span class="li-meta" style="display:block">📦 รับเข้าสต็อกเป็น</span><b>' + esc(it.sku) + '</b> ' + esc(it.name) + '</span><button type="button" class="ghost" data-act="change">เปลี่ยนตัว</button></div>'
         + (l.guess ? '<div class="outnote soft">🤖 ระบบเดาให้ (ชื่อ+ขนาดตรง แต่ยังไม่เคยจับคู่) — ดูให้แน่ใจ ถ้าไม่ใช่กด "เปลี่ยน" · รับแล้วระบบจำไว้</div>' : '');   // v1.60
     } else if (l.mode === 'direct'){   // v1.63 ของซื้อแล้วจ่ายตรงให้แผนก
       var ox = prOpenExtra();
@@ -4838,7 +4838,8 @@
       var vd = prVerdict(l), sug = vd.s.map(function(x){ return x.it; });   // v1.60 เรียงตามชื่อ+ขนาด+ยี่ห้อ
       h += '<div class="prpick">' + (vd.k === 'new' ? '<div class="outnote">🆕 <b>น่าจะเป็นของใหม่</b> — ' + esc(vd.why) + ' → กด "+ เพิ่มเป็นของใหม่" (ถ้าใช่ตัวเดิม แตะเลือกด้านล่างได้)</div>'
           : '<div class="outnote soft">❓ <b>ยังไม่เคยจับคู่</b> — เลือกตัวที่ใช่ (เรียงจากใกล้สุด)</div>')
-        + '<div class="li-meta" style="margin:6px 0 4px">' + (sug.length ? 'ตัวที่ใกล้:' : '') + '</div>'
+        + (l.prevSku && getSku(l.prevSku) ? '<button type="button" class="primary" data-pick="' + esc(l.prevSku) + '" style="width:100%; margin:6px 0 2px">↩ ใช้ตัวเดิม ' + esc(l.prevSku) + '</button>' : '')   // v2.02 กดเปลี่ยนแล้วกลับง่าย
+        + '<div class="li-meta" style="margin:6px 0 4px">' + (sug.length ? '👇 แตะตัวที่ใช่ = บรรทัด #' + l.ln + ' จะรับเข้าเป็นตัวนั้น' : '') + '</div>'
         + (sug.length ? sug.map(function(s){ return '<button type="button" class="chip na tapchip" data-pick="' + esc(s.sku) + '" style="margin:0 6px 6px 0">' + esc(s.sku) + ' ' + esc(s.name.slice(0, 34)) + '</button>'; }).join('') : '')
         + '<input type="text" data-f="q" placeholder="ค้นในทะเบียน เช่น ใบเจียร" autocomplete="off" style="margin-top:4px"><div class="prres"></div>'
         + '<div class="row" style="gap:6px; margin-top:6px"><button type="button" class="ghost" data-act="new" style="flex:1">+ เพิ่มเป็นของใหม่</button><button type="button" class="ghost" data-act="skip" style="flex:1">ไม่เข้าสต็อก</button></div>'
@@ -4950,11 +4951,12 @@
         l.sku = it.sku; l.mode = 'ok'; l.guess = false; l.factorAsk = normUnit(it.unit) !== normUnit(l.unit); if (!l.factorAsk) l.factor = 1;
         if (l.factorAsk && l.pkn && !/แพ็ค|กล่อง|pack|box|pk/i.test(it.unit)) l.factor = l.pkn;   // v1.65 PK (50) → เสนอ 50 ชิ้นให้ (ยังต้องยืนยัน)
         l.on = !l.done && (+l.recv > 0); prSave(); var y = window.scrollY; renderPR(); window.scrollTo(0, y);
+        toast('#' + l.ln + ' → รับเข้าเป็น ' + it.sku + ' แล้ว');   // v2.02
       }); }
       div.querySelectorAll('[data-pick]').forEach(bindPick);
       div.querySelectorAll('[data-act]').forEach(function(b){ b.addEventListener('click', function(){
         var a = b.getAttribute('data-act');
-        if (a === 'change'){ l.sku = ''; l.mode = 'pick'; l.on = false; l.guess = false; }
+        if (a === 'change'){ if (l.sku && l.sku !== 'SKIP') l.prevSku = l.sku; l.sku = ''; l.mode = 'pick'; l.on = false; l.guess = false; }
         if (a === 'skip'){ l.sku = 'SKIP'; l.mode = 'ok'; l.on = false; }
         if (a === 'new'){ l.sku = 'NEW'; l.mode = 'new'; l.on = !l.done; l.factor = 1; l.factorAsk = false; }
         if (a === 'back'){ l.sku = ''; l.mode = 'pick'; l.on = false; }
