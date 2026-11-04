@@ -665,7 +665,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.99</span>
+      <span class="ver" id="appVer">v2.00</span>
       <a class="homebtn" id="homeBtn" hidden href="#">← เมนูหลัก</a>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
@@ -698,7 +698,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.99 · อัปเดต 04/11/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 2.00 · อัปเดต 04/11/2026</div>
     </div>
   </header>
 
@@ -4280,7 +4280,40 @@
     if (!out.no) out.warn.push('อ่านเลข PO ไม่ได้ — พิมพ์เอง');
     return out;
   }
-  function parseDoc(text){ var k = docKind(text); if (k === 'PO') return parsePO(text); if (k === 'TAX') return parseTax(text); if (k === 'PR'){ var d = parsePR(text); d.kind = 'PR'; return d; } return parseLinde(text); }
+  // v2.00 ใบ PO บรรทัดเดียว (หรือไม่กี่บรรทัด) ที่ OCR อ่านออกมาเป็น "ป้าย ค่า" เช่น "Quantity 3.00 PCS" / "Unit Price 390.00" / "Amount" แล้วเลขบรรทัดถัดไป
+  // (เช่น PO2610090 CHANATHORN, PO2610072 WASIN) → ตัวอ่านตารางปกติหาเลข 3 ตัวต่อบรรทัดไม่ครบ = "หาบรรทัดสินค้าไม่เจอ"
+  function parsePOLabeled(text){
+    var raw = String(text || '').replace(/\\([*_!"'#])/g, '$1').replace(/\r/g, '');
+    var T = raw.split('\n').map(function(x){ return x.replace(/^\*\*|\*\*$/g, '').replace(/\|/g, ' ').trim(); }).filter(Boolean);
+    var NUMS = /([\d,]+\.\d{2})/, out = [], di = -1, i;
+    for (i = 0; i < T.length; i++) if (/Item\s*\/?\s*Description/i.test(T[i])){ di = i; break; }
+    var start = di;   // ชื่ออาจอยู่ก่อนหัว Item/Description (เช่น "1" / "SIZE:M18*1.5" / "Item/Description ซ่อม…") → เริ่มหลังหัว "No."
+    for (i = di; i >= 0 && i >= di - 6; i--) if (/^No\.?$/i.test(T[i])){ start = i; break; }
+    if (start < 0) return out;
+    var desc = [];
+    for (i = start + 1; i < T.length; i++){
+      var t = T[i], q = t.match(/^Quantity\s*:?\s*([\d,]+\.\d{2})\s*([A-Za-zก-๙.]{1,8})?/i);
+      if (q){
+        var l = {ln: out.length + 1, code:'', desc: desc.join(' ').trim(), qty: prNum(q[1]), unit: String(q[2] || '').toUpperCase().replace(/\.$/, ''), price: null, total: null, flags: []};
+        for (var k = i + 1; k < Math.min(T.length, i + 6); k++){
+          var p = T[k].match(/^Unit\s*Price\s*:?\s*([\d,]+\.\d{2})/i); if (p && l.price == null){ l.price = prNum(p[1]); continue; }
+          if (/^Amount\b/i.test(T[k])){ var a = T[k].match(NUMS) || (T[k + 1] && /^[\d,]+\.\d{2}$/.test(T[k + 1]) ? [0, T[k + 1]] : null); if (a) l.total = prNum(a[1]); break; }
+        }
+        if (l.total == null && l.qty != null && l.price != null) l.total = Math.round(l.qty * l.price * 100) / 100;
+        if (!l.unit) l.flags.push('อ่านจำนวน/หน่วยไม่ครบ');
+        if (l.qty != null && l.price != null && l.total != null && Math.abs(l.qty * l.price - l.total) > 0.05) l.flags.push('จำนวน×ราคา ไม่เท่ายอด');
+        out.push(l); desc = [];
+        continue;
+      }
+      if (/^(Remark|Sub\s*total|Already|Delivery)/i.test(t) && out.length) break;
+      if (/^(Unit\s*Price|Amount)\b/i.test(t) || /^[\d,]+\.\d{2}$/.test(t) || /^\d{1,2}$/.test(t)) continue;
+      t = t.replace(/^\d{1,2}\s+(?=\D)/, '').replace(/^Item\s*\/?\s*Description\s*/i, '').trim();
+      if (t) desc.push(t);
+    }
+    return out;
+  }
+  function parseDoc(text){ var k = docKind(text);
+    if (k === 'PO'){ var po = parsePO(text); if (!po.lines.length){ var lb = parsePOLabeled(text); if (lb.length){ po.lines = lb; po.warn = po.warn.filter(function(w){ return !/หาตาราง|หาบรรทัด/.test(w); }); } } return po; } if (k === 'TAX') return parseTax(text); if (k === 'PR'){ var d = parsePR(text); d.kind = 'PR'; return d; } return parseLinde(text); }
 
   /* ================= v1.71–1.72 ทะเบียนของใช้ (เครื่องมือไฟฟ้า / เครื่องมือช่าง) — แท็บ "ของใช้" PC เท่านั้น =================
    * รายการแยกตามไลน์ (แผนก) + มูลค่ารวม → แตะเข้าไปดูรายละเอียด: รูป ราคา เข้าไลน์เมื่อ อายุใช้งาน ค่าซ่อมสะสม
@@ -4698,7 +4731,7 @@
         PRS = j.prs || PRS; PRMAP = j.prmap || PRMAP;
         var doc = j.xdoc || parseDoc(j.text); doc.file = j.fileId || '';
         if (j.cyl) CYL = j.cyl;
-        if (!doc.lines.length){ stt.innerHTML = xls ? '⚠ ' + esc(doc.warn.join(' · ') || 'อ่านไฟล์ไม่ได้') : '⚠ อ่านบรรทัดของไม่ได้ — ลองถ่ายใหม่ให้ตรง เต็มใบ ไม่มีเงา'; return; }
+        if (!doc.lines.length){ toast('⚠ อ่านใบได้ แต่หาบรรทัดของไม่เจอ — ดูข้อความใต้ปุ่มสแกน', true); stt.scrollIntoView({block:'center', behavior:'smooth'}); stt.innerHTML = xls ? '⚠ ' + esc(doc.warn.join(' · ') || 'อ่านไฟล์ไม่ได้') : '⚠ อ่านบรรทัดของไม่ได้ — ลองถ่ายใหม่ให้ตรง เต็มใบ ไม่มีเงา'; return; }
         stt.textContent = 'อ่าน' + KIND_TH[doc.kind || 'PR'] + 'ได้ ' + doc.lines.length + ' บรรทัด — ตรวจด้านล่างแล้วกดรับเข้า';
         prStart(doc);
       })['catch'](function(e){ stt.textContent = '⚠ อ่านไม่สำเร็จ — ' + ((e && e.message) || 'เช็คเน็ต'); })
