@@ -665,7 +665,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v2.00</span>
+      <span class="ver" id="appVer">v2.01</span>
       <a class="homebtn" id="homeBtn" hidden href="#">← เมนูหลัก</a>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
@@ -698,7 +698,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 2.00 · อัปเดต 04/11/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 2.01 · อัปเดต 04/11/2026</div>
     </div>
   </header>
 
@@ -4208,7 +4208,7 @@
     var m = raw.match(/P\s*O\s*-?\s*(\d{7,})/i); if (m) out.no = 'PO' + m[1];
     var ds = (raw.match(/\b\d{1,2}\/\d{1,2}\/\d{4}\b/g) || []).map(function(d){ var p = d.split('/'); return {d:d, k:+p[2] * 10000 + +p[1] * 100 + +p[0]}; }).sort(function(a, b){ return a.k - b.k; });
     if (ds.length) out.date = ds[0].d;                                   // วันที่ PO = วันที่น้อยสุดในใบ (Request Date มาทีหลัง)
-    toks0.forEach(function(t){ if (!out.shop && /(CO\.|CORPORATION|LTD|LIMITED|บจก|ห้างหุ้นส่วน|หจก)/i.test(t) && !/delica|เดลิก้า/i.test(t)) out.shop = t.replace(/^[:\s]+/, '').replace(/^Supplier\s*code\s*\S+\s*/i, ''); });
+    toks0.forEach(function(t){ if (!out.shop && /(CO\.|CORPORATION|LTD|LIMITED|บจก|ห้างหุ้นส่วน|หจก)/i.test(t) && !/delica|เดลิก้า|Head\s*Office|สำนักงานใหญ่/i.test(t)) out.shop = t.replace(/^[:\s]+/, '').replace(/^Supplier\s*code\s*\S+\s*/i, ''); });
     var sc = raw.match(/Supplier\s*code\s*:?\s*([A-Z0-9]{3,})/i);
     // ตัดช่วงตาราง: หลังหัว Amount → ก่อน Remark/Subtotal
     var s = -1, e = toks0.length;
@@ -4243,18 +4243,25 @@
     function tryCol(){ var r = []; for (var j = 0; j < n; j++) r.push({q:N[j], p:N[n + j], a:N[2 * n + j]}); return r; }
     function okCnt(r){ return r.filter(function(x){ return x.q != null && x.p != null && x.a != null && Math.abs(x.q * x.p - x.a) < 0.05; }).length; }
     var A = tryRow(), B = tryCol(), V = okCnt(B) > okCnt(A) ? B : A;
-    if (!D.length){   // v1.99 OCR บางรูปอ่านคอลัมน์ชื่อก่อนหัว "Amount" (เช่น PO2610089 NST ลวดเชื่อม) → ชื่อหลุดช่วงตาราง = บรรทัดไม่มีชื่อ → ไปเก็บชื่อจากใต้หัว Item/Description แทน
+    if (!D.length){   // v1.99 OCR บางรูปอ่านคอลัมน์ชื่อก่อนหัว "Amount" (เช่น PO2610089 NST ลวดเชื่อม) → ชื่อหลุดช่วงตาราง = บรรทัดไม่มีชื่อ → ไปเก็บชื่อจากหัวตาราง No. / Item/Description แทน
       var di = -1; for (i = 0; i < toks0.length; i++) if (/Item\s*\/?\s*Description/i.test(toks0[i])){ di = i; break; }
       if (di >= 0){
-        var G = [], cur = null, nx = 1;
-        for (i = di + 1; i < toks0.length; i++){
+        var st0 = di; for (i = di; i >= 0 && i >= di - 8; i--) if (/^No\.?$/i.test(toks0[i])){ st0 = i; break; }   // v2.01 บางรูปชื่อมาก่อนหัว Item/Description (หลัง "No.") — PO2610089 รูป 1000013283
+        var G = [], cur = null, nx = 1, TX = [];
+        for (i = st0 + 1; i < toks0.length; i++){
           var tt = toks0[i];
+          if (/Item\s*\/?\s*Description/i.test(tt)){ tt = tt.replace(/^.*Item\s*\/?\s*Description\s*/i, '').trim(); if (!tt) continue; }
           if (/^(Remark|Already|Delivery|Quantity|Unit\s*Price|Amount|Sub\s*total|Purchase\s*Order|Request\s*Date|ORIGINAL|Page\b)/i.test(tt) || NUM.test(tt) || /^[\d,]+\.\d{2}\s/.test(tt)) break;
-          if (/^\d{1,2}$/.test(tt)){ if (+tt === nx){ cur = []; G.push(cur); nx++; } continue; }
-          var lm2 = tt.match(/^(\d{1,2})\s+(\D.*)$/); if (lm2 && +lm2[1] === nx){ cur = [lm2[2]]; G.push(cur); nx++; continue; }
-          if (!cur){ cur = []; G.push(cur); } cur.push(tt);
+          if (/^\d{1,3}$/.test(tt)){ if (+tt === nx){ cur = []; G.push(cur); nx++; } continue; }   // "23" = เลข 2,3 ติดกัน → ข้าม
+          var lm2 = tt.match(/^(\d{1,2})\s+(\D.*)$/); if (lm2){ tt = lm2[2]; if (+lm2[1] === nx){ cur = [tt]; G.push(cur); nx++; TX.push(tt); continue; } }
+          if (!cur){ cur = []; G.push(cur); } cur.push(tt); TX.push(tt);
         }
-        D = G.filter(function(g){ return g.length; });
+        // v2.01 จับคู่ "ชื่อหลัก" กับ "บรรทัดต่อ" ที่ขึ้นต้นด้วยวงเล็บ เช่น "YM-28 … Spool" + "(20 kg)" — ใช้ได้ทั้งแบบสลับกันและแบบชื่อหลักมาก่อนทั้งหมด
+        var MAIN = TX.filter(function(x){ return !/^\(/.test(x); }), CONT = TX.filter(function(x){ return /^\(/.test(x); });
+        if (MAIN.length === n){
+          if (CONT.length === n) D = MAIN.map(function(x, j){ return [x, CONT[j]]; });
+          else { D = []; TX.forEach(function(x){ if (!/^\(/.test(x) || !D.length) D.push([x]); else D[D.length - 1].push(x); }); }
+        } else D = G.filter(function(g){ return g.length; });
       }
     }
     // ชื่อ: ก้อนข้อความเท่าจำนวนบรรทัด = บรรทัดละก้อน · ถ้าเป็นคอลัมน์เดียวยาวๆ = แยกทีละข้อความ
