@@ -665,7 +665,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.98</span>
+      <span class="ver" id="appVer">v1.99</span>
       <a class="homebtn" id="homeBtn" hidden href="#">← เมนูหลัก</a>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
@@ -698,7 +698,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.98 · อัปเดต 03/11/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.99 · อัปเดต 04/11/2026</div>
     </div>
   </header>
 
@@ -4243,6 +4243,20 @@
     function tryCol(){ var r = []; for (var j = 0; j < n; j++) r.push({q:N[j], p:N[n + j], a:N[2 * n + j]}); return r; }
     function okCnt(r){ return r.filter(function(x){ return x.q != null && x.p != null && x.a != null && Math.abs(x.q * x.p - x.a) < 0.05; }).length; }
     var A = tryRow(), B = tryCol(), V = okCnt(B) > okCnt(A) ? B : A;
+    if (!D.length){   // v1.99 OCR บางรูปอ่านคอลัมน์ชื่อก่อนหัว "Amount" (เช่น PO2610089 NST ลวดเชื่อม) → ชื่อหลุดช่วงตาราง = บรรทัดไม่มีชื่อ → ไปเก็บชื่อจากใต้หัว Item/Description แทน
+      var di = -1; for (i = 0; i < toks0.length; i++) if (/Item\s*\/?\s*Description/i.test(toks0[i])){ di = i; break; }
+      if (di >= 0){
+        var G = [], cur = null, nx = 1;
+        for (i = di + 1; i < toks0.length; i++){
+          var tt = toks0[i];
+          if (/^(Remark|Already|Delivery|Quantity|Unit\s*Price|Amount|Sub\s*total|Purchase\s*Order|Request\s*Date|ORIGINAL|Page\b)/i.test(tt) || NUM.test(tt) || /^[\d,]+\.\d{2}\s/.test(tt)) break;
+          if (/^\d{1,2}$/.test(tt)){ if (+tt === nx){ cur = []; G.push(cur); nx++; } continue; }
+          var lm2 = tt.match(/^(\d{1,2})\s+(\D.*)$/); if (lm2 && +lm2[1] === nx){ cur = [lm2[2]]; G.push(cur); nx++; continue; }
+          if (!cur){ cur = []; G.push(cur); } cur.push(tt);
+        }
+        D = G.filter(function(g){ return g.length; });
+      }
+    }
     // ชื่อ: ก้อนข้อความเท่าจำนวนบรรทัด = บรรทัดละก้อน · ถ้าเป็นคอลัมน์เดียวยาวๆ = แยกทีละข้อความ
     var segs = D.map(function(x){ return x.join(' '); }), descs = [];
     if (segs.length === n) descs = segs;
@@ -4594,7 +4608,7 @@
       var b = triG(it.name), kb = Object.keys(b), c = 0; ka.forEach(function(x){ if (b[x]) c++; });
       var base = kb.length ? 2 * c / (ka.length + kb.length) : 0, I = prNums(it.name), IB = prBrands(it.name);
       var miss = D.filter(function(x){ return I.indexOf(x) < 0; }), hit = D.length - miss.length;
-      var bad = B.length && IB.length && !B.some(function(w){ return IB.indexOf(w) >= 0; });
+      var bad = B.length && IB.length && !B.some(function(w){ return IB.some(function(v){ return v === w || (w.length >= 4 && (v.indexOf(w) === 0 || w.indexOf(v) === 0)); }); });   // v1.99 Pail ในใบ = Pailpack ในทะเบียน
       return {it: it, base: base, sc: base + (D.length ? 0.4 * hit / D.length : 0) - (bad ? 0.15 : 0), miss: miss, bad: bad ? [B.join(' ').toUpperCase(), IB.join(' ').toUpperCase()] : null};
     }).filter(function(x){ return x.base >= 0.2; }).sort(function(x, y){ return y.sc - x.sc; }).slice(0, n || 3);
   }
