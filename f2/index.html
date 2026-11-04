@@ -179,6 +179,21 @@
   @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .prst.s-todo{color:#f0c040;} :root:not([data-theme="light"]) .prjump.todo{color:#f0c040;} }
   :root[data-theme="dark"] .prst.s-todo, :root[data-theme="dark"] .prjump.todo{color:#f0c040;}
   .prline input.prcode{display:inline-block; width:150px; min-height:0; padding:2px 6px; font:500 12px var(--fm);}
+  /* v2.03 แท็บเพิ่มของ: โหมดตรวจใบ + การ์ดสั้น */
+  #v-add.focus #prCard, #v-add.focus #addCard:not(.force){display:none !important;}
+  .prtop{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .prdoc{font:600 16px/1.35 var(--fs); margin-top:2px; overflow-wrap:anywhere;}
+  .ghostlink{white-space:nowrap; font:600 13px var(--fs); color:var(--accent); text-decoration:none; padding:4px 0;}
+  details.predit>summary, details.more>summary, details.tips>summary{cursor:pointer; color:var(--accent); font:600 14px var(--fs); margin-top:10px; padding:4px 0; list-style:none;}
+  details.predit>summary::-webkit-details-marker, details.more>summary::-webkit-details-marker, details.tips>summary::-webkit-details-marker, .addsum::-webkit-details-marker{display:none;}
+  details.predit>summary::after, details.more>summary::after, details.tips>summary::after{content:' ▾';} details[open].predit>summary::after, details[open].more>summary::after, details[open].tips>summary::after{content:' ▴';}
+  .prsum{margin-top:10px; padding:9px 11px; border-radius:9px; background:var(--surface-2); line-height:1.7; font-size:14px;}
+  .prwhat{font-size:16px; line-height:1.35; margin-top:2px;} .prwhat b{font-family:var(--fm);}
+  .prqty{margin-top:6px; font-size:15px;}
+  .prwarn{margin-top:6px; font-size:13px; color:#b54708;} :root[data-theme="dark"] .prwarn{color:#f0b060;}
+  .prline.simple .prhead{margin-bottom:6px;}
+  .prgo{margin-top:14px; padding-top:12px; border-top:1px solid var(--line);}
+  .addsum{cursor:pointer; list-style:none; font:700 17px var(--fs);}
   .prmatch{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:6px; padding:6px 8px; border-radius:8px; background:var(--ok-soft);}
   .prmatch button{min-height:30px; padding:2px 10px;}
   .cylrow{display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 0; border-top:1px solid var(--line);}
@@ -665,7 +680,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v2.02</span>
+      <span class="ver" id="appVer">v2.03</span>
       <a class="homebtn" id="homeBtn" hidden href="#">← เมนูหลัก</a>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
@@ -698,7 +713,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 2.02 · อัปเดต 04/11/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 2.03 · อัปเดต 04/11/2026</div>
     </div>
   </header>
 
@@ -840,8 +855,8 @@
     <!-- ── แท็บ เพิ่มของใหม่ ── -->
     <section id="v-add" hidden>
       <div class="card" id="prCard">
-        <h2>📄 รับของตามใบ PR / อินวอยซ์</h2>
-        <div class="note" style="margin:0">ถ่ายรูป<b>สำเนาใบ PO</b>, ใบ PR, <b>ใบกำกับภาษีร้าน</b> (เช่น Hardwarehouse), อินวอยซ์ หรือใบส่งของ Linde (หรือเลือก PDF สแกน / <b>ไฟล์ Excel ของใบ PR</b> ที่ export จากระบบ — อ่านแม่นสุด) → ระบบรู้เองว่าเป็นใบอะไร อ่านให้ → ตรวจทีละบรรทัด → กดรับเข้าทั้งใบ (ตัดสต็อก + ราคา + ร้าน + เลข PR ให้เอง)</div>
+        <h2 style="margin-bottom:4px">📄 รับของเข้าตามใบ</h2>
+        <div class="note" style="margin:0">PO · PR · ใบกำกับภาษี · อินวอยซ์/ใบส่งของ Linde</div>
         <div class="note" id="pr_lock" style="margin:8px 0 0">🔒 ต้องใส่ PIN ของ PC ในปุ่มตั้งค่าก่อน (ในใบมีราคา)</div>
         <div class="row" id="pr_btns" style="gap:8px; margin-top:10px; flex-wrap:wrap"><button class="primary" id="pr_cam" style="flex:1 1 100%">📷 ถ่ายรูปใบ</button><button class="ghost" id="pr_gal" style="flex:1">🖼 รูปในเครื่อง</button><button class="ghost" id="pr_pick" style="flex:1">📎 PDF / Excel</button></div>
         <input type="file" id="pr_file_gal" accept="image/jpeg,image/png,image/webp,image/*" hidden>
@@ -850,28 +865,28 @@
         <div class="note" id="pr_status" style="margin:8px 0 0"></div>
         <div id="pr_open"></div>
         <div id="pr_cyl"></div>
-        <div class="note" style="margin:8px 0 0">ถ่ายให้ตรง เต็มใบ ไม่มีเงา · ของที่เคยจับคู่แล้ว ครั้งหน้าระบบจำให้เอง</div>
+        <details class="tips"><summary>วิธีถ่ายให้อ่านได้</summary><div class="note" style="margin:6px 0 0">ถ่ายตรง เต็มใบ ไม่มีเงา · PDF สแกน หรือไฟล์ Excel ใบ PR ที่ export จากระบบ อ่านแม่นสุด · ของที่เคยจับคู่แล้ว ครั้งหน้าระบบจำให้เอง</div></details>
       </div>
       <div id="pr_review" hidden></div>
-      <div class="card">
-        <h2>เพิ่มของใหม่เข้าทะเบียน</h2>
-        <div class="note" style="margin:0 0 12px">รหัส CS-xxx จะออกให้อัตโนมัติต่อจากตัวล่าสุด · ทุกเครื่องเห็นของใหม่ทันที ไม่ต้องอัปเว็บ</div>
+      <div class="card" id="addCard"><details id="addDet"><summary class="addsum">➕ เพิ่มของใหม่เข้าทะเบียน <span class="li-meta">(ได้รหัส CS ใหม่อัตโนมัติ)</span></summary>
+        <div style="height:10px"></div>
         <div class="note" id="a_msg" style="margin:0 0 10px;color:var(--accent);font-weight:600"></div>
         <label class="fld" for="a_name">ชื่อรายการ *</label>
         <input type="text" id="a_name" placeholder="เช่น แปรงถ่าน Makita CB-411A" autocomplete="off">
         <div id="a_dup" hidden style="margin-top:8px; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--warn-soft)"></div>
         <div id="a_gsug" class="gsug" hidden></div>
-        <div style="margin-top:10px"><label class="fld" for="a_desc">คำอธิบาย (คืออะไร ใช้ทำอะไร · ไม่บังคับ)</label>
-          <input type="text" id="a_desc" placeholder="เช่น แปรงถ่านอะไหล่มอเตอร์เครื่องมือไฟฟ้า" autocomplete="off"></div>
-        <div style="margin-top:10px"><label class="fld" for="a_grp">กลุ่ม (ของคล้ายกัน ต่างขนาด/สี · ไม่บังคับ)</label>
-          <select id="a_grp"><option value="">— ไม่มีกลุ่ม —</option></select>
-          <input type="text" id="a_gnew" hidden placeholder="ชื่อกลุ่มใหม่ เช่น ดอกสว่านเจาะเหล็ก" autocomplete="off" style="margin-top:6px"></div>
         <div class="row" style="margin-top:12px; gap:8px; flex-wrap:wrap">
           <div style="flex:1 1 130px"><label class="fld" for="a_unit">หน่วยนับ *</label>
             <input type="text" id="a_unit" list="units" placeholder="ชิ้น / กล่อง / ลิตร" autocomplete="off"><div class="shopchips"><button type="button" class="chip na tapchip" data-fill="a_unit">ชิ้น</button><button type="button" class="chip na tapchip" data-fill="a_unit">กก.</button><button type="button" class="chip na tapchip" data-fill="a_unit">กล่อง</button><button type="button" class="chip na tapchip" data-fill="a_unit">แพ็ค</button><button type="button" class="chip na tapchip" data-fill="a_unit">ม้วน</button><button type="button" class="chip na tapchip" data-fill="a_unit">ลิตร</button><button type="button" class="chip na tapchip" data-fill="a_unit">ถัง</button><button type="button" class="chip na tapchip" data-fill="a_unit">กระป๋อง</button><button type="button" class="chip na tapchip" data-fill="a_unit">ชุด</button><button type="button" class="chip na tapchip" data-fill="a_unit">อัน</button><button type="button" class="chip na tapchip" data-fill="a_unit">เมตร</button><button type="button" class="chip na tapchip" data-fill="a_unit">โหล</button></div></div>
           <div style="flex:1 1 130px"><label class="fld" for="a_stock">จำนวนที่มีตอนนี้</label>
             <input type="number" id="a_stock" inputmode="decimal" min="0" placeholder="0"></div>
         </div>
+        <details class="more" id="addMore"><summary>รายละเอียดเพิ่ม (คำอธิบาย · กลุ่ม · MIN/MAX · ผู้ขาย · บาร์โค้ด)</summary>
+        <div style="margin-top:10px"><label class="fld" for="a_desc">คำอธิบาย (คืออะไร ใช้ทำอะไร · ไม่บังคับ)</label>
+          <input type="text" id="a_desc" placeholder="เช่น แปรงถ่านอะไหล่มอเตอร์เครื่องมือไฟฟ้า" autocomplete="off"></div>
+        <div style="margin-top:10px"><label class="fld" for="a_grp">กลุ่ม (ของคล้ายกัน ต่างขนาด/สี · ไม่บังคับ)</label>
+          <select id="a_grp"><option value="">— ไม่มีกลุ่ม —</option></select>
+          <input type="text" id="a_gnew" hidden placeholder="ชื่อกลุ่มใหม่ เช่น ดอกสว่านเจาะเหล็ก" autocomplete="off" style="margin-top:6px"></div>
         <datalist id="units"><option>ชิ้น</option><option>กก.</option><option>กล่อง</option><option>แพ็ค</option><option>ม้วน</option><option>ลิตร</option><option>ถัง</option><option>กระป๋อง</option><option>ขวด</option><option>ชุด</option><option>แผ่น</option><option>โหล</option><option>อัน</option><option>ตัว</option><option>เมตร</option><option>ถุง</option><option>คู่</option><option>เส้น</option><option>ด้าม</option><option>กระปุก</option><option>แกลลอน</option></datalist>
         <div class="row" style="margin-top:12px; gap:8px; flex-wrap:wrap">
           <div style="flex:1 1 100px"><label class="fld" for="a_mn">MIN (จุดสั่งเติม)</label>
@@ -885,9 +900,9 @@
           <input type="text" id="a_maker" list="shopList" placeholder="เช่น Hardwarehouse" autocomplete="off"><div id="a_makerChips"></div></div>
         <div style="margin-top:12px"><label class="fld" for="a_bc">บาร์โค้ดผู้ผลิต (ถ้ามี)</label>
           <input type="text" id="a_bc" class="code" placeholder="สแกนกล่องในแท็บสแกน แล้วกด เพิ่มเป็นของใหม่" autocomplete="off"></div>
+        </details>
         <div style="margin-top:16px"><button class="primary" id="a_save">เพิ่มเข้าทะเบียน</button></div>
-        <div class="note" style="margin-top:10px">แก้ไขชื่อ, MIN, MAX หรือเลิกใช้รายการ ทำได้ในแท็บ Master ของ Google Sheet (หรือกดปุ่ม "เลิกใช้รายการนี้" ท้ายการ์ดของในแท็บสแกน)</div>
-      </div>
+      </details></div>
     </section>
     <!-- ── v1.6 มุมมองแผนก: ขอเบิก ── -->
     <section id="v-req" hidden>
@@ -2720,7 +2735,7 @@
     var shop = b.shop || BUY_SHOP_DEF;
     buyAddCtx = {id: b.id, name: b.name, qty: q, price: p, shop: shop, unit: b.unit || '', note: b.note || '', t: Date.now()};
     buyRcv = null; renderBuy();
-    show('t-add');
+    show('t-add'); addOpen(true);
     el('a_name').value = b.name; el('a_unit').value = b.unit || ''; el('a_stock').value = q; el('a_maker').value = shop;
     el('a_name').dispatchEvent(new Event('input'));
     el('a_msg').textContent = '📝 จากสมุดซื้อ: ' + b.name + ' — ตรวจ/เติมที่เหลือแล้วกด "เพิ่ม" → ได้รหัสใหม่ สต็อก ' + fmt(q) + ' + ติ๊กซื้อแล้วในสมุดให้';
@@ -3079,9 +3094,10 @@
 
   /* ================= เพิ่มของใหม่ ================= */
   function normName(s){ return String(s || '').toLowerCase().replace(/[\s\-_.,()"']+/g, ''); }
+  function addOpen(more){ var c = el('addCard'); if (!c) return; c.classList.add('force'); el('addDet').open = true; if (more) el('addMore').open = true; }   // v2.03 ฟอร์มพับไว้ → เปิดเมื่อมีคนพามาเติม
   function goAdd(code){
     bindCode = null; renderHit();
-    show('t-add');
+    show('t-add'); addOpen(!!code);
     el('a_bc').value = code || '';
     el('a_msg').textContent = code ? 'ใส่บาร์โค้ดที่สแกนไว้ให้แล้ว กรอกชื่อกับหน่วยนับแล้วกดเพิ่มได้เลย' : '';
     setTimeout(function(){ el('a_name').focus(); }, 50);
@@ -4588,6 +4604,7 @@
   var UNIT_TH = {PCS:'ชิ้น', PC:'ชิ้น', EA:'ชิ้น', EACH:'ชิ้น', PIECE:'ชิ้น', BOX:'กล่อง', BX:'กล่อง', PACK:'แพ็ค', PK:'แพ็ค', PAC:'แพ็ค', ROLL:'ม้วน', RL:'ม้วน',
     CAN:'กระป๋อง', SET:'ชุด', BOTTLE:'ขวด', BTL:'ขวด', BT:'ขวด', KG:'กก.', M:'เมตร', MTR:'เมตร', L:'ลิตร', LTR:'ลิตร', DOZ:'โหล', DZ:'โหล', PAIR:'คู่', PR:'คู่',
     SHEET:'แผ่น', SHT:'แผ่น', TUBE:'หลอด', BAG:'ถุง', GAL:'แกลลอน', DRUM:'ถัง', PAIL:'ถัง', LOT:'ล็อต', REAM:'รีม', UNIT:'ชิ้น', CYL:'ถัง', CYLINDER:'ถัง'};
+  function sameUnit(a, b){ var x = normUnit(a), y = normUnit(b); if (x === y) return true; var C = /^(ชิ้น|แผ่น|อัน|ตัว)$/; return C.test(x) && C.test(y); }   // v2.03 PCS = ชิ้น/แผ่น/อัน/ตัว ไม่ต้องถามตัวคูณ
   function normUnit(u){ return stdUnit(u).replace(/\s*\(.*\)$/, '').toLowerCase(); }   // v1.20 ใช้หน่วยมาตรฐานเดียวกันทั้งระบบ
   function prKey(l){ return String(l.code || '').trim() || ('#' + String(l.desc || '').trim().slice(0, 60)); }
   function prMapOf(l){
@@ -4599,13 +4616,14 @@
     return best ? best.m : null;
   }
   // v1.57 ราคาในใบ เทียบราคาครั้งก่อนของร้านนี้ (ลายมือแก้ราคา OCR อ่านไม่ได้ → เตือนให้ดูใบจริง)
-  function prPriceWarn(l, it, shop){
+  function prPriceWarn(l, it, shop, short){
     if (!it || l.price == null || !(+l.price > 0)) return '';
     var p = pr(it); if (!p) return '';
     var f = +l.factor || 1, pp = Math.round(+l.price / f * pf(it) * 100) / 100, w = String(shop || '').toLowerCase().split(/[\s.,(]+/)[0], ref = null, who = '';
     [[p.s1,p.p1],[p.s2,p.p2],[p.s3,p.p3]].forEach(function(x){ if (ref == null && x[0] && x[1] > 0 && w.length >= 2 && String(x[0]).toLowerCase().indexOf(w) >= 0){ ref = +x[1]; who = x[0]; } });
     if (ref == null && p.last > 0){ ref = +p.last; who = p.lastShop || 'ครั้งก่อน'; }
     if (ref == null || Math.abs(pp - ref) / ref < 0.005) return '';
+    if (short) return '<div class="prwarn">⚠ ' + (pp > ref ? 'แพงขึ้น' : 'ถูกลง') + 'จากครั้งก่อน ' + baht(ref) + (p.pu ? '/' + esc(p.pu) : '') + ' → ตอนนี้ ' + baht(pp) + ' · ดูใบจริงว่าเขียนแก้ไหม</div>';   // v2.03
     return '<div class="outnote soft">⚠ ราคาในใบ ' + baht(pp) + (p.pu ? '/' + esc(p.pu) : '') + ' ' + (pp > ref ? 'แพงขึ้น' : 'ถูกลง') + ' จากเดิม ' + baht(ref) + ' (' + esc(who) + ') — ดูใบจริงว่าเขียนแก้ราคาไหม แก้ช่องราคาได้</div>';
   }
   // v1.57 กันรับซ้ำ (รับได้ทั้งใบ PR และใบ PO แต่ PO ไม่มีเลข PR อ้างอิง)
@@ -4666,7 +4684,7 @@
     l.sku = l.sku || l.auto || (prev && prev.sku) || (m && m.sku) || (l.code && bcMap[nz(l.code)]) || '';
     if (!l.sku && !(prev && /รับครบ|ปิด|ไม่เข้าสต็อก/.test(prev.st))){ var vd = prVerdict(l); if (vd.k === 'sure'){ l.sku = vd.s[0].it.sku; l.guess = true; } }   // v1.60 มั่นใจ → เลือกให้ (ติดป้าย)
     l.factor = l.factor || (prev && prev.factor) || (m && m.factor) || 1;
-    if (!m && !prev && l.sku && l.sku !== 'SKIP'){ var it = getSku(l.sku); if (it && normUnit(it.unit) !== normUnit(l.unit)) l.factorAsk = true; }
+    if (!m && !prev && l.sku && l.sku !== 'SKIP'){ var it = getSku(l.sku); if (it && !sameUnit(it.unit, l.unit)) l.factorAsk = true; }
     if (l.factorAsk && l.pkn && +l.factor === 1){ var iu = getSku(l.sku); if (iu && !/แพ็ค|กล่อง|pack|box|pk/i.test(iu.unit)) l.factor = l.pkn; }   // v1.64 PK50 / (50 ชิ้น) → เสนอตัวคูณ 50 ให้ (ยังต้องกดยืนยัน)
     l.prev = prev ? prev.recv : 0;
     l.done = !!(prev && (/รับครบ|ปิด|ไม่เข้าสต็อก/.test(prev.st) || (/^จ่ายตรง/.test(prev.st) && !/ค้างรับ/.test(prev.st))));
@@ -4797,16 +4815,19 @@
     var it = l.sku && l.sku !== 'SKIP' && l.sku !== 'NEW' ? getSku(l.sku) : null;
     var rem = Math.max(0, (+l.qty || 0) - (l.prev || 0));
     var needs = prNeeds(l), st = prState(l), nf = {}; needs.forEach(function(x){ if (x.f && !x.soft) nf[x.f] = 1; });
-    var h = '<div class="prline st-' + st.k + (l.done ? ' done' : '') + '" data-i="' + i + '">'
+    var simple = !!(it && l.mode === 'ok' && !l.done);   // v2.03 บรรทัดที่จับคู่แล้ว → โชว์แค่ของ+จำนวน+ราคา ที่เหลือพับใต้ "แก้ไข"
+    var h = '<div class="prline st-' + st.k + (l.done ? ' done' : '') + (simple ? ' simple' : '') + '" data-i="' + i + '">'
       + '<div class="prhead"><div class="row" style="gap:8px; align-items:center"><span class="prno">#' + l.ln + '</span><span class="prst s-' + st.k + '">' + esc(st.t) + '</span></div>'
-      + '<button type="button" class="ghost" data-act="drop" title="ลบบรรทัดนี้ (อ่านผิด/ไม่ใช่ของ)" style="width:auto; min-height:30px; padding:0 10px">🗑 ลบ</button></div>'   // v1.58
-      + '<div class="li-meta" style="margin:2px 0 0">📄 ในใบเขียนว่า</div><div class="li-name" style="font-weight:600; font-size:16px">' + esc(l.desc || '—') + '</div>'   // v2.02 แยกให้ชัด: ชื่อในใบ ≠ ของที่จะรับเข้า
+      + '<button type="button" class="ghost" data-act="drop" title="ลบบรรทัดนี้ (อ่านผิด/ไม่ใช่ของ)" aria-label="ลบบรรทัดนี้" style="width:auto; min-height:30px; padding:0 10px">🗑</button></div>';   // v1.58
+    var info = '<div class="li-meta" style="margin:2px 0 0">📄 ในใบเขียนว่า</div><div class="li-name" style="font-weight:600; font-size:' + (simple ? 14 : 16) + 'px">' + esc(l.desc || '—') + '</div>'   // v2.02 แยกให้ชัด: ชื่อในใบ ≠ ของที่จะรับเข้า
       + '<div class="li-meta" style="margin-top:2px">รหัสในใบ <input class="prcode' + (nf.code ? ' needf' : '') + '" data-f="code" value="' + esc(l.code || '') + '" placeholder="รหัสในใบ"></div>'
       + '<div class="li-meta">' + (prDoc && prDoc.kind === 'DD' ? 'ถังเต็มส่งมา' : prDoc && (prDoc.kind === 'INV' || prDoc.kind === 'TAX') ? 'ส่งมา' : 'ใบสั่ง') + ' <b>' + fmt(l.qty) + ' ' + esc(l.unit) + '</b>' + (l.price != null ? ' × ' + baht(l.price) : '') + (l.prev ? ' · รับไปแล้ว ' + fmt(l.prev) + ' · <b class="over">ค้าง ' + fmt(rem) + '</b>' : '') + '</div>'
-      + (needs.length && !(needs.length === 1 && needs[0].todo) ? (st.k === 'need' ? '<div class="prneed">👉 บรรทัด #' + l.ln + ' ต้องทำก่อนบันทึก<ol>' : '<div class="prneed check">👀 บรรทัด #' + l.ln + ' ควรเทียบกับใบจริง (ไม่บังคับ)<ol>') + needs.map(function(x){ return '<li' + (x.soft ? ' class="soft"' : '') + '>' + esc(x.t) + '</li>'; }).join('') + '</ol></div>' : '')
-      + (l.note ? '<div class="li-meta">หมายเหตุ: ' + esc(l.note) + '</div>' : '')
+      ;
+    var needH = (needs.length && !(needs.length === 1 && needs[0].todo) ? (st.k === 'need' ? '<div class="prneed">👉 บรรทัด #' + l.ln + ' ต้องทำก่อนบันทึก<ol>' : '<div class="prneed check">👀 บรรทัด #' + l.ln + ' ควรเทียบกับใบจริง (ไม่บังคับ)<ol>') + needs.map(function(x){ return '<li' + (x.soft ? ' class="soft"' : '') + '>' + esc(x.t) + '</li>'; }).join('') + '</ol></div>' : '');
+    var extra = (l.note ? '<div class="li-meta">หมายเหตุ: ' + esc(l.note) + '</div>' : '')
       + (l.dup ? '<div class="note" style="margin:4px 0 0">ℹ ถังเต็มล็อตนี้รับเข้าไปแล้วตาม ' + esc(l.dup) + ' — ไม่รับซ้ำ (บันทึกราคาได้)</div>' : '')
       + ((+l.rtn || 0) > 0 ? '<label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:4px"><input type="checkbox" data-f="rtnOn"' + (l.rtnOn ? ' checked' : '') + ' style="width:auto; min-height:0"> 🛢 บันทึก<b>คืนถังเปล่า ' + fmt(l.rtn) + ' ' + esc(l.unit) + '</b> ให้ร้าน</label>' : '');
+    if (!simple) h += info + needH + extra;
     if (l.mode === 'new'){
       h += '<div class="pricebox" style="margin-top:6px"><b>ของใหม่</b>'
         + '<input type="text" data-f="nname" value="' + esc(l.nname != null ? l.nname : l.desc) + '" style="margin-top:6px" placeholder="ชื่อรายการ">'
@@ -4817,6 +4838,16 @@
         + '</div>';
     } else if (l.sku === 'SKIP'){
       h += '<div class="row" style="gap:6px; margin-top:6px"><span class="chip na">ไม่เข้าสต็อก</span><button type="button" class="ghost" data-act="change">เปลี่ยน</button></div>';
+    } else if (simple){   // v2.03 แบบสั้น
+      var fq = Math.round((+l.recv || 0) * (+l.factor || 1) * 1000) / 1000, diffU = !sameUnit(it.unit, l.unit) || +l.factor !== 1;
+      h += '<div class="prwhat"><span class="li-meta">📦 รับเข้า</span> <b>' + esc(it.sku) + '</b> ' + esc(it.name) + '</div>'
+        + '<div class="prqty">' + (l.on && +l.recv > 0 ? 'รับ <b>' + fmt(fq) + ' ' + esc(it.unit || '') + '</b>' + (diffU ? ' <span class="li-meta">(ใบ ' + fmt(l.recv) + ' ' + esc(l.unit) + ')</span>' : '')
+            + (l.price != null ? ' · ' + baht(l.price) + '/' + esc(l.unit || 'หน่วย') + ' · รวม <b>' + baht((+l.recv || 0) * l.price) + '</b>' : '') : '<span class="li-meta">ไม่รับรอบนี้</span>')
+          + (l.prev ? '<br><span class="over">รับไปแล้ว ' + fmt(l.prev) + ' · ค้าง ' + fmt(rem) + ' ' + esc(l.unit) + '</span>' : '') + '</div>'
+        + needH + prPriceWarn(l, it, prDoc && prDoc.shop, true) + prDupWarn(l, it)
+        + '<details class="predit"' + (st.k === 'need' || l.editOpen ? ' open' : '') + '><summary>✏️ แก้ไข / ดูในใบ</summary>'
+        + info + extra
+        + '<div class="row" style="gap:6px; margin-top:8px"><button type="button" class="ghost" data-act="change" style="flex:1">🔄 เปลี่ยนเป็นของตัวอื่น</button></div>';
     } else if (it && l.mode === 'ok'){
       h += '<div class="prmatch"><span><span class="li-meta" style="display:block">📦 รับเข้าสต็อกเป็น</span><b>' + esc(it.sku) + '</b> ' + esc(it.name) + '</span><button type="button" class="ghost" data-act="change">เปลี่ยนตัว</button></div>'
         + (l.guess ? '<div class="outnote soft">🤖 ระบบเดาให้ (ชื่อ+ขนาดตรง แต่ยังไม่เคยจับคู่) — ดูให้แน่ใจ ถ้าไม่ใช่กด "เปลี่ยน" · รับแล้วระบบจำไว้</div>' : '');   // v1.60
@@ -4866,9 +4897,9 @@
         + (+l.recv < rem && l.on ? '<label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:4px"><input type="checkbox" data-f="close"' + (l.close ? ' checked' : '') + ' style="width:auto; min-height:0"> ปิดบรรทัดนี้ ไม่รอส่วนที่เหลือ</label>' : '')
         + '<div class="row" style="gap:8px; margin-top:6px; align-items:center"><span class="li-meta" style="white-space:nowrap">ราคา</span><input type="number" inputmode="decimal" min="0" step="0.01" data-f="price" value="' + (l.price != null ? l.price : '') + '" style="width:100px"><span class="li-meta">บาท/' + esc(l.unit || 'หน่วย') + ' ก่อน VAT (ในใบเขียนแก้ → แก้ตรงนี้)</span></div>'
         + '<input type="text" data-f="hand" value="' + esc(l.hand || '') + '" placeholder="📝 ในใบเขียนแก้/เขียนเพิ่มว่า… (ถ้ามี)" autocomplete="off" style="margin-top:6px">'   // v1.57
-        + prPriceWarn(l, it, prDoc && prDoc.shop) + prDupWarn(l, it);
+        + (simple ? '' : prPriceWarn(l, it, prDoc && prDoc.shop) + prDupWarn(l, it));
     }
-    return h + '</div>';
+    return h + (simple ? '</details>' : '') + '</div>';
   }
   // v1.63 ของนอกระบบที่แผนกขอไว้ ยังไม่ได้จ่าย (ใช้ผูกตอนจ่ายตรง)
   function prOpenExtra(){ return (requests || []).filter(function(r){ return r.st === 'นอกระบบ'; }).sort(function(a, b){ return a.ts < b.ts ? 1 : -1; }); }
@@ -4882,7 +4913,6 @@
       if (l.flags && l.flags.length) c.flag++;
     });
     var p = [];
-    if (c.ok) p.push('✔ จับคู่แล้ว ' + c.ok);
     if (c.guess) p.push('<b>🤖 ระบบเดา ' + c.guess + '</b> (ตรวจ)');
     if (c.ask) p.push('<b>❓ ต้องเลือก ' + c.ask + '</b>');
     if (c.nw) p.push('<b style="color:#d92d20">🆕 น่าจะของใหม่ ' + c.nw + '</b>');
@@ -4897,29 +4927,33 @@
     var jump = (J.length ? '<div style="margin-top:6px"><b style="color:#d92d20">👉 ต้องแก้ก่อนบันทึก:</b> ' + J.map(function(i){ return '<button type="button" class="prjump" data-jump="' + i + '">#' + d.lines[i].ln + '</button>'; }).join('') + '</div>' : '')
       + (T.length ? '<div style="margin-top:4px"><b>❓ ยังไม่ได้เลือกว่าเป็นของอะไร:</b> ' + T.map(function(i){ return '<button type="button" class="prjump todo" data-jump="' + i + '">#' + d.lines[i].ln + '</button>'; }).join('') + '</div>' : '')
       + (K.length ? '<div style="margin-top:4px"><b>👀 ควรเทียบกับใบจริง:</b> ' + K.map(function(i){ return '<button type="button" class="prjump todo" data-jump="' + i + '">#' + d.lines[i].ln + '</button>'; }).join('') + '</div>' : '')
-      + (!J.length && !T.length && d.lines.length ? '<div style="margin-top:6px; color:var(--ok)"><b>✅ ไม่มีจุดที่ต้องแก้ — กดรับเข้าได้</b></div>' : '');
-    return p.length || jump ? '<div class="pricebox" style="margin-top:10px; line-height:1.7"><b>สรุปใบนี้:</b> ' + p.join(' · ') + jump + '</div>' : '';
+      + (!J.length && !T.length && d.lines.length ? '<div style="' + (p.length ? 'margin-top:4px; ' : '') + 'color:var(--ok)"><b>✅ พร้อมรับเข้า — ตรวจแล้วกดปุ่มล่างสุด</b></div>' : '');
+    return p.length || jump ? '<div class="prsum">' + (p.length ? p.join(' · ') : '') + jump + '</div>' : '';   // v2.03 สั้นลง
   }
   function renderPR(){
     var box = el('pr_review'); if (!box) return;
+    var va = el('v-add'); if (va){ va.classList.toggle('focus', !!(prDoc && !DEPT_MODE && pinOk)); if (!prDoc && el('addCard')) el('addCard').classList.remove('force'); }   // v2.03 ตรวจใบอยู่ → ซ่อนส่วนอื่นของแท็บ
     if (!prDoc || DEPT_MODE || !pinOk){ box.innerHTML = ''; box.hidden = true; return; }
     box.hidden = false;
     var d = prDoc, on = d.lines.filter(function(l){ return l.on && +l.recv > 0; });
     var val = on.reduce(function(a, l){ return a + (+l.recv || 0) * (+l.price || 0); }, 0);
-    box.innerHTML = '<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">ตรวจ' + KIND_TH[d.kind || 'PR'] + 'ก่อนรับ</h2>'
-      + (d.file ? '<a href="https://drive.google.com/file/d/' + esc(d.file) + '/view" target="_blank" rel="noopener" class="li-meta">ดูใบจริง ↗</a>' : '') + '</div>'
+    box.innerHTML = '<div class="card"><div class="prtop"><div style="min-width:0"><div class="li-meta">ตรวจ' + KIND_TH[d.kind || 'PR'] + 'ก่อนรับ</div>'
+      + '<div class="prdoc"><b>' + esc(d.no || 'ไม่มีเลขที่') + '</b> · ' + esc(d.shop || 'ไม่รู้ร้าน') + (d.date ? ' · ' + esc(d.date) : '') + '</div></div>'
+      + (d.file ? '<a href="https://drive.google.com/file/d/' + esc(d.file) + '/view" target="_blank" rel="noopener" class="ghostlink">ดูใบจริง ↗</a>' : '') + '</div>'
+      + '<details class="predit"' + (!d.no || !d.shop ? ' open' : '') + '><summary>✏️ แก้หัวใบ (เลขที่ · วันที่ · ร้าน · เลขอินวอยซ์)</summary>'   // v2.03 พับไว้
       + '<div class="row" style="gap:6px; margin-top:8px; flex-wrap:wrap">'
       +   '<div style="flex:1 1 140px"><label class="fld" for="pr_no">เลขเอกสาร</label><input type="text" id="pr_no" value="' + esc(d.no) + '" autocomplete="off"></div>'
       +   '<div style="flex:1 1 110px"><label class="fld" for="pr_date">วันที่ใบ</label><input type="text" id="pr_date" value="' + esc(d.date) + '" autocomplete="off"></div></div>'
       + '<div style="margin-top:6px"><label class="fld" for="pr_shop">ร้าน</label><input type="text" id="pr_shop" list="shopList" value="' + esc(d.shop) + '" autocomplete="off">' + shopChips('pr_shop') + '</div>'
       + (d.kind === 'PO' || d.kind === 'TAX' ? '<div style="margin-top:6px"><label class="fld" for="pr_inv">เลขอินวอยซ์ของร้าน (ที่มากับของ)</label><input type="text" id="pr_inv" value="' + esc(d.inv || '') + '" placeholder="เช่น IV6910-0123" autocomplete="off"></div>' : '')   // v1.57
       + (d.so || d.note ? '<div class="li-meta" style="margin-top:6px">' + (d.so ? 'Sys. Order ' + esc(d.so) : '') + (d.ref ? ' · ใบส่งของ ' + esc(d.ref) : '') + (d.note ? ' · ' + esc(d.note) : '') + '</div>' : '')
+      + '</details>'
       + (d.seen ? '<div class="note" style="margin:8px 0 0">ℹ ใบนี้เคยรับไปแล้วบางส่วน — ระบบนับต่อจากที่รับไปแล้ว ไม่รับซ้ำ</div>' : '')
       + (d.warn && d.warn.length ? '<div class="outnote" style="margin-top:8px">⚠ ' + d.warn.map(esc).join('<br>⚠ ') + '</div>' : '')
       + prSummary(d)   // v1.60 สรุปทั้งใบก่อนไล่ทีละบรรทัด
       + '<div id="pr_lines">' + d.lines.map(prLineHtml).join('') + '</div>'
-      + '<div class="note" style="margin:10px 0 0">จะรับ <b>' + on.length + '</b> บรรทัด' + (val ? ' · มูลค่า ' + baht(val) + ' (ก่อน VAT)' : '') + '</div>'
-      + '<div class="row" style="gap:8px; margin-top:10px"><button class="primary" id="pr_go" style="flex:2">✅ รับเข้าทั้งใบ</button><button class="ghost" id="pr_cancel" style="flex:1">ยกเลิก</button></div></div>';
+      + '<div class="prgo"><div class="li-meta" style="margin:0 0 6px">จะรับ <b>' + on.length + '</b> บรรทัด' + (val ? ' · ' + baht(val) + ' (ก่อน VAT)' : '') + '</div>'
+      + '<div class="row" style="gap:8px"><button class="primary" id="pr_go" style="flex:2">✅ รับเข้าทั้งใบ</button><button class="ghost" id="pr_cancel" style="flex:1">ยกเลิก</button></div></div></div>';
     bindPR();
   }
   function bindPR(){
@@ -4927,6 +4961,7 @@
     ['pr_no','pr_date','pr_shop','pr_inv'].forEach(function(id){ if (el(id)) el(id).addEventListener('input', function(){ prDoc[id.slice(3)] = el(id).value.trim(); prSave(); }); });
     box.querySelectorAll('.prline').forEach(function(div){
       var l = prDoc.lines[+div.getAttribute('data-i')];
+      var dt = div.querySelector('details.predit'); if (dt) dt.addEventListener('toggle', function(){ l.editOpen = dt.open; });   // v2.03 จำว่าเปิด "แก้ไข" ไว้
       div.querySelectorAll('[data-f]').forEach(function(inp){
         var f = inp.getAttribute('data-f');
         inp.addEventListener(inp.type === 'checkbox' ? 'change' : 'input', function(){
@@ -4948,7 +4983,7 @@
       });
       function bindPick(b){ b.addEventListener('click', function(){
         var it = getSku(b.getAttribute('data-pick')); if (!it) return;
-        l.sku = it.sku; l.mode = 'ok'; l.guess = false; l.factorAsk = normUnit(it.unit) !== normUnit(l.unit); if (!l.factorAsk) l.factor = 1;
+        l.sku = it.sku; l.mode = 'ok'; l.guess = false; l.factorAsk = !sameUnit(it.unit, l.unit); if (!l.factorAsk) l.factor = 1;
         if (l.factorAsk && l.pkn && !/แพ็ค|กล่อง|pack|box|pk/i.test(it.unit)) l.factor = l.pkn;   // v1.65 PK (50) → เสนอ 50 ชิ้นให้ (ยังต้องยืนยัน)
         l.on = !l.done && (+l.recv > 0); prSave(); var y = window.scrollY; renderPR(); window.scrollTo(0, y);
         toast('#' + l.ln + ' → รับเข้าเป็น ' + it.sku + ' แล้ว');   // v2.02
