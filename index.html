@@ -17,7 +17,7 @@
   var PC = {
     id: 'pc', ls: '', name: 'โรงงาน 1', owner: 'PC', store: 'PC / คลัง', what: 'วัสดุสิ้นเปลือง',
     api: 'https://script.google.com/macros/s/AKfycbwO41Enxx8NMRPOLbXLqdE9Y8GfoOxwDdiGxVUlSRGaNNfTuQr0RHPPimwfpnG1Beji/exec',
-    sku: 'CS', seed: true, file: 'pc-scan',
+    sku: 'CS', seed: true, file: 'pc-scan', home: 'https://powahaha.github.io/wip-check/',   // v1.98 ปุ่มกลับเมนูหลัก (หน้าแผนก)
     depts: ['CNC','Robot','Friction','Assy','Finishing & Hand weld','QA','MT/HW'],
     wireMc: [{mc:'RB008', w:'YM-28'}, {mc:'RB045', w:'YM-26'}, {mc:'RB047', w:'YM-28'}, {mc:'RB064', w:'YM-28'}, {mc:'RB053', w:'YM-28'}],   // v1.95 ถังลวดเชื่อมที่เครื่อง Robot
     qr: {cnc:'CNC', robot:'Robot', friction:'Friction', assy:'Assy', finish:'Finishing & Hand weld', qa:'QA', mthw:'MT/HW'},
@@ -291,7 +291,9 @@
   @media (max-width:340px){ nav.pc button{font-size:11px;} nav.pc{gap:4px; padding-left:4px; padding-right:4px;} }
   .skucol{flex:0 0 46px; width:46px; padding-top:2px; font:700 11.5px/1.25 var(--fm); color:var(--accent); white-space:nowrap; overflow:hidden;}
   #d_list .li-top, #l_list .li-top{gap:8px;}
-  #d_list .thumb, #l_list .thumb{flex-basis:38px; width:38px; height:38px;}
+  #d_list .thumb, #l_list .thumb{flex-basis:76px; width:76px; height:76px; border-radius:10px;}   /* v1.98 รูปใหญ่ขึ้น (เดิม 38px) หัวหน้างานจอเล็กดูออก */
+  .thumbcol{flex:0 0 76px; width:76px; display:flex; flex-direction:column; gap:3px;}   /* v1.98 รหัส CS บนซ้าย เหนือรูป */
+  .thumbcol .skutop{font:700 12px/1.1 var(--fm); color:var(--accent); white-space:nowrap;}
   .addbtn{flex:0 0 36px; width:36px; min-height:36px; border-radius:18px; display:flex; flex-direction:column; align-items:center; justify-content:center; font:700 20px/1 var(--fs); color:var(--accent); background:var(--accent-soft); border:1.5px solid var(--accent);}
   .addbtn.in{background:var(--ok); border-color:var(--ok); color:#fff; font-size:15px;}
   .addbtn small{font:600 10.5px/1.1 var(--fm);}
@@ -561,7 +563,7 @@
   :root[data-theme="dark"] .eqst.warn{color:#f0c040;}
   /* v1.61 รูปแนบใบขอเบิก + ของนอกระบบ */
   /* v1.91 สมุดจดซื้อ */
-  .lowmode{margin:0 0 12px;} .lowmode .badge:empty{display:none;}
+  .lowmode{margin:0 0 12px; grid-template-columns:1fr 1fr 1fr;} .lowmode button{padding:10px 4px; font-size:14px;} .lowmode .badge:empty{display:none;}
   .buysugs{position:absolute; left:0; right:0; z-index:30; background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.25); max-height:340px; overflow:auto;}
   .buysug{display:flex; gap:10px; align-items:center; width:100%; text-align:left; background:none; border:0; border-bottom:1px solid var(--line); padding:8px 10px; color:var(--ink); font:14px var(--fs); cursor:pointer;}
   .buypick{display:flex; gap:10px; align-items:center; margin-top:8px; padding:8px; border:1px solid var(--accent); border-radius:10px; background:var(--accent-soft);}
@@ -640,6 +642,8 @@
   .pcchk input{width:20px; height:20px; accent-color:var(--accent); margin:0;}
   nav button{font-size:12.5px;}
   .warnline{color:var(--warn)!important; font-weight:600;}
+  .homebtn{margin-left:auto; display:inline-flex; align-items:center; min-height:36px; padding:0 12px; border-radius:8px; border:1.5px solid var(--accent); color:var(--accent); font:600 14px var(--fs); text-decoration:none; white-space:nowrap;}
+  .homebtn:not([hidden]) + .setbtn{margin-left:6px;}
   .setbtn{margin-left:auto; appearance:none; border:1px solid var(--line); background:var(--surface);
     color:var(--muted); border-radius:7px; padding:5px 11px; font:600 12.5px var(--fs); cursor:pointer;}
   .setpanel{margin-top:10px; padding:12px; border:1px solid var(--line); border-radius:var(--r);
@@ -661,7 +665,8 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v1.97</span>
+      <span class="ver" id="appVer">v1.98</span>
+      <a class="homebtn" id="homeBtn" hidden href="#">← เมนูหลัก</a>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
     <div class="proto" id="protoline">กำลังโหลด…</div>
@@ -693,7 +698,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 1.97 · อัปเดต 26/10/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 1.98 · อัปเดต 03/11/2026</div>
     </div>
   </header>
 
@@ -766,7 +771,7 @@
 
     <!-- ── แท็บ ต้องเติม ── -->
     <section id="v-low" hidden>
-      <div class="seg lowmode" role="group" aria-label="มุมมอง"><button type="button" id="lm_min" aria-pressed="true">⚠️ ต่ำกว่า MIN</button><button type="button" id="lm_buy" aria-pressed="false">📝 สมุดจดซื้อ <span class="badge" id="lm_buyN"></span></button></div>
+      <div class="seg lowmode" role="group" aria-label="มุมมอง"><button type="button" id="lm_min" aria-pressed="true">⚠️ ต่ำกว่า MIN</button><button type="button" id="lm_buy" aria-pressed="false">📝 สมุดจดซื้อ <span class="badge" id="lm_buyN"></span></button><button type="button" id="lm_mck" aria-pressed="false">🗓 เช็คสิ้นเดือน</button></div>
       <div id="buyMain" hidden>
         <div class="card">
           <h2>📝 สมุดจดของที่จะซื้อ</h2>
@@ -803,7 +808,7 @@
           <button type="button" class="ghost" id="b_clear" style="width:100%; margin-top:8px">🧹 ล้างของที่ซื้อแล้วออกจากสมุด</button>
         </details>
       </div>
-      <div id="lowMain">
+      <div id="mckMain" hidden>
       <div class="card" id="mckCard">
         <div class="row" style="justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap">
           <div><b>🗓 ใบเช็คสต็อกสิ้นเดือน</b> · <span id="mck_n">0</span> รายการ<div class="note" style="margin:0">ของที่ไลน์ไม่ได้เบิกทีละชิ้น (น้ำมัน ลวดเชื่อม แก๊ส…) ให้ไลน์จดยอดที่เหลือ</div></div>
@@ -817,6 +822,8 @@
           <ul class="list" id="mck_list"></ul>
         </div>
       </div>
+      </div>
+      <div id="lowMain">
       <div class="card">
         <h2>ของที่ต่ำกว่า MIN (ต้องเติม)</h2>
         <div class="row" style="justify-content:space-between; align-items:flex-end">
@@ -1083,7 +1090,7 @@
   function imgUrl(id, w){ return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w' + (w || 400); }
   function thumb(it){
     return (it && it.img)
-      ? '<img class="thumb" loading="lazy" alt="ดูรูปใหญ่" src="' + imgUrl(it.img, 120) + '" data-big="' + esc(it.img) + '" data-cap="' + esc(it.sku + ' · ' + it.name) + '">'
+      ? '<img class="thumb" loading="lazy" alt="ดูรูปใหญ่" src="' + imgUrl(it.img, 200) + '" data-big="' + esc(it.img) + '" data-cap="' + esc(it.sku + ' · ' + it.name) + '">'
       : '<span class="thumb none" aria-hidden="true"></span>';
   }
   function getSku(s){ s = String(s || '').toUpperCase(); return BY_SKU[s] || OFF_SKU[s] || null; }
@@ -2741,10 +2748,10 @@
     return id ? '<img class="thumb" loading="lazy" alt="ดูรูปใหญ่" src="' + imgUrl(id, 120) + '" data-big="' + esc(id) + '" data-cap="' + esc(b.name) + '">' : '<span class="thumb none" aria-hidden="true"></span>'; }
   function buyMode(m){
     if (m) lsSet('pcscan_lowmode', m); else m = lsGet('pcscan_lowmode', 'min');
-    var isBuy = m === 'buy';
-    el('lowMain').hidden = isBuy; el('buyMain').hidden = !isBuy;
-    el('lm_min').setAttribute('aria-pressed', String(!isBuy)); el('lm_buy').setAttribute('aria-pressed', String(isBuy));
-    if (isBuy) renderBuy();
+    if (m !== 'buy' && m !== 'mck') m = 'min';   // v1.98 แยก 3 ปุ่ม: ต่ำกว่า MIN | สมุดจดซื้อ | เช็คสิ้นเดือน
+    el('lowMain').hidden = m !== 'min'; el('buyMain').hidden = m !== 'buy'; el('mckMain').hidden = m !== 'mck';
+    el('lm_min').setAttribute('aria-pressed', String(m === 'min')); el('lm_buy').setAttribute('aria-pressed', String(m === 'buy')); el('lm_mck').setAttribute('aria-pressed', String(m === 'mck'));
+    if (m === 'buy') renderBuy();
   }
   function buyCall(op, it, okMsg, btn){
     if (!pinOk){ toast('ต้องใส่ PIN ของ PC ในปุ่มตั้งค่าก่อน', true); return Promise.resolve(); }
@@ -2903,6 +2910,7 @@
     var sv = lsGet('pcscan_buyshop', ''); if (sv) el('b_shop').value = sv;
     el('lm_min').addEventListener('click', function(){ buyMode('min'); });
     el('lm_buy').addEventListener('click', function(){ buyMode('buy'); });
+    el('lm_mck').addEventListener('click', function(){ buyMode('mck'); });
     el('b_shop').addEventListener('change', function(){ lsSet('pcscan_buyshop', el('b_shop').value.trim()); if (buyPick) buySetPick(buyPick); renderBuy(); });
     el('b_q').addEventListener('input', function(){ if (buyPick && el('b_q').value !== buyPick.name) buySetPick(null); buySugg(); });
     el('b_q').addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); var f = el('b_sug').querySelector('[data-bsku]'); if (f && !el('b_sug').hidden) f.click(); else el('b_qty').focus(); } });
@@ -3270,6 +3278,7 @@
     if (!p.hidden) el('apiUrl').value = API;
   });
   if (DEPT_MODE) el('pinWrap').hidden = true;
+  if (DEPT_MODE && CFG.home && el('homeBtn')){ el('homeBtn').href = CFG.home; el('homeBtn').hidden = false; }   // v1.98
   /* v1.78 สถานะแจ้งเตือน LINE (เฉพาะ PC มี PIN) */
   function renderLine(s){
     var w = el('lineWrap'); if (!w || DEPT_MODE) return; w.hidden = false;
@@ -3593,7 +3602,7 @@
     lst.hidden = !q; el('d_qhint').hidden = !!q;
     lst.innerHTML = rows.map(function(it){
       var n = onHand(it), inCart = cart.some(function(c){ return c.sku === it.sku; });
-      return '<li class="tap' + (n > 0 ? '' : ' outrow') + '" data-add="' + esc(it.sku) + '"><div class="li-top"><span class="skucol">' + esc(it.sku) + '</span>' + thumb(it) + '<div class="grow">'
+      return '<li class="tap' + (n > 0 ? '' : ' outrow') + '" data-add="' + esc(it.sku) + '"><div class="li-top"><div class="thumbcol"><span class="skutop">' + esc(it.sku) + '</span>' + thumb(it) + '</div><div class="grow">'
         + '<div class="li-name">' + esc(it.name) + '</div>' + descLine(it) + retChip(it) + (function(){ var pd = pendSku(el('d_dept').value, it.sku); return pd.rem > 0 ? '<div class="pendchip">⏳ ขอไว้แล้ว ค้าง ' + fmt(pd.rem) + ' ' + esc(it.unit || '') + ' (ใบ ' + esc(pd.nos.join(', ')) + ')</div>' : ''; })()
         + (n > 0 ? '<div class="stk ' + stockCls(it) + '">📦 มีของ ' + fmt(n) + ' ' + esc(it.unit || '') + '</div>' : '<div class="stk out">⛔ ของหมด</div><div class="li-meta">ขอได้ — ใบจะค้างไว้จนของเข้า</div>')
         + '</div><span class="addbtn' + (inCart ? ' in' : '') + '" aria-label="' + (inCart ? 'อยู่ในใบแล้ว' : 'เพิ่ม') + '">' + (inCart ? '✓' : '+') + '</span></div></li>';
@@ -5527,7 +5536,7 @@
     el('l_sortrow').querySelectorAll('[data-lsort]').forEach(function(b){ b.className = 'chip tapchip ' + (b.getAttribute('data-lsort') === srt ? 'ok' : 'na'); });
     var lrow = function(it){
       var n = onHand(it), c = cart.filter(function(x){ return x.sku === it.sku; })[0];
-      return '<li class="tap' + (n > 0 ? '' : ' outrow') + '" data-ladd="' + esc(it.sku) + '"><div class="li-top"><span class="skucol">' + esc(it.sku) + '</span>' + thumb(it) + '<div class="grow">'
+      return '<li class="tap' + (n > 0 ? '' : ' outrow') + '" data-ladd="' + esc(it.sku) + '"><div class="li-top"><div class="thumbcol"><span class="skutop">' + esc(it.sku) + '</span>' + thumb(it) + '</div><div class="grow">'
         + '<div class="li-name">' + esc(it.name) + '</div>' + descLine(it) + retChip(it)
         + (n > 0 ? '<div class="stk ' + stockCls(it) + '">📦 มีของ ' + fmt(n) + ' ' + esc(it.unit || '') + '</div>' : '<div class="stk out">⛔ ของหมด</div>')
         + '</div><span class="addbtn' + (c ? ' in' : '') + '" aria-label="' + (c ? 'อยู่ในใบ ' + fmt(c.qty) : 'เพิ่ม') + '">' + (c ? '✓<small>×' + fmt(c.qty) + '</small>' : '+') + '</span></div></li>';
