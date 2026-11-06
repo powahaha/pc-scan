@@ -680,7 +680,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v2.03</span>
+      <span class="ver" id="appVer">v2.04</span>
       <a class="homebtn" id="homeBtn" hidden href="#">← เมนูหลัก</a>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
@@ -713,7 +713,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 2.03 · อัปเดต 04/11/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 2.04 · อัปเดต 06/11/2026</div>
     </div>
   </header>
 
@@ -4016,18 +4016,21 @@
     if (kind === 'INV'){
       var m = raw.match(/INVOICE\s*NO\.?\s*:?\s*(\d{6,})/i); if (m) out.no = 'INV-' + m[1];
       m = raw.match(/DATE\s*:?\s*(\d{1,2}\.\d{1,2}\.\d{2,4})/i); if (m) out.date = m[1];
-      out.so = afterLabel(toks, /Sys\.?\s*ORDER/i, function(t){ var x = t.match(/(?:^|\s)(\d{9,10})$/); return x && x[1]; }, 8);   // v1.89 เดิมคว้าเลขลูกค้า (CUST No.) มาแทน
+      out.so = afterLabel(toks, /S[yv]s\.?\s*ORDER/i, function(t){ var x = t.match(/(?:^|\s)(\d{9,10})$/); return x && x[1]; }, 8);   // v1.89 เดิมคว้าเลขลูกค้า (CUST No.) มาแทน
       if (!out.so){ m = raw.match(/ORDER\s*No\.?\s*:?\s*(\d{9,10})/i); if (m) out.so = m[1]; }
-      out.ref = afterLabel(toks, /Ref\.?\s*DD/i, function(t){ var x = t.match(/^\d{9,10}$/); return x && x[0]; }, 10);
+      out.ref = afterLabel(toks, /Ref\.?\s*DD/i, function(t){ var x = t.match(/^23\d{7}$/); return x && x[0]; }, 30) || afterLabel(toks, /Ref\.?\s*DD/i, function(t){ var x = t.match(/^\d{9,10}$/); return x && x[0]; }, 10);   // v2.04 เลขใบส่งของ Linde ขึ้นต้น 23 (กันคว้าเลข Billing 379…)
       var po = afterLabel(toks, /PURCHASE\s*ORDER/i, function(t, first){ var x = first ? null : t.match(/^(?:PO)?(\d{2}(?:0[1-9]|1[0-2])\d{3})$/i); return x && x[1]; }, 10);   // v1.89 เลข PO ของเรา = ปีเดือน+3 หลัก (กันคว้าเลขลูกค้า 3169301)
       if (!po) po = afterLabel(toks, /PURCHASE\s*ORDER/i, function(t, first){ var x = first ? null : t.match(/^\d{6,8}$/); return x && x[0]; }, 6);
       if (po) out.note = 'PO ' + po;
-      var di = toks.findIndex(function(t){ return /^DESCRIPTION$/i.test(t); }), descs = [];
+      var di = toks.findIndex(function(t){ return /(^|\s)DESCRIPTION$/i.test(t); }), descs = [];   // v2.04 "รายการ DESCRIPTION" อยู่บรรทัดเดียวกัน (INV-09150088)
       for (var i = di + 1; di >= 0 && i < toks.length && !/QTY|OTY|จ[ํำ]?านวน/i.test(toks[i]); i++) descs.push(toks[i]);
+      var LPROD = /\b(CYL|KG|M3|GAS|CO2|ARGON|OXYGEN|NITROGEN|LPG|ACETYLENE)\b|surcharge|ค่าธรรมเนียม|ค่าขนส่ง|ค่าเช่า/i;
+      descs = descs.filter(function(d){ return LPROD.test(d) || !(/Billing|Document|Place\s*No|DUE\s*DATE|TERMS|PLANT|EXT\.|เหตุ|^TP\s|\d{3}-\d{6}/i.test(d) || !/[A-Za-zก-๙]{2}/.test(d)); });   // v2.04 ตัดเลขเอกสาร/หมายเหตุที่ OCR แทรกเข้ามาระหว่างชื่อ
       var qi = toks.findIndex(function(t){ return /Q?[TO]?TY\.?\s*SUPP|OTY\.SUPP|QTY\.SUPP/i.test(t); }), qtys = [];
-      for (var q = qi + 1; qi >= 0 && q < toks.length && prNum(toks[q]) != null; q++) qtys.push(prNum(toks[q]));
+      var q0 = qi + 1; while (qi >= 0 && q0 < toks.length && q0 <= qi + 3 && prNum(toks[q0]) == null) q0++;   // v2.04 ข้ามหัวคอลัมน์ที่ OCR อ่านต่อกัน ("UNIT PRICE")
+      for (var q = q0; qi >= 0 && q < toks.length && prNum(toks[q]) != null; q++) qtys.push(prNum(toks[q]));
       var ui = raw.search(/UNIT\s*PRICE/i), prices = [];
-      if (ui >= 0){ var re = /(\d[\d,]*\.\d{2})\s*\|?\s*\n?\s*([A-Z]{2,4})\b/g, mm, seg = raw.slice(ui).replace(/UOM|DISC|VAT|UNIT PRICE/gi, ' ');
+      if (ui >= 0){ var re = /(\d[\d,]*\.\d{2})\s*\|?\s*\n?\s*([A-Z]{2,4})\b(?!\.?\s*RET)/g, mm, seg = raw.slice(ui).replace(/UOM|DISC|VAT|UNIT PRICE/gi, ' ');
         while ((mm = re.exec(seg)) && prices.length < descs.length) prices.push({p:prNum(mm[1]), u:mm[2].toUpperCase()}); }
       var ai = toks.findIndex(function(t){ return /^AMOUNT$/i.test(t); }), amts = [];
       for (var a = ai + 1; ai >= 0 && a < toks.length && prNum(toks[a]) != null; a++) amts.push(prNum(toks[a]));
@@ -4045,7 +4048,7 @@
         if (nd.length){
           descs = nd;
           if (nq.length){ qtys = descs.map(function(){ return nq[0]; }); out.rtn = nq.length > 1 ? nq[1] : null; }   // จำนวนส่ง (ค่าธรรมเนียมคิดต่อถังเท่ากัน) · ถังเปล่าคืน
-          prices = []; var re2 = /(\d[\d,]*\.\d{2})\s*\|?\s*\n?\s*([A-Z]{2,4})\b/g, m2, seg2 = raw.slice(raw.search(/UNIT\s*PRICE/i) >= 0 ? raw.search(/UNIT\s*PRICE/i) : 0).replace(/UOM|DISC|VAT|UNIT PRICE/gi, ' ');
+          prices = []; var re2 = /(\d[\d,]*\.\d{2})\s*\|?\s*\n?\s*([A-Z]{2,4})\b(?!\.?\s*RET)/g, m2, seg2 = raw.slice(raw.search(/UNIT\s*PRICE/i) >= 0 ? raw.search(/UNIT\s*PRICE/i) : 0).replace(/UOM|DISC|VAT|UNIT PRICE/gi, ' ');
           while ((m2 = re2.exec(seg2)) && prices.length < descs.length) prices.push({p:prNum(m2[1]), u:m2[2].toUpperCase()});
           if (amts.length < descs.length){   // ยอดเงินมักติดกันบรรทัดเดียว "5,400 120"
             toks.forEach(function(tk){ if (amts.length >= descs.length) return; var ns = tk.split(/\s+/).map(prNum);
@@ -4053,6 +4056,10 @@
           }
           if (out.rtn != null && out.rtn > 0) out.warn.push('ถังเปล่าคืนไปกับรถ ' + out.rtn + ' ถัง (ตามใบ)');
         }
+      }
+      if (amts.length < descs.length && descs.length){   // v2.04 ยอดเงินติดกันบรรทัดเดียว "4,320.00 96.00" (เดิมทำเฉพาะทางสำรอง)
+        toks.forEach(function(tk){ if (amts.length >= descs.length) return; var ns = tk.split(/\s+/).map(prNum);
+          if (ns.length === descs.length && ns.every(function(x){ return x !== null; }) && ns.every(function(x, i){ return qtys[i] == null || !prices[i] || Math.abs(qtys[i] * prices[i].p - x) < 0.05; })) amts = ns; });
       }
       descs.forEach(function(d, k){
         var l = {ln:k + 1, code: mats[k] || (k === 0 ? mats[0] || '' : ''), desc:d, qty: qtys[k] != null ? qtys[k] : null, unit: prices[k] ? prices[k].u : 'CYL',
