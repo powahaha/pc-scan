@@ -194,6 +194,7 @@
   .prline.simple .prhead{margin-bottom:6px;}
   .prgo{margin-top:14px; padding-top:12px; border-top:1px solid var(--line);}
   .addsum{cursor:pointer; list-style:none; font:700 17px var(--fs);}
+  .prqlist li{padding:8px 0;} .prqlist .paybox input{width:80px;}   /* v2.06 */
   .sublink{display:inline-block; width:auto; min-height:0; margin-top:4px; padding:2px 0; border:0; background:none; color:var(--accent); font:600 13px var(--fs); cursor:pointer;}   /* v2.05 */
   .subbox{margin-top:6px; padding:8px 10px; border-radius:9px; border:1px dashed var(--accent); font-size:14px;}
   .subbox .subx{width:auto; min-height:28px; padding:0 10px; margin-left:6px; font-size:13px;}
@@ -683,7 +684,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v2.05</span>
+      <span class="ver" id="appVer">v2.06</span>
       <a class="homebtn" id="homeBtn" hidden href="#">← เมนูหลัก</a>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
@@ -716,7 +717,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 2.05 · อัปเดต 23/11/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 2.06 · อัปเดต 23/11/2026</div>
     </div>
   </header>
 
@@ -833,6 +834,7 @@
           <div class="row" style="gap:6px"><button type="button" class="ghost" id="mck_toggle">✏️ เลือกรายการ</button><button type="button" class="primary" id="mck_print">🖨 พิมพ์ใบเช็ค</button></div>
         </div>
         <div id="wireBox" hidden style="margin-top:8px"><button type="button" class="ghost" id="wire_toggle">🧵 ถังลวด Robot</button><div id="wire_panel" hidden></div></div>
+        <div id="prqBox" style="margin-top:8px"><button type="button" class="ghost" id="prq_toggle">🛒 จะสั่งซื้อ → ส่งไปเปิด PR <span class="badge" id="prq_n"></span></button><div id="prq_panel" hidden></div></div>
         <div id="mck_edit" hidden style="margin-top:10px">
           <input type="text" id="mck_q" placeholder="ค้นของในทะเบียนเพื่อเพิ่ม เช่น น้ำมัน / NITTESU" autocomplete="off">
           <ul class="list" id="mck_sug"></ul>
@@ -1375,13 +1377,14 @@
     if (j.cyl) CYL = j.cyl;   // v1.18 ถังแก๊ส
     if (j.buy){ BUY = j.buy; lsSet('pcscan_buy', BUY); }   // v1.91 สมุดจดซื้อ
     if (j.wire) WIRE = j.wire;   // v1.95 ถังลวด Robot
+    if (j.prq) PRQ = j.prq;   // v2.06 รอเปิด PR
     if (j.eq) EQ = j.eq; if (j.eqPend) EQP = j.eqPend;   // v1.71 ทะเบียนของใช้
     if (j.line) renderLine(j.line);   // v1.78
     if ('count' in j) COUNT = j.count || null;   // v1.21 รอบนับ
     if (j.sheet && j.sheet.id){ SHEETINFO = j.sheet; lsSet('pcscan_sheet', SHEETINFO); }
     if (j.pin === true){ pinOk = true; PRICES = j.prices || {}; PURCH = j.purchases || []; lsSet(K_PRICE, PRICES); fillShops(); }
     else if (j.pin === false){   // PIN เก่า/ผิด — ล้างทิ้ง กันไปนับครั้งผิดจนระบบล็อก
-      pinOk = false; PRICES = {}; PURCH = []; lsSet(K_PRICE, {}); BUY = []; lsSet('pcscan_buy', []); WIRE = [];
+      pinOk = false; PRICES = {}; PURCH = []; lsSet(K_PRICE, {}); BUY = []; lsSet('pcscan_buy', []); WIRE = []; PRQ = [];
       if (PIN){ PIN = ''; lsSetRaw(K_PIN, ''); toast('PIN ไม่ถูกแล้ว — ใส่ใหม่ในปุ่มตั้งค่า', true); }
     }
     if (j.master && j.master.length){
@@ -2558,6 +2561,7 @@
   function renderMck(){
     var c = el('mckCard'); if (!c) return;
     renderWire();   // v1.95
+    renderPrq();    // v2.06
     var L = mckItems();
     el('mck_n').textContent = L.length;
     el('mck_print').disabled = !L.length;
@@ -2707,6 +2711,72 @@
     if (DEPT_MODE || !el('wireBox')) return;
     el('wire_toggle').addEventListener('click', function(){ wireOpen = !wireOpen; wireDirty = false; renderWire(true); });
     renderWire();
+  })();
+  /* ================= v2.06 จะสั่งซื้อ → รอเปิด PR =================
+   * หลังได้ใบเช็คสิ้นเดือนคืน PC ใส่ "จะสั่ง" ทีละรายการ → บันทึกลงแท็บ "รอเปิดPR" ใน Sheet
+   * แชตเปิด PR (SimLex) อ่านแท็บนั้นไปเปิด แล้วเขียนเลข PR / สถานะ "เปิดแล้ว" กลับ → แอปโชว์ให้เห็น */
+  var PRQ = [], prqOpen = false, prqDirty = false;
+  function prqMine(mon){ var o = {}; PRQ.forEach(function(x){ if (x.mon === mon && x.st !== 'ยกเลิก') o[x.sku] = x; }); return o; }
+  function prqInfo(it){
+    var rows = (PRS || []).filter(function(r){ return String(r.sku).toUpperCase() === it.sku && r.code; }).sort(function(a, b){ return a.ts < b.ts ? 1 : -1; });
+    var code = rows.length ? rows[0].code : '';
+    if (!code){ var m = (PRMAP || []).filter(function(x){ return String(x.sku).toUpperCase() === it.sku && x.code && x.code.charAt(0) !== '#'; })[0]; if (m) code = m.code; }
+    var p = pr(it), shop = (p && (p.lastShop || p.s1)) || (rows[0] && rows[0].shop) || '';
+    return {code: code, shop: shop, price: unitPrice(it), pu: (p && p.pu) || it.unit || ''};
+  }
+  function useAvg(sku){   // เบิกออกเฉลี่ย/เดือน 90 วันล่าสุด (ของที่ไลน์ไม่ได้เบิกผ่านแอป จะเป็น 0)
+    var cut = Date.now() - 90 * 864e5, s = 0;
+    log.forEach(function(r){ if (r.dir === 'เบิกออก' && String(r.sku).toUpperCase() === sku && Date.parse(r.ts) >= cut) s += +r.qty || 0; });
+    return Math.round(s / 3 * 10) / 10;
+  }
+  function renderPrq(force){
+    var box = el('prqBox'); if (!box) return;
+    var nOpen = PRQ.filter(function(x){ return x.st === 'รอเปิด'; }).length;
+    el('prq_n').textContent = nOpen ? nOpen : '';
+    el('prq_toggle').firstChild.textContent = prqOpen ? 'ปิด ' : '🛒 จะสั่งซื้อ → ส่งไปเปิด PR ';
+    el('prq_panel').hidden = !prqOpen;
+    if (!prqOpen || (prqDirty && !force)) return;
+    if (!pinOk){ el('prq_panel').innerHTML = '<div class="note" style="margin:8px 0 0">🔒 ต้องใส่ PIN ของ PC ในปุ่มตั้งค่าก่อน</div>'; return; }
+    var mon = (el('prq_mon') && el('prq_mon').value) || wMon(), mine = prqMine(mon), L = mckItems();
+    var h = '<div class="row" style="gap:8px; align-items:flex-end; margin-top:10px; flex-wrap:wrap"><div><label class="fld" for="prq_mon">เดือน</label><input type="month" id="prq_mon" value="' + esc(mon) + '"></div>'
+      + '<div class="note" style="margin:0 0 6px; flex:1 1 180px">ใส่จำนวนที่จะสั่ง (ว่าง/0 = ไม่สั่ง) → กดส่ง · แชตเปิด PR อ่านจากแท็บ <b>รอเปิดPR</b> ใน Sheet</div></div>'
+      + '<ul class="list prqlist">' + L.map(function(it){
+        var x = mine[it.sku], inf = prqInfo(it), u = useAvg(it.sku), done = x && x.st === 'เปิดแล้ว';
+        return '<li><div class="li-top"><div class="grow"><div class="li-name">' + esc(it.name) + '</div>'
+          + '<div class="li-meta"><b>' + esc(it.sku) + '</b> · คลัง ' + fmt(onHand(it)) + ' ' + esc(it.unit || '') + (u > 0 ? ' · ใช้ ~' + fmt(u) + '/เดือน' : '') + (+it.mx > 0 ? ' · MAX ' + fmt(it.mx) : '') + '</div>'
+          + '<div class="li-meta">' + (inf.shop ? '🏪 ' + esc(inf.shop) : '🏪 ยังไม่มีร้าน') + (inf.price != null ? ' · ฿' + fmt(inf.price) + '/' + esc(inf.pu) : '') + (inf.code ? ' · Item ' + esc(inf.code) : '') + '</div>'
+          + (done ? '<div class="li-meta" style="color:var(--ok)">✅ เปิดแล้ว ' + esc(x.pr || '') + '</div>' : '') + '</div>'
+          + '<label class="paybox"><span class="li-meta">จะสั่ง</span><input type="number" inputmode="decimal" min="0" step="any" data-prq="' + esc(it.sku) + '" value="' + (x && x.qty != null ? x.qty : '') + '"' + (done ? ' disabled' : '') + ' placeholder="0"></label></div></li>';
+      }).join('') + '</ul>'
+      + (L.length ? '<button type="button" class="primary" id="prq_save" style="margin-top:10px">📤 ส่งไปรอเปิด PR — ' + esc(wMonTh(mon)) + '</button>' : '<div class="note">ยังไม่มีรายการในใบเช็ค — กด ✏️ เลือกรายการ ก่อน</div>');
+    var all = PRQ.filter(function(x){ return x.mon === mon && x.st !== 'ยกเลิก'; });
+    if (all.length){
+      var w = all.filter(function(x){ return x.st === 'รอเปิด'; }).length, d = all.length - w;
+      h += '<div class="note" style="margin:10px 0 0">' + esc(wMonTh(mon)) + ': <b>รอเปิด ' + w + '</b> · เปิดแล้ว ' + d + (d ? ' (' + all.filter(function(x){ return x.st === 'เปิดแล้ว'; }).map(function(x){ return esc(x.sku) + (x.pr ? ' ' + esc(x.pr) : ''); }).join(', ') + ')' : '') + '</div>';
+    }
+    el('prq_panel').innerHTML = h;
+    el('prq_mon').addEventListener('change', function(){ prqDirty = false; renderPrq(true); });
+    el('prq_panel').querySelectorAll('[data-prq]').forEach(function(i){ i.addEventListener('input', function(){ prqDirty = true; }); });
+    if (el('prq_save')) el('prq_save').addEventListener('click', function(){
+      var mon2 = el('prq_mon').value; if (!/^\d{4}-\d{2}$/.test(mon2)){ toast('เลือกเดือนก่อน', true); return; }
+      var cur = prqMine(mon2), rows = [];
+      el('prq_panel').querySelectorAll('[data-prq]').forEach(function(i){
+        if (i.disabled) return;
+        var sku = i.getAttribute('data-prq'), it = getSku(sku), q = i.value === '' ? 0 : +i.value, old = cur[sku];
+        if (!(q > 0) && !old) return;
+        if (old && +old.qty === q) return;
+        var inf = prqInfo(it);
+        rows.push({mon: mon2, sku: sku, name: it.name, qty: q, unit: it.unit || '', shop: inf.shop, price: inf.price != null ? inf.price : '', code: inf.code});
+      });
+      if (!rows.length){ toast('ไม่มีอะไรเปลี่ยน'); return; }
+      reqAction({action:'prq', op:'save', it:{rows: rows}, who:'PC'}, '📤 ส่งไปรอเปิด PR แล้ว ' + rows.filter(function(r){ return r.qty > 0; }).length + ' รายการ', el('prq_save'))
+        .then(function(j){ if (j){ prqDirty = false; renderPrq(true); } });
+    });
+  }
+  (function initPrq(){
+    if (DEPT_MODE || !el('prqBox')){ if (el('prqBox')) el('prqBox').hidden = true; return; }
+    el('prq_toggle').addEventListener('click', function(){ prqOpen = !prqOpen; prqDirty = false; renderPrq(true); });
+    renderPrq();
   })();
   (function initMck(){
     if (DEPT_MODE || !el('mckCard')) return;
