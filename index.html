@@ -195,6 +195,7 @@
   .prgo{margin-top:14px; padding-top:12px; border-top:1px solid var(--line);}
   .addsum{cursor:pointer; list-style:none; font:700 17px var(--fs);}
   .prqlist li{padding:8px 0;} .prqlist .paybox input{width:80px;}   /* v2.06 */
+  .wiregrid.w3{grid-template-columns:1.2fr 1fr 0.9fr;} .wfull{display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;} .wfull .li-meta:first-child{flex-basis:100%;}   /* v2.08 */
   .prqin{display:flex; flex-direction:column; gap:4px; align-items:flex-end;} .prqd{margin-top:2px;}   /* v2.07 */
   .sublink{display:inline-block; width:auto; min-height:0; margin-top:4px; padding:2px 0; border:0; background:none; color:var(--accent); font:600 13px var(--fs); cursor:pointer;}   /* v2.05 */
   .subbox{margin-top:6px; padding:8px 10px; border-radius:9px; border:1px dashed var(--accent); font-size:14px;}
@@ -685,7 +686,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v2.07</span>
+      <span class="ver" id="appVer">v2.08</span>
       <a class="homebtn" id="homeBtn" hidden href="#">← เมนูหลัก</a>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
@@ -718,7 +719,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 2.07 · อัปเดต 23/11/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 2.08 · อัปเดต 24/11/2026</div>
     </div>
   </header>
 
@@ -2641,7 +2642,24 @@
   function wDateFor(mon){ var x = WIRE.filter(function(w){ return w.mon === mon && w.d; }).map(function(w){ return w.d; }).sort().pop(); return x || wToday(); }   // v1.97 วันที่เช็ค
   function wDTh(d){ var p = String(d || '').split('-'); return p.length === 3 ? +p[2] + '/' + +p[1] : ''; }
   function wDefWire(mc){ var m = WIRE_MC.filter(function(x){ return x.mc === mc; })[0]; return m ? m.w : (WIRE_TYPES[0] && WIRE_TYPES[0].w); }
-  function wMachines(){ var s = {}, out = []; WIRE_MC.forEach(function(x){ s[x.mc] = 1; out.push(x.mc); }); WIRE.forEach(function(w){ if (!s[w.mc]){ s[w.mc] = 1; out.push(w.mc); } }); return out; }
+  function wMachines(){ var s = {}, out = []; WIRE_MC.forEach(function(x){ s[x.mc] = 1; out.push(x.mc); }); WIRE.forEach(function(w){ if (!s[w.mc] && !/^FULL:/.test(w.mc)){ s[w.mc] = 1; out.push(w.mc); } }); return out; }
+  /* v2.08 ถังเต็มที่เหลือ (ยังไม่เปิด) ต่อชนิดลวด — เก็บในแท็บเดียวกัน เครื่อง = "FULL:YM-28" ช่องถังใหม่ = จำนวนถังเต็ม
+   * ถังที่เปิดใช้ในเดือน = ถังเต็มเดือนก่อน + ถังที่รับเข้า (ระหว่างวันเช็ค 2 ครั้ง) − ถังเต็มเดือนนี้ → ยอดใช้ต่อชนิดลวด */
+  function wFull(mon, w){ var x = wGet(mon, 'FULL:' + w); return x ? (+x.nw || 0) : null; }
+  function wEdge(mon){ var d = WIRE.filter(function(w){ return w.mon === mon && w.d; }).map(function(w){ return w.d; }).sort().pop();
+    if (d) return Date.parse(d + 'T23:59:59+07:00'); var p = mon.split('-'); return Date.parse(new Date(+p[0], +p[1], 0, 23, 59, 59).toISOString()); }
+  function wRecvDrums(t, from, to){ var kg = 0; log.forEach(function(r){ var ts = Date.parse(r.ts); if (r.dir === 'รับเข้า' && String(r.sku).toUpperCase() === t.sku && ts > from && ts <= to) kg += +r.qty || 0; }); return Math.round(kg / WIRE_KG * 100) / 100; }
+  function wTypeUse(mon, t){   // {opened, kg} หรือ null ถ้าข้อมูลไม่ครบ
+    var pm = wPrevMon(mon), fp = wFull(pm, t.w), fn = wFull(mon, t.w); if (fp == null || fn == null) return null;
+    var rec = wRecvDrums(t, wEdge(pm), wEdge(mon)), opened = Math.round((fp + rec - fn) * 100) / 100, part = 0, ok = true;
+    wMachines().forEach(function(mc){ var c = wGet(mon, mc), p = wGet(pm, mc); if (!c || c.pct == null || (c.wire || wDefWire(mc)) !== t.w) return; if (!p || p.pct == null){ ok = false; return; } part += (p.pct - c.pct) / 100 * WIRE_KG; });
+    return {opened: opened, rec: rec, kg: ok ? Math.round(opened * WIRE_KG + part) : null};
+  }
+  function wCountKg(mon, t){   // ยอดรวมคลัง+ที่เครื่อง (กก.) ไว้เติมช่อง ① นับได้
+    var f = wFull(mon, t.w); if (f == null) return null; var kg = f * WIRE_KG;
+    wMachines().forEach(function(mc){ var c = wGet(mon, mc); if (c && c.pct != null && (c.wire || wDefWire(mc)) === t.w) kg += c.pct / 100 * WIRE_KG; });
+    return Math.round(kg * 10) / 10;
+  }
   function renderWire(force){
     var box = el('wireBox'); if (!box || !WIRE_MC) return;
     box.hidden = !WIRE_MC.length;
@@ -2655,15 +2673,17 @@
     var mcs = wMachines();
     var form = '<div class="row" style="gap:8px; align-items:flex-end; margin-top:10px; flex-wrap:wrap"><div><label class="fld" for="wire_mon">เดือน</label><input type="month" id="wire_mon" value="' + esc(mon) + '"></div>'
       + '<div><label class="fld" for="wire_d">วันที่เช็ค</label><input type="date" id="wire_d" value="' + esc(wDateFor(mon)) + '"></div>'
-      + '<div class="note" style="margin:0 0 6px">ถังละ ' + WIRE_KG + ' กก. · % ที่เหลือในถังตอนสิ้นเดือน · เปิดถังใหม่ในเดือน = กี่ถัง</div></div>'
-      + '<div class="wiregrid"><div class="wh">เครื่อง</div><div class="wh">ลวด</div><div class="wh">% เหลือ</div><div class="wh">ถังใหม่</div>'
+      + '<div class="note" style="margin:0 0 6px">ถังละ ' + WIRE_KG + ' กก. · % ที่เหลือในถังที่เครื่อง + ถังเต็มที่ยังไม่เปิด · ถังที่เปิดใช้แอปคิดให้เอง</div></div>'
+      + '<div class="wiregrid w3"><div class="wh">เครื่อง</div><div class="wh">ลวด</div><div class="wh">% เหลือ</div>'
       + mcs.map(function(mc){
         var cur = wGet(mon, mc), last = wLastBefore(mon, mc), w = cur ? cur.wire : (last ? last.wire : wDefWire(mc));
         return '<div class="wmc"><b>' + esc(mc) + '</b>' + (last ? '<br><span class="nu">' + (last.d ? esc(wDTh(last.d)) + ' ' : '') + esc(wMonTh(last.mon)) + ' ' + fmt(last.pct) + '%</span>' : '') + '</div>'
           + '<div><select data-wwire="' + esc(mc) + '">' + WIRE_TYPES.map(function(t){ return '<option' + (t.w === w ? ' selected' : '') + '>' + esc(t.w) + '</option>'; }).join('') + '</select></div>'
-          + '<div><input type="number" inputmode="decimal" min="0" max="100" step="5" data-wpct="' + esc(mc) + '" value="' + (cur && cur.pct != null ? cur.pct : '') + '" placeholder="%"></div>'
-          + '<div><input type="number" inputmode="numeric" min="0" step="1" data-wnw="' + esc(mc) + '" value="' + (cur && cur.nw ? cur.nw : '') + '" placeholder="0"></div>';
+          + '<div><input type="number" inputmode="decimal" min="0" max="100" step="5" data-wpct="' + esc(mc) + '" value="' + (cur && cur.pct != null ? cur.pct : '') + '" placeholder="%"></div>';
       }).join('') + '</div>'
+      + '<div class="wfull"><div class="li-meta" style="margin:10px 0 4px"><b>ถังเต็มที่ยังไม่เปิด</b> (นับทั้งคลัง + ที่วางรอที่ไลน์)</div>'   // v2.08
+      + WIRE_TYPES.map(function(t){ var f = wFull(mon, t.w), pf2 = wFull(wPrevMon(mon), t.w);
+          return '<label class="paybox"><span class="li-meta">' + esc(t.w) + '</span><input type="number" inputmode="numeric" min="0" step="1" data-wfull="' + esc(t.w) + '" value="' + (f != null ? f : '') + '" placeholder="ถัง"><span class="li-meta">ถัง' + (pf2 != null ? ' · เดือนก่อน ' + fmt(pf2) : '') + '</span></label>'; }).join('') + '</div>'
       + '<button type="button" class="primary" id="wire_save" style="margin-top:10px">💾 บันทึกเดือน ' + esc(wMonTh(mon)) + '</button>';
     // ประวัติ 6 เดือนล่าสุด
     var mons = {}; WIRE.forEach(function(x){ mons[x.mon] = 1; });
@@ -2675,38 +2695,44 @@
         + mcs.map(function(mc){
           var sum = 0, n = 0;
           var tds = ml.map(function(m){ var x = wGet(m, mc), u = wUsed(m, mc);
-            if (u != null){ sum += u; n++; var t = x.wire || wDefWire(mc); byType[t] = byType[t] || {}; byType[t][m] = (byType[t][m] || 0) + u; }
+            if (u != null){ sum += u; n++; }
             return '<td>' + (x && x.pct != null ? fmt(x.pct) + '%' : '–') + (x && x.nw ? ' <span class="nu">+' + x.nw + ' ถัง</span>' : '') + (u != null ? '<br><span class="nu">ใช้ ' + fmt(u) + '</span>' : '') + '</td>'; }).join('');
           return '<tr><td><b>' + esc(mc) + '</b></td>' + tds + '<td>' + (n ? fmt(Math.round(sum / n)) + ' กก.' : '–') + '</td></tr>';
         }).join('') + '</tbody></table></div>';
+      // v2.08 ยอดใช้ต่อชนิดลวด = ถังที่เปิดใช้ × 300 + % ที่ลดลงของถังที่เครื่อง
+      WIRE_TYPES.forEach(function(t){ ml.forEach(function(m){ var u = wTypeUse(m, t); if (u){ byType[t.w] = byType[t.w] || []; byType[t.w].push({m: m, u: u}); } }); });
       var tl = Object.keys(byType);
-      if (tl.length) hist += '<div class="note" style="margin:8px 0 0">' + tl.map(function(t){ var v = Object.keys(byType[t]).map(function(m){ return byType[t][m]; }), avg = v.reduce(function(a, b){ return a + b; }, 0) / v.length;
-        return '<b>' + esc(t) + '</b> ใช้เฉลี่ย ' + fmt(Math.round(avg)) + ' กก./เดือน ≈ ' + (Math.round(avg / WIRE_KG * 10) / 10) + ' ถัง/เดือน (' + v.length + ' เดือน)'; }).join('<br>') + '</div>';
-      else hist += '<div class="note" style="margin:8px 0 0">ต้องมีข้อมูล 2 เดือนติดกันขึ้นไป ถึงจะคิดยอดใช้ได้</div>';
+      if (tl.length) hist += '<div class="note" style="margin:8px 0 0"><b>ใช้ต่อชนิดลวด</b> (ถังที่เปิด = ถังเต็มเดือนก่อน + รับเข้า − ถังเต็มเดือนนี้)<br>' + tl.map(function(w){ var v = byType[w], kk = v.filter(function(x){ return x.u.kg != null; }), avg = kk.length ? kk.reduce(function(a, x){ return a + x.u.kg; }, 0) / kk.length : null;
+        return '<b>' + esc(w) + '</b> ' + v.map(function(x){ return esc(wMonTh(x.m)) + ': เปิด ' + fmt(x.u.opened) + ' ถัง' + (x.u.rec ? ' (รับเข้า ' + fmt(x.u.rec) + ')' : '') + (x.u.kg != null ? ' · ใช้ ' + fmt(x.u.kg) + ' กก.' : ''); }).join(' · ')
+          + (avg != null ? '<br>→ เฉลี่ย ' + fmt(Math.round(avg)) + ' กก./เดือน ≈ ' + (Math.round(avg / WIRE_KG * 10) / 10) + ' ถัง/เดือน' : ''); }).join('<br>') + '</div>';
+      else hist += '<div class="note" style="margin:8px 0 0">ยอดใช้ต่อชนิดลวด จะขึ้นเมื่อมี "ถังเต็มที่ยังไม่เปิด" 2 เดือนติดกัน</div>';
     }
     el('wire_panel').innerHTML = form + hist;
     el('wire_mon').addEventListener('change', function(){ wireDirty = false; renderWire(true); });
-    el('wire_panel').querySelectorAll('[data-wpct],[data-wnw],[data-wwire],#wire_d').forEach(function(x){ x.addEventListener('input', function(){ wireDirty = true; }); x.addEventListener('change', function(){ wireDirty = true; }); });
+    el('wire_panel').querySelectorAll('[data-wpct],[data-wfull],[data-wwire],#wire_d').forEach(function(x){ x.addEventListener('input', function(){ wireDirty = true; }); x.addEventListener('change', function(){ wireDirty = true; }); });
     el('wire_save').addEventListener('click', function(){
       var mon2 = el('wire_mon').value; if (!/^\d{4}-\d{2}$/.test(mon2)){ toast('เลือกเดือนก่อน', true); return; }
       if (!el('wire_d').value){ toast('ใส่วันที่เช็คก่อน', true); el('wire_d').focus(); return; }
-      var rows = mcs.map(function(mc){ var p = el('wire_panel').querySelector('[data-wpct="' + mc + '"]').value, nw = el('wire_panel').querySelector('[data-wnw="' + mc + '"]').value;
-        return {mon: mon2, d: el('wire_d').value || '', mc: mc, wire: el('wire_panel').querySelector('[data-wwire="' + mc + '"]').value, pct: p === '' ? '' : +p, nw: nw === '' ? 0 : +nw}; })
-        .filter(function(r){ return r.pct !== '' || r.nw; });
+      var rows = mcs.map(function(mc){ var p = el('wire_panel').querySelector('[data-wpct="' + mc + '"]').value;
+        return {mon: mon2, d: el('wire_d').value || '', mc: mc, wire: el('wire_panel').querySelector('[data-wwire="' + mc + '"]').value, pct: p === '' ? '' : +p, nw: 0}; })
+        .filter(function(r){ return r.pct !== ''; });
+      el('wire_panel').querySelectorAll('[data-wfull]').forEach(function(i){ if (i.value === '') return;   // v2.08 ถังเต็ม
+        rows.push({mon: mon2, d: el('wire_d').value || '', mc: 'FULL:' + i.getAttribute('data-wfull'), wire: i.getAttribute('data-wfull'), pct: '', nw: Math.max(0, +i.value || 0), note: 'ถังเต็มที่ยังไม่เปิด'}); });
       if (!rows.length){ toast('ยังไม่ได้ใส่ % เลย', true); return; }
       if (rows.some(function(r){ return r.pct !== '' && (r.pct < 0 || r.pct > 100); })){ toast('% ต้องอยู่ระหว่าง 0–100', true); return; }
-      reqAction({action:'wire', rows: rows, who: 'PC'}, '🧵 บันทึกถังลวด ' + wMonTh(mon2) + ' แล้ว (' + rows.length + ' เครื่อง)', el('wire_save')).then(function(j){ if (j){ wireDirty = false; renderWire(true); } });
+      reqAction({action:'wire', rows: rows, who: 'PC'}, '🧵 บันทึกถังลวด ' + wMonTh(mon2) + ' แล้ว', el('wire_save')).then(function(j){ if (j){ wireDirty = false; renderWire(true); } });
     });
   }
   function wirePrintHtml(){   // ตารางในใบเช็คที่พิมพ์
     if (!WIRE_MC.length) return '';
     var mon = wMon();
     return '<h2 style="font-size:14px; margin:14px 0 4px; color:#000; text-transform:none; letter-spacing:0; font-weight:700">ถังลวดเชื่อม Pailpack (' + WIRE_KG + ' กก./ถัง) ที่เครื่อง Robot — เขียน % ที่เหลือในถัง</h2><div style="font-size:12px; margin:0 0 4px">วันที่เช็ค ........../........../.......... &nbsp; ผู้เช็ค ..............................</div>'
-      + '<table><thead><tr><th>เครื่อง</th><th>ลวดที่ใช้ (วงกลม)</th><th>% ที่เหลือ</th><th>เปิดถังใหม่เดือนนี้ (ถัง)</th><th>หมายเหตุ</th></tr></thead><tbody>'
+      + '<table><thead><tr><th>เครื่อง</th><th>ลวดที่ใช้ (วงกลม)</th><th>% ที่เหลือ</th><th>หมายเหตุ</th></tr></thead><tbody>'
       + wMachines().map(function(mc){ var last = wLastBefore(mon + '-99', mc), w = last ? last.wire : wDefWire(mc);
         return '<tr><td><b>' + esc(mc) + '</b></td><td>' + WIRE_TYPES.map(function(t){ return (t.w === w ? '<b>' + esc(t.w) + '</b>' : esc(t.w)); }).join(' / ') + '</td>'
-          + '<td style="width:90px">' + (last && last.pct != null ? '<span class="u">ล่าสุด ' + (last.d ? esc(wDTh(last.d)) + ' ' : '') + esc(wMonTh(last.mon)) + ' ' + fmt(last.pct) + '%</span>' : '') + '</td><td style="width:90px"></td><td></td></tr>'; }).join('')
-      + '</tbody></table>';
+          + '<td style="width:90px">' + (last && last.pct != null ? '<span class="u">ล่าสุด ' + (last.d ? esc(wDTh(last.d)) + ' ' : '') + esc(wMonTh(last.mon)) + ' ' + fmt(last.pct) + '%</span>' : '') + '</td><td></td></tr>'; }).join('')
+      + '</tbody></table>'
+      + '<div style="font-size:13px; margin:6px 0 0"><b>ถังเต็มที่ยังไม่เปิด</b> (คลัง + ที่ไลน์): ' + WIRE_TYPES.map(function(t){ return esc(t.w) + ' .......... ถัง'; }).join(' &nbsp;&nbsp; ') + '</div>';   // v2.08
   }
   (function initWire(){
     if (DEPT_MODE || !el('wireBox')) return;
@@ -2746,12 +2772,14 @@
       + '<div class="note" style="margin:0 0 6px; flex:1 1 180px"><b>① นับได้</b> = ยอดรวมคลัง + ที่ไลน์ → กดปรับสต็อก · <b>② จะสั่ง</b> → กดส่งไปเปิด PR (แชตเปิด PR อ่านจากแท็บ <b>รอเปิดPR</b>)</div></div>'
       + '<ul class="list prqlist">' + L.map(function(it){
         var x = mine[it.sku], inf = prqInfo(it), u = useAvg(it.sku), done = x && x.st === 'เปิดแล้ว';
+        var wt = (WIRE_TYPES || []).filter(function(t){ return t.sku === it.sku; })[0], wkg = wt ? wCountKg(mon, wt) : null;   // v2.08 ลวด Pailpack: เติมยอดนับจากหน้าถังลวด
         return '<li><div class="li-top"><div class="grow"><div class="li-name">' + esc(it.name) + '</div>'
           + '<div class="li-meta"><b>' + esc(it.sku) + '</b> · คลัง ' + fmt(onHand(it)) + ' ' + esc(it.unit || '') + (u > 0 ? ' · ใช้ ~' + fmt(u) + '/เดือน' : '') + (+it.mx > 0 ? ' · MAX ' + fmt(it.mx) : '') + '</div>'
           + '<div class="li-meta">' + (inf.shop ? '🏪 ' + esc(inf.shop) : '🏪 ยังไม่มีร้าน') + (inf.price != null ? ' · ฿' + fmt(inf.price) + '/' + esc(inf.pu) : '') + (inf.code ? ' · Item ' + esc(inf.code) : '') + '</div>'
           + (done ? '<div class="li-meta" style="color:var(--ok)">✅ เปิดแล้ว ' + esc(x.pr || '') + '</div>' : '') + '</div>'
-          + '<div class="prqin"><label class="paybox"><span class="li-meta">① นับได้</span><input type="number" inputmode="decimal" min="0" step="any" data-cnt="' + esc(it.sku) + '" placeholder="' + fmt(onHand(it)) + '"></label>'   // v2.07
+          + '<div class="prqin"><label class="paybox"><span class="li-meta">① นับได้</span><input type="number" inputmode="decimal" min="0" step="any" data-cnt="' + esc(it.sku) + '" placeholder="' + fmt(onHand(it)) + '"' + (wkg != null ? ' value="' + wkg + '"' : '') + '></label>'   // v2.07
           + '<label class="paybox"><span class="li-meta">② จะสั่ง</span><input type="number" inputmode="decimal" min="0" step="any" data-prq="' + esc(it.sku) + '" value="' + (x && x.qty != null ? x.qty : '') + '"' + (done ? ' disabled' : '') + ' placeholder="0"></label></div></div>'
+          + (wkg != null ? '<div class="li-meta">🧵 นับได้คิดจากหน้าถังลวด: ถังเต็ม ' + fmt(wFull(mon, wt.w)) + ' ถัง + % ที่เครื่อง</div>' : '')
           + '<div class="li-meta prqd" data-cntd="' + esc(it.sku) + '"></div></li>';
       }).join('') + '</ul>'
       + (L.length ? '<button type="button" class="ghost" id="prq_adj" style="margin-top:10px; width:100%">① 🔢 ปรับสต็อกตามที่นับ</button>'
@@ -2775,6 +2803,7 @@
       if (el('prq_adj')) el('prq_adj').textContent = '① 🔢 ปรับสต็อกตามที่นับ' + (n ? ' (' + n + ' รายการ)' : '');
     };
     el('prq_panel').querySelectorAll('[data-cnt]').forEach(function(i){ i.addEventListener('input', function(){ prqDirty = true; cntDiff(); }); });
+    cntDiff();   // v2.08 ช่องที่เติมให้ (ลวด) โชว์ส่วนต่างทันที
     if (el('prq_adj')) el('prq_adj').addEventListener('click', function(){
       var mon2 = el('prq_mon').value, list = [];
       el('prq_panel').querySelectorAll('[data-cnt]').forEach(function(i){
