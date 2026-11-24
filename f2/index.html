@@ -192,6 +192,14 @@
   .prqty{margin-top:6px; font-size:15px;}
   .prwarn{margin-top:6px; font-size:13px; color:#b54708;} :root[data-theme="dark"] .prwarn{color:#f0b060;}
   .prline.simple .prhead{margin-bottom:6px;}
+  /* v2.11 การ์ดที่พร้อมแล้วเด่นชัด · หัวการ์ดสีตามสถานะ · ระยะห่างระหว่างการ์ดมากขึ้น */
+  .prline{margin-top:22px;}
+  .prline.st-ready{border:2px solid var(--ok); border-left-width:8px;}
+  .prline.st-ready .prhead{background:var(--ok-soft);}
+  .prline.st-need .prhead{background:rgba(217,45,32,.13);}
+  .prline.st-todo .prhead{background:rgba(212,161,6,.17);}
+  .prst.s-ready{background:var(--ok); color:var(--surface); font-size:14px; padding:4px 12px;}
+  .prttl{font:700 15px var(--fm); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;}
   .prgo{margin-top:14px; padding-top:12px; border-top:1px solid var(--line);}
   .addsum{cursor:pointer; list-style:none; font:700 17px var(--fs);}
   .prqlist li{padding:8px 0;} .prqlist .paybox input{width:80px;}   /* v2.06 */
@@ -686,7 +694,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v2.10</span>
+      <span class="ver" id="appVer">v2.11</span>
       <a class="homebtn" id="homeBtn" hidden href="#">← เมนูหลัก</a>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
@@ -719,7 +727,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 2.10 · อัปเดต 24/11/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 2.11 · อัปเดต 24/11/2026</div>
     </div>
   </header>
 
@@ -4817,7 +4825,7 @@
     log.forEach(function(r){ if (r.dir === 'รับเข้า' && String(r.sku).toUpperCase() === String(it.sku).toUpperCase() && Math.abs((+r.qty || 0) - q) < 0.001 && now - Date.parse(r.ts) < 30 * 864e5 && (!hit || r.ts > hit.ts)) hit = r; });
     if (!hit) return '';
     var d = new Date(hit.ts);
-    return '<div class="outnote">⚠ เพิ่งรับ ' + esc(it.sku) + ' เข้า ' + fmt(hit.qty) + ' ' + esc(it.unit || '') + ' ไปแล้วเมื่อ ' + d.getDate() + '/' + (d.getMonth() + 1) + (hit.note ? ' (' + esc(String(hit.note).slice(0, 40)) + ')' : '') + ' — ถ้าเป็นของล็อตเดียวกัน เอาติ๊ก "รับ" ออก กันสต็อกบวกซ้ำ</div>';
+    return '<div class="prwarn" style="color:#d92d20">⚠ รับ ' + fmt(hit.qty) + ' ' + esc(it.unit || '') + ' ไปแล้ว ' + d.getDate() + '/' + (d.getMonth() + 1) + ' — ล็อตเดียวกัน? เอาติ๊ก "รับ" ออกใน ✏️ แก้ไข</div>';   // v2.11 สั้นลง
   }
   function shopFromOcr(s){
     var S = String(s || '').toUpperCase(); if (!S) return '';
@@ -5003,7 +5011,7 @@
     var needs = prNeeds(l), st = prState(l), nf = {}; needs.forEach(function(x){ if (x.f && !x.soft) nf[x.f] = 1; });
     var simple = !!(it && l.mode === 'ok' && !l.done);   // v2.03 บรรทัดที่จับคู่แล้ว → โชว์แค่ของ+จำนวน+ราคา ที่เหลือพับใต้ "แก้ไข"
     var h = '<div class="prline st-' + st.k + (l.done ? ' done' : '') + (simple ? ' simple' : '') + '" data-i="' + i + '">'
-      + '<div class="prhead"><div class="row" style="gap:8px; align-items:center"><span class="prno">#' + l.ln + '</span><span class="prst s-' + st.k + '">' + esc(st.t) + '</span></div>'
+      + '<div class="prhead"><div class="row" style="gap:8px; align-items:center; flex:1; min-width:0; flex-wrap:nowrap"><span class="prno">#' + l.ln + '</span><span class="prst s-' + st.k + '">' + esc(st.t) + '</span>' + (it && l.mode === 'ok' ? '<span class="prttl">' + esc(it.sku) + '</span>' : '') + '</div>'   // v2.11 หัวการ์ดบอกว่าเป็นของตัวไหน
       + '<button type="button" class="ghost" data-act="drop" title="ลบบรรทัดนี้ (อ่านผิด/ไม่ใช่ของ)" aria-label="ลบบรรทัดนี้" style="width:auto; min-height:30px; padding:0 10px">🗑</button></div>';   // v1.58
     var info = '<div class="li-meta" style="margin:2px 0 0">📄 ในใบเขียนว่า</div>' + (l.manual ? '<input type="text" data-f="desc" value="' + esc(l.desc || '') + '" placeholder="ชื่อตามใบ (ไม่ใส่ก็ได้ — ใช้ชื่อในทะเบียน)" autocomplete="off">' : '<div class="li-name" style="font-weight:600; font-size:' + (simple ? 14 : 16) + 'px">' + esc(l.desc || '—') + '</div>')   // v2.02 แยกให้ชัด: ชื่อในใบ ≠ ของที่จะรับเข้า
       + '<div class="li-meta" style="margin-top:2px">รหัสในใบ <input class="prcode' + (nf.code ? ' needf' : '') + '" data-f="code" value="' + esc(l.code || '') + '" placeholder="รหัสในใบ"></div>'
@@ -5103,7 +5111,8 @@
       else { if (prVd(l).k === 'new') c.nw++; else c.ask++; }
       if (l.flags && l.flags.length) c.flag++;
     });
-    var p = [];
+    var p = [], nr = d.lines.filter(function(l){ return prState(l).k === 'ready'; }).length;
+    if (nr) p.push('<b style="color:var(--ok)">✅ พร้อม ' + nr + '/' + d.lines.length + '</b>');   // v2.11
     if (c.guess) p.push('<b>🤖 ระบบเดา ' + c.guess + '</b> (ตรวจ)');
     if (c.ask) p.push('<b>❓ ต้องเลือก ' + c.ask + '</b>');
     if (c.nw) p.push('<b style="color:#d92d20">🆕 น่าจะของใหม่ ' + c.nw + '</b>');
