@@ -686,7 +686,7 @@
     <div class="hrow">
       <h1 id="appTitle">สแกนเบิก-รับ วัสดุสิ้นเปลือง</h1>
       <span class="plant">โรงงาน 1</span>
-      <span class="ver" id="appVer">v2.08</span>
+      <span class="ver" id="appVer">v2.09</span>
       <a class="homebtn" id="homeBtn" hidden href="#">← เมนูหลัก</a>
       <button class="setbtn" id="setBtn" title="ตั้งค่า">ตั้งค่า</button>
     </div>
@@ -719,7 +719,7 @@
         <label class="li-meta" style="display:flex; gap:6px; align-items:center; margin-top:6px"><input type="checkbox" id="bulkOver" style="width:auto; min-height:0"> ทับรูปเดิม (ปกติข้ามของที่มีรูปแล้ว)</label>
         <div class="note" id="bulkState" style="margin-top:6px"></div>
       </div>
-      <div class="note" style="margin-top:10px">เวอร์ชัน 2.08 · อัปเดต 24/11/2026</div>
+      <div class="note" style="margin-top:10px">เวอร์ชัน 2.09 · อัปเดต 24/11/2026</div>
     </div>
   </header>
 
@@ -4268,7 +4268,7 @@
   }
   function taxUnit(u){
     u = String(u || '').trim();
-    if (/^(ขึ้น|ชื้น|ชิน|ชิ่น|ชั้น)$/.test(u)) return 'ชิ้น';
+    if (/^(ขึ้น|ชื้น|ชิน|ชิ่น|ชั้น|ซิน|ซิ้น|ซื้น|ขิ้น)$/.test(u)) return 'ชิ้น';   // v2.09 +ซิน
     var pk = u.match(/^PK(\d+)$/i); if (pk) return 'PK (' + pk[1] + ')';   // PK50 = แพ็ค 50 ชิ้น (เขียนแบบเดียวกับทะเบียน)
     return u.toUpperCase() === u.toLowerCase() ? u : u.toUpperCase();
   }
@@ -4288,13 +4288,19 @@
       if (Math.abs(y - now) > 1){ out.warn.push('ปีในใบอ่านได้ ' + dm[3] + ' (ดูแปลก) — ใช้ปีนี้แทน เช็ควันที่อีกที'); y = now; }
       out.date = ('0' + dm[1]).slice(-2) + '/' + ('0' + (TH_MONF.indexOf(dm[2]) + 1)).slice(-2) + '/' + y;
     } else { var d2 = raw.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/); if (d2){ var yy = +d2[3]; if (yy > 2400) yy -= 543; out.date = ('0' + d2[1]).slice(-2) + '/' + ('0' + d2[2]).slice(-2) + '/' + yy; } }
-    var BC = /(?:^|\s)(?:\d{1,2}\s+)?(\d{12,13})\s+/g, NUM = /^[\d,]+\.\d{2}$/, STOP = /^(汉|HARDWAREHOUSE|HARDWARE\s*&|CL\s*:|DA\s*:|รวมเงิน|Total\s*Amount|มูลค่า|ไม่มี\s*PO|Ship|ip-to|หมายเหตุ|Remark)/i;
+    var BC = /(?:^|\s)(?:\d{1,2}\s+)?(\d{12,13})\s+/g, BC8 = /(?:^|\s)(?:\d{1,2}\s+)?(\d{8})\s+(?=[^\d\s(])/g, NUM = /^[\d,]+\.\d{2}$/, STOP = /^(汉|CL\s*:|DA\s*:|รวมเงิน|Total\s*Amount|มูลค่า|ไม่มี\s*PO|Ship|ip-to|หมายเหตุ|Remark)/i;
+    var LOGO = /^(HARDWAREHOUSE|HARDWARE\s*&)/i;   // v2.09 โลโก้ร้านอาจแทรกกลางตาราง (ตัวเลขบรรทัด 5–12 อยู่หลังโลโก้) → ข้าม ไม่ใช่จบตาราง
     var items = [], ev = [], started = false;
     for (var i = 0; i < toks.length; i++){
       var t = toks[i];
       BC.lastIndex = 0;
       var hits = [], m;
       while ((m = BC.exec(t))) hits.push({bc:m[1], at:m.index, end:BC.lastIndex});
+      if (started || hits.length){   // v2.09 รหัสสินค้าร้าน 8 หลัก (10030028) ที่ OCR อ่านต่อกันหลายบรรทัด
+        BC8.lastIndex = 0;
+        while ((m = BC8.exec(t))) if (!hits.some(function(h){ return m.index < h.end && BC8.lastIndex > h.at; })) hits.push({bc:m[1], at:m.index, end:BC8.lastIndex});
+        hits.sort(function(a, b){ return a.at - b.at; });
+      }
       if (hits.length){
         started = true;
         hits.forEach(function(h, k){
@@ -4305,7 +4311,8 @@
       }
       if (!started) continue;
       if (STOP.test(t)) break;
-      if (/^\d{1,2}$/.test(t)) continue;                                  // เลขบรรทัดแยกบรรทัด
+      if (LOGO.test(t)) continue;
+      if (/^\d{1,3}$/.test(t)) continue;                                  // เลขบรรทัดแยกบรรทัด / เลขขยะ (121)
       t = t.replace(/(^|\s)[$S§'`.,·•:;]+\s*(?=\d[\d,]*\.\d{2}\b)/g, '$1');
       var qm = t.match(/^([\d,]+\.\d{2})\s+([^\d\s][^\s]*)$/);
       if (qm){ ev.push({q:prNum(qm[1]), u:taxUnit(qm[2]), n:[]}); continue; }
@@ -4317,7 +4324,9 @@
     if (ev.length !== items.length) out.warn.push('อ่านชื่อได้ ' + items.length + ' บรรทัด แต่จำนวน/ราคา ' + ev.length + ' ชุด — เทียบกับใบจริงทีละบรรทัด');
     items.forEach(function(it, j){
       var e = ev[j] || {n:[]}, l = {ln:j + 1, code:it.code, desc:it.desc.replace(/^[=\-–:.\s]+|[=\s]+$/g, '').replace(/\s{2,}/g, ' '),
-        qty: e.q != null ? e.q : null, unit: e.u || '', price: e.n[0] != null ? e.n[0] : null, total: e.n[1] != null ? e.n[1] : null, flags:[]};
+        qty: e.q != null ? e.q : null, unit: e.u || '', price: e.n[0] != null ? e.n[0] : null, total: null, flags:[]};
+      if (l.price != null) l.total = e.n.slice(1).filter(function(x){ return l.qty != null && Math.abs(l.qty * l.price - x) < 0.05; })[0];   // v2.09 ยอดที่ตรง จำนวน×ราคา (OCR แทรกเลขส่วนลด 00.00 / ยอดบรรทัดอื่น)
+      if (l.total == null) l.total = e.n[1] != null ? e.n[1] : null;
       if (l.total == null && l.qty != null && l.price != null) l.total = Math.round(l.qty * l.price * 100) / 100;
       var pk = String(l.unit).match(/^PK\s*\((\d+)\)$/i) || String(l.desc).match(/\((\d+)(?:\.0+)?\s*(?:ชิ้น|ใบ|แผ่น|PCS)\)/i);
       if (pk && +pk[1] > 1) l.pkn = +pk[1];                               // 1 แพ็ค/กล่อง = กี่ชิ้น (ไว้เสนอตัวคูณ)
